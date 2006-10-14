@@ -1,0 +1,14 @@
+#!/bin/sh
+
+PROGRAM=setup-hostname
+PREFIX=
+
+. $PREFIX/lib/libalpine.sh
+
+HOST=`hostname`
+echon "Enter system hostname (short form, e.g. 'foo') [$HOST]: "
+default_read HOST `hostname`
+
+mkdir -p "$ROOT/etc"
+echo "$HOST" > "$ROOT/etc/hostname"
+

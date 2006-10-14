@@ -1,0 +1,371 @@
+#!/bin/sh
+
+# lbu - utility to create local backups.
+# Copyright (c) 2006 Natanael Copa
+# May be distributed under GPL2
+
+PREFIX=
+. $PREFIX/lib/libalpine.sh
+# this one is from apk-tools
+. $PREFIX/lib/apk/libutil.sh
+
+VERSION=0.6_beta1
+[ "$SFIC" ] && SFIC="$SFIC -i d"
+
+# globals
+CURRENT_TDB="$APK_CACHE/current.tdb"
+TMPCURRENT_TDB="$APK_CACHE/tmp-current.tdb"
+COMMITED_TDB="$APK_CACHE/commited.tdb"
+
+EXCLUDE_LIST=/etc/lbu/exclude
+INCLUDE_LIST=/etc/lbu/include
+
+MASK="Npugsh"
+
+LBUDIRS=`echo "$APK_LBUDIRS" | sed 's/:/ /g'`
+
+retcode=0
+usage() {
+	echo "$PROGRAM $VERSION"
+	echo "usage: $PROGRAM <subcommand> [options] [args]
+
+Available subcommands:
+  commit (ci)
+  exclude (ex, delete)
+  include (inc, add)
+  status (stat, st)
+  update (up)
+
+Common options:
+ -h	Show help for subcommand.
+ -q	Quiet mode.
+ -v	Verbose mode.
+"
+	exit 1
+}
+
+
+#gen_temp_tdb() {
+#	# generate temp tdb
+#	local opwd="$PWD"
+#	rm -f "$TMP_TDB"
+#	cd "$ROOT"
+#	$SFIC -R --add "$TMP_TDB" $LBUDIRS
+#	cd "$opwd"
+#}	
+
+gen_current_tdb() {
+#	[ -f "$TMP_TDB" ] || gen_temp_tdb
+	# generate current tdb
+	rm -f "$CURRENT_TDB"
+	$SFIC -R -t --mask "$MASK" --old "$APK_DEFAULT_TDB" $LBUDIRS \
+		| grep -v ^D | awk '{print $2}' | $SFIC --add $CURRENT_TDB --file -
+}
+
+# list_add(char *listfile, char* file...)
+list_add() {
+	local list="$1"
+	shift
+	mkdir -p `dirname "$list"`
+	while [ $# -gt 0 ] ; do
+		filename=`echo "$1" | sed 's:^/\+::'`
+		if grep "^$filename$" "$list" >/dev/null 2>&1 ; then
+			[ "$VERBOSE" ] echo "$filename is already in $list."
+		else
+			[ "$VERBOSE" ] && echo "Adding $filename to $list."
+			echo "$filename" >> "$list"
+		fi
+		shift
+	done
+}
+
+# list_delete(char *listfile, char *file...)
+list_delete() {
+	local list="$1"
+	local tmp="$list.old"
+	shift
+	[ -f "$list" ] || return 1
+	while [ $# -gt 0 ] ; do
+		filename=`echo "$1" | sed 's:^/\+::'`
+		mv "$list" "$tmp"
+		[ "$VERBOSE" ] && echo "Removing $filename from list."
+		grep -v "^$filename$" "$tmp" > "$list"
+		rm "$tmp"
+		shift
+	done
+}
+
+
+		
+#
+# lbu_include - add/remove files to include list
+#
+usage_include() {
+	echo "$PROGRAM $VERSION
+usage: $PROGRAM include [-rv] <file> ...
+       $PROGRAM include [-v] -l
+
+Options:
+  -l	List contents of include list.
+  -r	Remove specified file(s) from include list instead of adding.
+  -v	Verbose mode.
+"
+	exit 1
+}
+
+cmd_include() {
+	if [ "$LIST" ] ; then
+		[ $# -gt 0 ] && usage_include
+		show_include
+		return
+	fi
+	
+	[ $# -lt 1 ] && usage_include
+	if [ "$REMOVE" ] ; then
+		list_delete "$INCLUDE_LIST" "$@"
+	else
+		list_add "$INCLUDE_LIST" "$@"
+		list_delete "$EXCLUDE_LIST" "$@"
+	fi
+}
+
+show_include() {
+	if [ -f "$INCLUDE_LIST" ] ; then
+		[ "$VERBOSE" ] && echo "Include files:"
+		cat "$INCLUDE_LIST"
+	fi
+}
+
+
+#
+# lbu_commit - commit config files to writeable media
+#
+usage_commit() {
+	echo "$PROGRAM $VERSION
+usage: $PROGRAM commit [-nv] [<media>]
+
+Options:
+  -n	Don't commit, just show what would have been commited.
+  -v	Verbose mode.
+
+The following values for <media> is supported: floppy usb
+If <media> is not specified, the environment variable LBU_MEDIA will be used.
+"
+	exit 1
+}
+
+cmd_commit() {
+	local media mnt was_mounted statuslist tmplist currentlist 
+	local incl excl outfile
+	
+	if [ "$1" ] ; then
+		media="$1"
+	else
+		media="$LBU_MEDIA"
+	fi
+	[ -z "$media" ] && usage_commit
+
+	mnt=/media/$media
+
+	[ -d $mnt ] || usage
+	was_mounted=`grep $mnt /proc/mounts`
+
+	cd "$ROOT"
+	
+	# Automatically add list and modified files
+	currentlist=`VERBOSE="" USE_DEFAULT="-a" cmd_status -a | grep -v ^D | awk '{print $2}'`
+
+	if [ -z "$was_mounted" ]; then
+		mount $mnt || die "failed to mount $mnt."
+	fi
+
+	# we generate a tmpcurrent before we commit to avoid race condition
+	[ -f "$CURRENT_TDB" ]  || $SFIC --add "$CURRENT_TDB" $currentlist
+	
+	# commit files to archive
+	if [ "$DRYRUN" ] ; then
+		outfile=/dev/null
+		VERBOSE="-v"
+	else
+		outfile="$mnt/`hostname`.apkovl.tar.gz"
+	fi
+	
+	[ -f "$EXCLUDE_LIST" ] && excl="-X $EXCLUDE_LIST"
+	[ -f "$INCLUDE_LIST" ] && incl="-T $INCLUDE_LIST"
+	
+	if ! tar $VERBOSE $excl $incl -c $currentlist | gzip -c  >"$outfile" ; then
+		rm -f "$CURRENT_TDB"
+		[ -z "$was_mounted" ] && umount $mnt
+		die "Problems creating archive. aborting"
+	fi	
+
+	#cp /etc/alpine.conf $mnt
+	# we strip off the version number to make upgrades easier.
+	[ "$DRYRUN" ] || apk_info | sed 's/-[0-9].*//' > $mnt/packages.list
+
+	sync
+	sleep 1
+	[ -z "$was_mounted" ] && umount $mnt
+
+	# move current to commited.
+	[ "$DRYRUN" ] || mv "$CURRENT_TDB" "$COMMITED_TDB"
+}
+
+#---------------------------------------------------------------------------
+# lbu_exclude - add remove file(s) from exclude list
+
+usage_exclude() {
+	echo "$PROGRAM $VERSION
+usage: $PROGRAM exclude [-rv] <file> ...
+       $PROGRAM exclude [-v] -l
+
+Options:
+  -l	List contents of exclude list.
+  -r	Remove specified file(s) from exclude list instead of adding.
+  -v	Verbose mode.
+"
+	exit 1
+}
+
+cmd_exclude() {
+	if [ "$LIST" ] ; then
+		[ $# -gt 0 ] && usage_exclude
+		show_exclude
+		return
+	fi
+	
+	[ $# -lt 1 ] && usage_exclude
+	if [ "$REMOVE" ] ; then
+		list_delete "$EXCLUDE_LIST" "$@"
+	else
+		list_delete "$INCLUDE_LIST" "$@"
+		list_add "$EXCLUDE_LIST" "$@"
+	fi
+}
+
+show_exclude() {
+	if [ -f "$EXCLUDE_LIST" ] ; then
+		[ "$VERBOSE" ] && echo "Exclude files:"
+		cat "$EXCLUDE_LIST"
+	fi	
+}
+
+#---------------------------------------------------------------------------
+# lbu_status - check what files have been changed since last save
+usage_status() {
+	echo "$PROGRAM $VERSION
+Check what files have been changed since last commit.
+
+usage: $PROGRAM status [-M <MASK>] [-av]
+
+Options:
+  -M	Use a different mask for comparing. (see sfic -h)
+  -a	Compare all files, not just since last commit.
+  -v	Also show include and exclude lists.
+"
+	exit 1
+}
+
+cmd_status() {
+	cd "$ROOT"
+
+	[ "$SFIC" ] || die "Need sfic."
+	[ -f "$APK_DEFAULT_TDB" ] || die "$APK_DEFAULT_TDB not found."
+
+	# genereate temp tdb
+	#gen_temp_tdb
+	
+	if [ -f "$COMMITED_TDB" ] && [ -z "$USE_DEFAULT" ]; then
+		# generate current tdb
+		gen_current_tdb
+		OLD="$COMMITED_TDB"
+		NEW="--new $CURRENT_TDB"
+	else
+		OLD="$APK_DEFAULT_TDB"
+		NEW="-R $LBUDIRS"
+	fi
+
+	$SFIC $QUIET $VERBOSE --mask "$MASK" -t --old "$OLD" $NEW
+	retcode=$?
+
+	if [ "$VERBOSE" ] ; then
+		echo ""
+		show_include
+		echo ""
+		show_exclude
+	fi
+}
+
+#------------------------------------------------
+# lbu_update - Update the database wihtout commit to media.
+usage_update() {
+	echo "$PROGRAM $VERSION
+Update the commited database without commit to media.
+	
+usage: $PROGRAM update [-v] <file> ...
+
+Options:
+  -v	Verbose mode.
+"
+	exit 1
+}
+
+cmd_update() {
+	[ $# -lt 1 ] && usage_update
+	cd "$ROOT"
+	for i in "$@" ; do
+		echo $i | sed 's:^/::'
+	done | lbu_filter | $SFIC $VERBOSE --add "$COMMITED_TDB" --file -
+}
+
+#-----------------------------------------------------------
+# Main
+
+cmd=`echo "$PROGRAM" | cut -s -d_ -f2`
+PROGRAM=`echo "$PROGRAM" | cut -d_ -f1`
+if [ -z "$cmd" ] ; then
+	cmd="$1"
+	[ -z "$cmd" ] && usage
+	shift
+fi
+
+# check for valid sub command
+case "$cmd" in
+	include|inc|add)	SUBCMD="include";;
+	commit|ci)		SUBCMD="commit";;
+	exclude|ex|delete)	SUBCMD="exclude";;
+	status|stat|st)		SUBCMD="status";;
+	update|up)		SUBCMD="update";;
+	*)			usage;;
+esac
+
+# parse common args
+while getopts "ahlM:nqrv" opt ; do
+	case "$opt" in
+		a) 	[ $SUBCMD = status ] || usage_$SUBCMD
+			USE_DEFAULT="-a"
+			;;
+		h) 	usage_$SUBCMD
+			;;
+		l)	LIST="-l"
+			;;
+		M) 	[ $SUBCMD = status ] || usage_$SUBCMD
+			MASK="$OPTARG"
+			;;
+		n) 	[ $SUBCMD = commit ] || usage_$SUBCMD
+			DRYRUN="-n"
+			;;
+		q)	QUIET="$QUIET -q"
+			;;
+		r)	REMOVE="-r"
+			;;
+		v) 	VERBOSE="$VERBOSE -v"
+			;;
+	esac
+done
+shift `expr $OPTIND - 1`
+			
+cmd_$SUBCMD "$@"		
+# cleanup
+rm -f "$CURRENT_TDB"
+exit $retcode

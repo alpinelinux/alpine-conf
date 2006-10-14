@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# script to set up webconf
+
+apk_add mini_httpd webconf-mvc
+
+sed -i 's:MINI_HTTPD_OPTS=.*:MINI_HTTPD_OPTS="-C /etc/mini_httpd.conf":
+	s:#MINI_HTTPD_DOCROOT=.*:MINI_HTTPD_DOCROOT=/var/lib/webconf/www:
+		' /etc/conf.d/mini_httpd
+
+cat - > /etc/mini_httpd.conf <<EOF
+nochroot
+dir=/var/lib/webconf/www
+user=root
+logfile=/var/log/mini_httpd.log
+cgipat=cgi-bin**
+
+EOF
+
+rc_add mini_httpd
+/etc/init.d/mini_httpd start

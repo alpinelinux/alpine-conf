@@ -1,0 +1,25 @@
+#!/bin/sh
+
+PREFIX=
+. "$PREFIX/lib/libalpine.sh"
+
+conf="$ROOT/etc/resolv.conf"
+if [ -f "$conf" ] ; then
+	domain=`awk '/^domain/ {print $2}' $conf`
+	dns=`awk '/^nameserver/ {print $2}' $conf`
+fi
+
+echon "DNS domain name? (e.g 'bar.com') [$domain] "
+default_read domain $domain
+echon "DNS nameserver(s)? ["
+for i in $dns ; do
+	echon "$i "
+done
+echon "] "
+default_read dns "$dns"
+
+echo "search $domain" > $conf
+for i in $dns ; do
+	echo "nameserver $i" >> $conf
+done
+

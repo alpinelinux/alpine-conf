@@ -1,0 +1,74 @@
+#!/bin/sh
+
+
+PREFIX=
+. $PREFIX/lib/libalpine.sh
+
+# set up temp dir
+init_tmpdir TMPD
+
+LBUCACHE="$TMPD/lbucache"
+
+usage() {
+	echo "$PROGRAM $VERSION
+Usage: $PROGAM [-ahl]
+
+  -a  Select all updated files.
+  -h  Show this help.
+  -l  List updated files.
+"	
+}
+
+
+is_modified() {
+	[ -f "$LBUCACHE" ] || lbu status -a | awk '{print $2}' > "$LBUCACHE"
+	test -n "`( echo \"$1\" ; cat \"$LBUCACHE\" ) | sort | uniq -d`"
+}
+
+while getopts "alh" opt ; do
+	case "$opt" in
+		a)	aflag="-a" ;;
+		l)	lflag="-l" ;;
+		h|*)	usage;;
+	esac	
+done
+shift `expr $OPTIND - 1`
+
+find "$ROOT/etc" -name '*.apk-new' | while read apknew ; do
+	p="${apknew%.apk-new}"
+	f="${p#${ROOT}/}"
+	unset choice
+
+	if [ "$lflag" ] ; then
+	
+		# just list the file
+		if [ "$aflag" ] || is_modified "$f" ; then
+			echo "$p"
+		fi
+		
+	elif [ "$aflag" ] || is_modified "$f" ; then
+	
+		# ask user what to do with the file
+		while [ -z "$choice" ] ; do
+			echo "New $p available:"
+			echon "Quit, Next, Show diff, Edit new, Zap new, Use new (q/n/s/e/z/u) [s]: "
+			default_read choice "s" </dev/tty
+			case "$choice" in
+				q) exit;;
+				n) continue;;
+				s) diff -u "$p" "$apknew" | ${PAGER:-less}
+				   unset choice
+				   ;;	
+				e) ${EDITOR:-vi} "$apknew" ; unset choice;;
+				z) rm "$apknew";;
+				u) mv "$apknew" "$p";;
+				*) unset choice;;
+			esac
+		done
+	else
+		# auto update
+		echo "Autoupdating unchanged $p"
+		mv "$apknew" "$p"
+	fi
+done
+

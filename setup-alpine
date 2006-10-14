@@ -1,0 +1,48 @@
+#!/bin/sh
+
+PROGRAM=setup-alpine
+VERSION=0.1
+
+PREFIX=
+. $PREFIX/lib/libalpine.sh
+
+while getopts "ah" opt ; do
+	case $opt in
+		a) ARCHIVE=yes;;
+		h) usage;;
+		*) usage;;
+	esac
+done
+shift `expr $OPTIND - 1`
+
+if [ "$ARCHIVE" ] ; then
+	echo "Creating an Alpine overlay"
+	init_tmpdir ROOT
+else
+	PKGADD=apk_add
+fi
+
+$PREFIX/sbin/setup-hostname
+$PREFIX/sbin/setup-interfaces
+
+# setup up dns if no dhcp was configured
+grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
+	$PREFIX/sbin/setup-dns
+
+# set root password
+[ -z "$NOCOMMIT" ] && while ! passwd ; do echo "Please retry." ; done
+
+# add some boot services
+rc_add -s 01 hwclock
+rc_add -s 04 modutils
+rc_add -s 06 procps
+rc_add -s 08 hostname
+
+rc_add -s 20 syslog
+rc_add -s 22 bootmisc.sh
+rc_add -s 24 -k networking
+
+# start up the services
+for i in hwclock modutils procps hostname syslog bootmisc.sh networking ; do
+	/etc/init.d/$i start
+done

@@ -1,0 +1,136 @@
+#!/bin/sh
+
+PROGRAM=setup-interfaces
+PREFIX=
+
+. $PREFIX/lib/libalpine.sh
+
+
+detect_interfaces() {
+	ip addr | grep -v ' lo:' | awk -F : '/^[0-9]*:/ { print $2}'
+}
+
+get_first_unconfigured() {
+	ls *.noconf 2>/dev/null | head -n 1 | sed 's/.noconf//'
+}
+
+get_default_addr() {
+	# check if dhcpcd is running
+	if pidof dhcpcd > /dev/null && [ -f "$ROOT/var/lib/dhcpc/dhcpcd-$1.info" ]; then
+		echo dhcp
+	else
+		ip addr show $1 | awk '/inet / {print $2}' | head -n 1 | sed 's:/.*::'
+	fi	
+}
+
+get_default_mask() {
+	if [ "$1" ] ; then
+		ipcalc -m $1 | sed 's/.*=//'
+	else
+		echo "255.255.255.0"
+	fi
+}
+
+get_default_gateway() {
+	ip route show dev $1 | awk '/^default/ {print $3}'
+}
+
+
+config_iface() {
+	local iface=$1
+	local address
+	local netmask
+	local gateway
+	while invalid_ip $address ; do
+		address=`get_default_addr $iface`
+		echon "Ip address for $iface? (or 'dhcp') [$address] "
+		default_read address $address
+		[ "$address" = "abort" ] && return
+		if [ "$address" = "dhcp" ] ; then
+			HAS_DHCP=yes
+			echo "type=dhcp" > $iface.conf
+			rm $iface.noconf
+			return
+		fi
+	done
+
+	while invalid_ip $netmask ; do
+		netmask=`get_default_mask $address`
+		echon "Netmask? [$netmask] "
+		default_read netmask "$netmask"
+		[ "$netmask" = "abort" ] && return
+	done
+
+	while invalid_ip $gateway ; do
+		gateway=`get_default_gateway $iface`
+		[ -z "$gateway" ] && gateway=none
+		echon "Gateway? (or 'none') [$gateway] "
+		default_read gateway $gateway
+		[ "$gateway" = "abort" ] && return
+		[ "$gateway" = "none" ] && gateway=""
+		[ -z "$gateway" ] && break
+	done
+	
+	echo "type=static" > $iface.conf
+	echo "address=$address" >> $iface.conf
+	echo "netmask=$netmask" >> $iface.conf
+	echo "gateway=$gateway" >> $iface.conf
+	
+	rm $iface.noconf
+}
+
+init_tmpdir TMP
+
+cd $TMP
+for i in $(detect_interfaces); do
+	touch $i.noconf
+done
+
+
+while ls *.noconf > /dev/null 2>&1 ; do
+	echon "Available interfaces are:"
+	for i in *.noconf; do
+		echon " `basename $i .noconf`"
+	done
+	echo "."
+
+	firstif=`get_first_unconfigured`
+	echon "Which one do you want to initialize? (or 'done') [$firstif] "
+	default_read iface "$firstif"
+	
+	[ "$iface" = "done" ] && break
+	[ -f $iface.noconf ] || continue
+	config_iface $iface
+done
+
+echo "type=loopback" > lo.conf
+echo "" > interface
+for i in *.conf ; do
+	iface=`basename $i .conf`
+	. ./$i
+	echo "" >> interfaces
+	echo "auto $iface" >> interfaces
+	echo "iface $iface inet $type" >> interfaces
+	[ "$type" = "static" ] || continue
+	echo "    address $address" >> interfaces
+	echo "    netmask $netmask" >> interfaces
+	[ "$gateway" ] && echo "    gateway $gateway" >> interfaces
+done
+
+while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
+	echon "Do you want to do any manual network configuration? [no] "
+	default_read answer no
+done
+
+if [ "$answer" = "yes" ]; then
+	[ -z "$EDITOR" ] && EDITOR=nano
+	case $EDITOR in
+		nano)	pkg_inst nano;;
+		vim)	pkg_inst vim;;
+	esac
+	$EDITOR interfaces
+fi
+
+mkdir -p $ROOT/etc/network
+cp interfaces $ROOT/etc/network/
+

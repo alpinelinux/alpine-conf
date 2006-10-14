@@ -1,0 +1,19 @@
+Alpine Conf are a set of utilities for making backup of config files.
+
+* The concept
+Specify the files you want to backup in a list, /etc/backuplist. You can add
+or delete entries in this list with the utilities lbu_add and lbu_delete.
+
+To actually prform the backup, use the utility lbu_commit. The files can be
+"commited" (backed up) to either floppy or usb.
+
+For example:
+
+  lbu_add /etc/networking/interfaces
+  lbu_commit floppy
+
+
+To install, run:
+
+  make install
+ 
