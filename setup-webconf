@@ -2,16 +2,16 @@
 
 # script to set up webconf
 
-apk_add mini_httpd webconf-mvc
+apk_add mini_httpd acf-alpine-baselayout
 
 sed -i 's:MINI_HTTPD_OPTS=.*:MINI_HTTPD_OPTS="-C /etc/mini_httpd.conf":
-	s:#MINI_HTTPD_DOCROOT=.*:MINI_HTTPD_DOCROOT=/var/lib/webconf/www:
+	s:#\?MINI_HTTPD_DOCROOT=.*:MINI_HTTPD_DOCROOT=/var/lib/acf/www:
 		' /etc/conf.d/mini_httpd
 
 cat - > /etc/mini_httpd.conf <<EOF
 nochroot
-dir=/var/lib/webconf/www
-user=root
+dir=/var/lib/acf/www
+user=nobody
 logfile=/var/log/mini_httpd.log
 cgipat=cgi-bin**
 
