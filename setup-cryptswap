@@ -1,0 +1,48 @@
+#!/bin/sh
+
+PREFIX=
+. "$PREFIX/lib/libalpine.sh"
+
+
+list_partitions() {
+	awk '$1 ~ /[0-9]/ {print "  " $4}' /proc/partitions
+}
+
+
+if [ -z "$1" ] ; then
+	while [ "x$verify" != "xy" ] ; do
+		echo "Available partitions: " $(list_partitions)
+		echon "Use what partition for encrypted swap? [none] "
+		default_read part "none"
+
+		# check if user requested to abort
+		if [ "x$part" = "xabort" ] || [ "x$part" = "xnone" ] ; then
+			exit
+		fi
+		# check if device exist
+		[ -e /dev/$part ] || continue
+
+		# let the user verify
+		echon "Warning! you will lose all data on $part. Continue? (y/n) [n] "
+		default_read verify "n"
+	done
+else
+	part=$1
+fi
+
+
+apk_add cryptsetup-luks
+
+# set the device in /etc/conf.f/cryptswap
+if grep ^DEVICE= /etc/conf.d/cryptswap >/dev/null ; then
+	sed -i 's:^DEVICE=.*:DEVICE=/dev/'$part':' /etc/conf.d/cryptswap
+else
+	echo "DEVICE=/dev/$part" >> /etc/conf.d/cryptswap
+fi
+
+rc_add -k -s 05 cryptswap
+rc_add -k -s 06 swap
+
+/etc/init.d/cryptswap start
+/etc/init.d/swap start
+
