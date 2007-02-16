@@ -1,0 +1,168 @@
+#!/bin/sh
+#
+# Join AD
+# for uclibc systems
+#
+# Copyright (c) 2007 A.Poslavsky
+# May be distributed under gpl2
+
+VERSION=0.1
+PROGRAM=setup-ads
+
+. $PREFIX/lib/libalpine.sh
+
+KRBCONF="/etc/krb5.conf"
+SMBCONF="/etc/samba/smb.conf"
+DOMAINADMIN="Administrator"
+PW=""
+HOSTNAME=$(hostname)
+FORCE=""
+
+retcode=0
+
+die() {
+	echo $* > &2
+	exit 1
+}
+
+ask_info() {
+
+	echo "Configuring kerberos"
+	echon "Enter your full Domain name in uppercase [$DOMAIN]: "
+	default_read DOMAIN $DOMAIN
+	echon "Enter your short Domain name (Workgroup) [$WORKGROUP]: "
+	default_read WORKGROUP $WORKGROUP
+	echon "Domain controller(s) (separate with space) [$DC]: "
+	default_read DC $DC
+	echon "Domain Administrator [$DOMAINADMIN]: "
+	default_read DOMAINADMIN $DOMAINADMIN
+}
+
+conf_krb() {
+	[ -f  $KRBCONF ] && cp $KRBCONF $KRBCONF.bak ; [ "$VERBOSE" ] && echo "Making backup copy of $KRBCONF to $KRBCONF.bak"
+
+	echo "Writing $KRBCONF"
+
+
+	echo "[libdefaults]
+	default_realm = $DOMAIN
+
+[realms]
+$DOMAIN = {
+$(for a in $DC
+do
+	echo "	kdc = $a"
+done)
+	admin_server = $(echo $DC | sed "s/ .*//")
+}
+
+[login]
+	krb4_convert = true
+	krb4_get_tickets = true" > $KRBCONF
+
+	kinit $DOMAINADMIN@$DOMAIN || die "Sorry, could not authenticate against kerberos!"
+}
+
+join_ads() {
+	if [ -f  $SMBCONF ] ; then
+		cp $SMBCONF $SMBCONF.bak 
+		[ "$VERBOSE" ] && echo "Making backup copy of $SMBCONF to $SMBCONF.bak"
+	fi
+	echo "smb.conf witten by $PROGRAM
+
+[global]
+	# Browsing/Identification
+	domain master = no
+	domain logons = no
+	preferred master = no
+
+	# Domain info
+	security = ADS
+	password server = $(echo $DC)
+
+	workgroup = $WORKGROUP
+	realm = $DOMAIN
+	netbios name = $HOSTNAME
+	server string = "Samba Server $HOSTNAME"
+	allow trusted domains = no
+	idmap backend = rid:$WORKGROUP=50000-100000000
+	winbind separator = -
+	winbind nested groups = Yes
+	winbind enum users = yes
+	winbind enum groups = yes
+	idmap uid = 50000-100000000
+	idmap gid = 50000-100000000
+	wins server = $(echo $DC)
+	guest account = nobody
+
+[testshare]
+	comment = Secret data
+	writable = yes
+	path = /srv/Samba/Test
+	public = yes
+	" > $SMBCONF
+
+	[ "$VERBOSE" ] && echo "net ads join -W $DOMAIN -S $(echo $DC | sed "s/ .*//")  -U $DOMAINADMIN"
+	net ads join -W $DOMAIN -S $(echo $DC | awk '{ print $1 }') -U $DOMAINADMIN\
+		|| echo "Sorry could not join $DOMAIN domain" && exit 1
+}
+
+check_exist() {
+	if [ -f "$SMBCONF" -o -f "$KRBCONF" ] ; then
+		[ ! "$FORCE" ] && die "Config file(s) already exist(s),
+use -f to force overwriting of these file(s)"
+	fi
+}
+
+usage() {
+	echo "$PROGRAM $VERSION"
+	echo "usage: $PROGRAM [options] [args]
+
+Options:
+  -h     Show help for subcommand.
+  -q     Quiet mode.
+  -v     Verbose mode.
+  -K     <kerberosconfigfile>
+  -S     <sambaconfigfile>
+  -U     <domain administrator>
+  -D     <domain>
+  -P     <password>
+  -f     force overwrite of existing configfiles (will do backup)
+
+"
+	exit 1
+}
+
+
+
+# parse common args
+while getopts "D:fP:hvU:K:S:" opt ; do
+	case "$opt" in
+		h)	usage
+		 	;;
+		P)	PW="$OPTARG"
+			;;
+		v)	VERBOSE="$VERBOSE -v"
+			;;
+		U)	DOMAINADMIN="$OPTARG"
+			;;
+		K)	KRBCONF="$OPTARG"
+			;;
+		S)	SMBCONF="$OPTARG"
+			;;
+		D)	DOMAIN="$OPTARG"
+			;;
+		f)	FORCE="$FORCE -f"
+			;;
+	esac
+done
+shift `expr $OPTIND - 1`
+
+apk_add samba-ldap
+check_exist
+ask_info
+conf_krb
+join_ads
+echo "kerberos initialized, domain joined"
+
+exit $retcode

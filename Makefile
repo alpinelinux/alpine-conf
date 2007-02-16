@@ -1,4 +1,4 @@
-V=0.6.1
+V=0.8_beta2
 P=alpine-conf
 PV=$(P)-$(V)
 APKF=$(PV).apk
@@ -13,6 +13,8 @@ SBIN_FILES=lbu\
 	setup-hostname\
 	setup-alpine\
 	setup-webconf\
+	setup-cryptswap\
+	setup-ads\
 	update-conf
 EXTRA_DIST=Makefile README
 

@@ -11,10 +11,11 @@ LBUCACHE="$TMPD/lbucache"
 
 usage() {
 	echo "$PROGRAM $VERSION
-Usage: $PROGAM [-ahl]
+Usage: $PROGAM [-aihl]
 
   -a  Select all updated files.
   -h  Show this help.
+  -i  Use all new init.d scripts.
   -l  List updated files.
 "	
 }
@@ -25,9 +26,15 @@ is_modified() {
 	test -n "`( echo \"$1\" ; cat \"$LBUCACHE\" ) | sort | uniq -d`"
 }
 
-while getopts "alh" opt ; do
+
+is_initd() {
+	echo "$1" | grep etc/init.d/ > /dev/null
+}
+
+while getopts "alih" opt ; do
 	case "$opt" in
 		a)	aflag="-a" ;;
+		i)	iflag="-i" ;;
 		l)	lflag="-l" ;;
 		h|*)	usage;;
 	esac	
@@ -47,7 +54,14 @@ find "$ROOT/etc" -name '*.apk-new' | while read apknew ; do
 		fi
 		
 	elif [ "$aflag" ] || is_modified "$f" ; then
-	
+		if [ "$iflag" ] && is_initd "$f" ; then
+			echo "Autoupdating $p"
+			mv "$apknew" "$p"
+			continue
+		fi
+			
+		diff -u "$p" "$apknew"
+
 		# ask user what to do with the file
 		while [ -z "$choice" ] ; do
 			echo "New $p available:"

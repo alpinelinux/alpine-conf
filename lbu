@@ -9,7 +9,7 @@ PREFIX=
 # this one is from apk-tools
 . $PREFIX/lib/apk/libutil.sh
 
-VERSION=0.6_beta1
+VERSION=0.8
 [ "$SFIC" ] && SFIC="$SFIC -i d"
 
 # globals
@@ -171,6 +171,12 @@ cmd_commit() {
 	was_mounted=`grep $mnt /proc/mounts`
 
 	cd "$ROOT"
+
+	# for upgrading from packages.list times
+	if [ ! -f "$INCLUDE_LIST" ] ; then
+		mkdir -p $(dirname "$INCLUDE_LIST")
+		echo "var/lib/apk/world" > "$INCLUDE_LIST"
+	fi
 	
 	# Automatically add list and modified files
 	currentlist=`VERBOSE="" USE_DEFAULT="-a" cmd_status -a | grep -v ^D | awk '{print $2}'`
@@ -199,9 +205,10 @@ cmd_commit() {
 		die "Problems creating archive. aborting"
 	fi	
 
-	#cp /etc/alpine.conf $mnt
-	# we strip off the version number to make upgrades easier.
-	[ "$DRYRUN" ] || apk_info | sed 's/-[0-9].*//' > $mnt/packages.list
+	# remove obsolete file
+	if [ -z "$DRYRUN" ] ; then
+		rm -f $mnt/packages.list
+	fi
 
 	sync
 	sleep 1
