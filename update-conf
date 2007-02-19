@@ -41,7 +41,7 @@ while getopts "alih" opt ; do
 done
 shift `expr $OPTIND - 1`
 
-find "$ROOT/etc" -name '*.apk-new' | while read apknew ; do
+for apknew in $(find "$ROOT/etc" -name '*.apk-new') ; do
 	p="${apknew%.apk-new}"
 	f="${p#${ROOT}/}"
 	unset choice

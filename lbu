@@ -173,9 +173,9 @@ cmd_commit() {
 	cd "$ROOT"
 
 	# for upgrading from packages.list times
-	if [ ! -f "$INCLUDE_LIST" ] ; then
-		mkdir -p $(dirname "$INCLUDE_LIST")
-		echo "var/lib/apk/world" > "$INCLUDE_LIST"
+	mkdir -p $(dirname "$INCLUDE_LIST")
+	if ! grep "var/lib/apk/world" "$INCLUDE_LIST" >/dev/null 2>&1 ; then
+		echo "var/lib/apk/world" >> "$INCLUDE_LIST"
 	fi
 	
 	# Automatically add list and modified files
