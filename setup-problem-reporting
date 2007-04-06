@@ -1,0 +1,40 @@
+#!/bin/sh
+
+PREFIX=
+. "$PREFIX/lib/libalpine.sh"
+
+conf="$ROOT/etc/gnats/send-pr.conf"
+
+cfgval() {
+	awk -F= "/^$1/ {print \$2}" "$ROOT/etc/ssmtp/ssmtp.conf" 2>/dev/null
+}
+
+email=$(awk -F= '/^FROM/ {print $2}' "$conf" 2>/dev/null)
+
+if [ -z "$email" ] ; then
+	hostname=$(cfgval hostname)
+	if [ -z "$hostname" ]; then
+		hostname=$(hostname -f 2>/dev/null || cat /etc/hostname)
+	fi
+else
+	hostname=$(hostname -f 2>/dev/null || cat /etc/hostname)
+fi
+domain=$(hostname -d $hostname 2>/dev/null)
+if [ -n "$hostname" -a -z "$email" ] ; then
+	email=$(whoami)@$hostname
+fi
+
+echon "Sender email address for problem reports? [$email] "
+default_read email $email
+
+if grep ^FROM "$conf" > /dev/null ; then
+	sed -i "s/FROM.*/FROM=$email/" "$conf"
+else
+	echo "FROM=$email" >> "$conf"
+fi
+
+setup-mta
+
+echo ""
+echo "Please run 'send-pr' to submit problem reports"
+

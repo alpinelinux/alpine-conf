@@ -1,4 +1,4 @@
-V=0.8_beta3
+V=0.8_beta6
 P=alpine-conf
 PV=$(P)-$(V)
 APKF=$(PV).apk
@@ -8,13 +8,15 @@ TMP=$(PV)
 
 LIB_FILES=libalpine.sh
 SBIN_FILES=lbu\
-	setup-interfaces\
+	setup-ads\
+	setup-alpine\
+	setup-cryptswap\
 	setup-dns\
 	setup-hostname\
-	setup-alpine\
+	setup-interfaces\
+	setup-mta\
+	setup-problem-reporting\
 	setup-webconf\
-	setup-cryptswap\
-	setup-ads\
 	update-conf
 EXTRA_DIST=Makefile README
 
