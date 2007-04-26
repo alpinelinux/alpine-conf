@@ -6,6 +6,11 @@
 # Copyright (c) 2007 A.Poslavsky
 # May be distributed under gpl2
 
+# TODO:
+# * suggest a domain name based on hostname -d? /etc/resolv.conf?
+# * suggest DC server(s) based on 
+#     $(dig _kerberos._tcp.dc._msdcs.$DOMAIN SRV  +short)
+
 VERSION=0.1
 PROGRAM=setup-ads
 
@@ -21,7 +26,7 @@ FORCE=""
 retcode=0
 
 die() {
-	echo $* > &2
+	echo $* >&2
 	exit 1
 }
 
