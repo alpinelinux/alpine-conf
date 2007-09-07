@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# bootstrap an alpine installation
+
+VERSION=1.0
+
+usage() {
+	echo "usage: $(basename $0) TARGETDIR"
+	exit 2
+}
+
+die () {
+	echo "$@" >&2
+	exit 3
+}
+
+# set up vars
+: ${WGET:="/usr/bin/wget"}
+: ${TAR:="/usr/bin/tar"}
+: ${MIRROR:="http://dev.alpinelinux.org/alpine/v1.7"}
+: ${BASE:="base.tar.bz2"}
+target=$1
+
+# main
+[ -z "$target" ] && usage
+[ "$target" = "/" ] && die "Bootstrapping Alpine to '/' is probably not a good idea. Aborting..."
+
+mkdir -p "$target"
+
+echo ">>> Fetching $MIRROR/$BASE..."
+$WGET -q -O - "$MIRROR/$BASE" | tar -C "$target" -jx || die "Failed to fetch or unpack $BASE"
+
+echo ">>> Creating missing dirs..."
+for dir in proc sys dev home; do
+	mkdir -p "$target/$dir"
+done
+
+echo ">>> Installing busybox links..."
+# create fake /proc/self/exe
+mkdir -p "$target/proc/self"
+ln -s /bin/busybox "$target/proc/self/exe"
+chroot "$target" /bin/busybox --install -s
+rm -r "$target/proc/self"
+
+if [ -f /etc/resolv.conf ]; then
+	echo ">>> Copying /etc/resolv.conf..."
+	cp /etc/resolv.conf "$target/etc/"
+fi
+
+echo ">>> Setting up APK_PATH..."
+echo "export APK_PATH=$MIRROR/apks" >> "$target/etc/profile"
+
+echo ">>> Alpine bootstrap complete."
+

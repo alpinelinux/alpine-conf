@@ -22,6 +22,7 @@ else
 	PKGADD=apk_add
 fi
 
+$PREFIX/sbin/setup-keymap
 $PREFIX/sbin/setup-hostname
 $PREFIX/sbin/setup-interfaces
 
@@ -38,6 +39,7 @@ rc_add -s 04 modutils
 rc_add -s 06 procps
 rc_add -s 08 hostname
 
+rc_add -s 20 keymap
 rc_add -s 20 syslog
 rc_add -s 22 bootmisc.sh
 rc_add -s 24 -k networking

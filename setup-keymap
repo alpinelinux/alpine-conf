@@ -1,0 +1,104 @@
+#!/bin/sh
+
+PREFIX=
+. $PREFIX/lib/libalpine.sh
+
+MAPDIR="$ROOT/usr/share/bkeymaps"
+
+if [ -f "$ROOT/etc/conf.d/keymap" ]; then
+	. "$ROOT/etc/conf.d/keymap"
+	variant=$(basename $KEYMAP .bmap.gz)
+fi
+
+
+show_keymaps() {
+	local opwd="$PWD"
+	cd "$ROOT/usr/share/bkeymaps"
+	ls --color=never
+	cd "$opwd"
+}
+
+select_layout() {
+	while true; do
+		if [ -z "$layout" ]; then
+			layout=none
+		fi
+		echo "Available keyboard layouts:"
+		show_keymaps
+		echon "Select keyboard layout [$layout]: "
+		default_read layout "$layout"
+		if [ "$layout" = "abort" ] || [ "$layout" = "none" ] ; then
+			goodbye 0
+		elif [ -d "$MAPDIR/$layout" ] ; then
+			return 0
+		fi
+	done
+}
+
+setup_mapfile() {
+	local name=$(basename $1)
+	local conf="$ROOT/etc/conf.d/keymap"
+	mkdir -p "$ROOT/etc/keymap"
+	mkdir -p "$ROOT/etc/conf.d/"
+	if gzip -9 -c "$1" > "$ROOT/etc/keymap/$name.gz" ; then
+		[ -f "$conf" ] && sed -i '/^KEYMAP=/d' "$conf"
+		echo "KEYMAP=/etc/keymap/$name.gz" >> "$conf"
+		# we actually load the keymap now
+		zcat /etc/keymap/$name.gz | loadkmap
+		rc_add -s 20 keymap
+		goodbye 0
+	fi
+}
+
+select_variant() {
+	while true; do
+		echon "Available variants: "
+		for i in $(ls $MAPDIR/$layout) ; do
+			echon "$(basename $i .bmap) "
+		done
+		echo ""
+		if [ ! -f "$MAPDIR/$layout/$variant.bmap" ] ; then
+			variant=""
+		fi
+		echon "Select variant [$variant]: "
+		default_read variant "$variant"
+		if [ "$variant" = "abort" ] || [ "$variant" = "none" ]; then
+			break;
+		fi
+		if [ -f "$MAPDIR/$layout/$variant.bmap" ]; then
+			setup_mapfile "$MAPDIR/$layout/$variant.bmap"
+		fi
+	done	
+}
+
+goodbye() {
+	if [ $was_installed -ne 0 ]; then
+		pkg_deinst bkeymaps
+	fi
+	exit $1
+}
+
+apk_info -e bkeymaps
+was_installed=$?
+
+pkg_inst bkeymaps
+
+deflayout="$1"
+while true; do
+
+	if [ -n "$deflayout" ]; then
+		layout="$deflayout"
+		unset deflayout
+	else
+		select_layout
+	fi
+
+	# if there is only one variant, just pick it
+	count=$(ls $MAPDIR/$layout | wc -l)
+	if [ $count -eq 1 ]; then
+		setup_mapfile "$MAPDIR/$layout/$(ls $MAPDIR/$layout)"
+		continue
+	fi
+
+	select_variant
+done

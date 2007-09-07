@@ -1,4 +1,4 @@
-V=0.9
+V=1.0
 P=alpine-conf
 PV=$(P)-$(V)
 APKF=$(PV).apk
@@ -7,15 +7,17 @@ PREFIX=/usr/local
 TMP=$(PV)
 
 LIB_FILES=libalpine.sh
-SBIN_FILES=lbu\
+SBIN_FILES=albootstrap\
+	lbu\
 	setup-ads\
 	setup-alpine\
 	setup-cryptswap\
 	setup-dns\
 	setup-hostname\
 	setup-interfaces\
+	setup-keymap\
 	setup-mta\
-	setup-problem-reporting\
+	setup-sendbug\
 	setup-webconf\
 	update-conf
 EXTRA_DIST=Makefile README

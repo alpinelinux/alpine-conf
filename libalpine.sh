@@ -35,6 +35,10 @@ pkg_inst() {
 	[ -z "$NOCOMMIT" ] && apk_add $*
 }
 
+pkg_deinst() {
+	[ -z "$NOCOMMIT" ] && apk_delete $*
+}
+
 default_read() {
 	local n
 	read n
