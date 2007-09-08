@@ -40,7 +40,7 @@ rc_add -s 06 procps
 rc_add -s 08 hostname
 
 rc_add -s 20 keymap
-rc_add -s 20 syslog
+rc_add -s 20 -k syslog
 rc_add -s 22 bootmisc.sh
 rc_add -s 24 -k networking
 
