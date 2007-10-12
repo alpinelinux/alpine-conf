@@ -1,4 +1,4 @@
-V=1.0
+V=1.1
 P=alpine-conf
 PV=$(P)-$(V)
 APKF=$(PV).apk
@@ -20,9 +20,11 @@ SBIN_FILES=albootstrap\
 	setup-sendbug\
 	setup-webconf\
 	update-conf
+
+ETC_LBU_FILES=lbu.conf
 EXTRA_DIST=Makefile README
 
-DIST_FILES=$(LIB_FILES) $(SBIN_FILES) $(EXTRA_DIST)
+DIST_FILES=$(LIB_FILES) $(SBIN_FILES) $(ETC_LBU_FILES) $(EXTRA_DIST)
 
 DESC="Alpine configuration scripts"
 WWW="http://alpinelinux.org/alpine-conf"
@@ -59,6 +61,8 @@ install:
 	install -m 755 $(SBIN_FILES) $(DESTDIR)/$(PREFIX)/sbin
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/lib
 	install -m 755 $(LIB_FILES) $(DESTDIR)/$(PREFIX)/lib
+	install -m 755 -d $(DESTDIR)/etc/lbu
+	install -m 755 $(ETC_LBU_FILES) $(DESTDIR)/etc/lbu
 
 uninstall:
 	for i in $(SBIN_FILES); do \

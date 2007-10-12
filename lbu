@@ -9,7 +9,7 @@ PREFIX=
 # this one is from apk-tools
 . $PREFIX/lib/apk/libutil.sh
 
-VERSION=0.9
+VERSION=1.1
 [ "$SFIC" ] && SFIC="$SFIC -i d"
 
 # globals
@@ -23,6 +23,10 @@ INCLUDE_LIST=/etc/lbu/include
 MASK="Npugsh"
 
 LBUDIRS=`echo "$APK_LBUDIRS" | sed 's/:/ /g'`
+
+if [ -f /etc/lbu/lbu.conf ]; then
+	. /etc/lbu/lbu.conf
+fi
 
 retcode=0
 usage() {
@@ -46,18 +50,16 @@ Common options:
 	exit 1
 }
 
+# verify we have openssl is we want to encrypt
+check_openssl() {
+	[ -z "$ENCRYPTION" ] && return 0
+	OPENSSL=$(which openssl 2>/dev/null) || die "openssl was not found"
 
-#gen_temp_tdb() {
-#	# generate temp tdb
-#	local opwd="$PWD"
-#	rm -f "$TMP_TDB"
-#	cd "$ROOT"
-#	$SFIC -R --add "$TMP_TDB" $LBUDIRS
-#	cd "$opwd"
-#}	
+	$OPENSSL list-cipher-commands | grep "^$ENCRYPTION$" > /dev/null \
+		|| die "Cipher $ENCRYPTION is not supported"
+}
 
 gen_current_tdb() {
-#	[ -f "$TMP_TDB" ] || gen_temp_tdb
 	# generate current tdb
 	rm -f "$CURRENT_TDB"
 	$SFIC -R -t --mask "$MASK" --old "$APK_DEFAULT_TDB" $LBUDIRS \
@@ -98,7 +100,7 @@ list_delete() {
 }
 
 
-		
+
 #
 # lbu_include - add/remove files to include list
 #
@@ -123,7 +125,7 @@ cmd_include() {
 		show_include
 		return
 	fi
-	
+
 	[ $# -lt 1 ] && usage_include
 	if [ "$REMOVE" ] ; then
 		list_delete "$INCLUDE_LIST" "$@"
@@ -158,7 +160,7 @@ be created in the specified directory.
 If <filename> is specified, and is not a direcotry, a package with the
 specified name willbe created.
 
-If <dirname> nor <filename> is not specified, a package named 
+If <dirname> nor <filename> is not specified, a package named
 <hostname>.apkovl.tar.gz will be created in current work directory.
 "
 	exit 1
@@ -168,12 +170,17 @@ cmd_package() {
 	local pkg="$1"
 	local rc=0
 	local owd="$PWD"
+	local suff="apkovl.tar.gz"
+
+	check_openssl
+
+	[ -n "$ENCRYPTION" ] && suff="$suff.$ENCRYPTION"
 
 	# find filename
 	if [ -d "$pkg" ] ; then
-		pkg="$pkg/$(hostname).apkovl.tar.gz"
+		pkg="$pkg/$(hostname).$suff"
 	elif [ -z "$pkg" ]; then
-		pkg="$PWD/$(hostname).apkovl.tar.gz"
+		pkg="$PWD/$(hostname).$suff"
 	fi
 
 	# generate the packages.list
@@ -185,20 +192,32 @@ cmd_package() {
 		# only add the packages who has no REQUIRED_BY
 		[ -z "$reqby" ] && echo $i
 	done | sed 's/-[0-9].*//' >> /etc/lbu/packages.list
-	
+
 	# Automatically add list and modified files
 	currentlist=`VERBOSE="" USE_DEFAULT="-a" cmd_status -a | grep -v ^D | awk '{print $2}'`
 
 	# we generate a tmpcurrent before we commit to avoid race condition
 	rm -f "$CURRENT_TDB"
 	$SFIC --add "$CURRENT_TDB" $currentlist
-	
+
 	# create tar archive
 	[ -f "$EXCLUDE_LIST" ] && excl="-X $EXCLUDE_LIST"
 	[ -f "$INCLUDE_LIST" ] && incl="-T $INCLUDE_LIST"
-	if ! tar $VERBOSE $excl $incl -c $currentlist | gzip -c  >"$pkg" ; then
-		rm -f "$CURRENT_TDB"
-		rc=1
+
+	if [ -z "$ENCRYPTION" ]; then
+		if ! tar $VERBOSE $excl $incl -c $currentlist \
+			| gzip -c  >"$pkg" ; then
+			rm -f "$CURRENT_TDB"
+			rc=1
+		fi
+	else
+		if ! tar $VERBOSE $excl $incl -c $currentlist \
+			| gzip -c \
+			| $OPENSSL enc "-$ENCRYPTION" -salt > "$pkg"
+		then
+			rm -f "$CURRENT_TDB"
+			rc=1
+		fi
 	fi
 	cd "$owd"
 	return $rc
@@ -231,6 +250,8 @@ Create a backup of config to writeable media.
 usage: $PROGRAM commit|ci [-nv] [<media>]
 
 Options:
+  -d	Remove old configuration files.
+  -e	Protect configuration with a password.
   -n	Don't commit, just show what would have been commited.
   -v	Verbose mode.
 
@@ -241,9 +262,11 @@ If <media> is not specified, the environment variable LBU_MEDIA will be used.
 }
 
 cmd_commit() {
-	local media mnt was_mounted statuslist tmplist currentlist 
-	local incl excl outfile
-	
+	local media mnt was_mounted statuslist tmplist currentlist
+	local incl excl outfile ovls lines
+
+	check_openssl
+
 	# find what media to use
 	if [ "$1" ] ; then
 		media="$1"
@@ -260,12 +283,34 @@ cmd_commit() {
 		mount $mnt || die "failed to mount $mnt."
 	fi
 
+	if [ -n "$DELETEOLDCONFIGS" ] ; then
+		if [ -n "$DRYRUN" ] ; then
+			local rmfiles=$(ls "$mnt/*.apkovl.*" 2>/dev/null)
+			if [ -n "$rmfiles" ] ; then
+				echo "I would have removed:"
+				echo "$rmfiles"
+			fi
+		else
+			[ -n "$VERBOSE" ] && echo "Removing old config files"
+			rm "$mnt/*.apkovl.*" 2>/dev/null
+		fi
+	else
+       		lines=$(ls -1 "$mnt"/*.apkovl.tar.gz* 2>/dev/null | wc -l )
+	       	if [ $lines -gt 1 ] ; then
+	               	# More then one apkovl, this is a security concern
+	               	die "More than one apkovl file was found. Please use -d to erase old configs."
+		fi
+	fi
+
 	# commit files to archive
 	if [ "$DRYRUN" ] ; then
 		outfile=/dev/null
 		VERBOSE="-v"
 	else
 		outfile="$mnt/$(hostname).apkovl.tar.gz"
+		if [ -n "$ENCRYPTION" ]; then
+			outfile="$outfile.$ENCRYPTION"
+		fi
 	fi
 
 	# create package
@@ -315,7 +360,7 @@ cmd_exclude() {
 		show_exclude
 		return
 	fi
-	
+
 	[ $# -lt 1 ] && usage_exclude
 	if [ "$REMOVE" ] ; then
 		list_delete "$EXCLUDE_LIST" "$@"
@@ -329,7 +374,7 @@ show_exclude() {
 	if [ -f "$EXCLUDE_LIST" ] ; then
 		[ "$VERBOSE" ] && echo "Exclude files:"
 		cat "$EXCLUDE_LIST"
-	fi	
+	fi
 }
 
 #---------------------------------------------------------------------------
@@ -356,7 +401,7 @@ cmd_status() {
 
 	# genereate temp tdb
 	#gen_temp_tdb
-	
+
 	if [ -f "$COMMITED_TDB" ] && [ -z "$USE_DEFAULT" ]; then
 		# generate current tdb
 		gen_current_tdb
@@ -383,7 +428,7 @@ cmd_status() {
 usage_update() {
 	echo "$PROGRAM $VERSION
 Update the commited database without commit to media.
-	
+
 usage: $PROGRAM update|up [-v] <file> ...
 
 Options:
@@ -424,10 +469,16 @@ case "$cmd" in
 esac
 
 # parse common args
-while getopts "ahlM:nqrv" opt ; do
+while getopts "adehlM:nqrv" opt ; do
 	case "$opt" in
 		a) 	[ $SUBCMD = status ] || usage_$SUBCMD
 			USE_DEFAULT="-a"
+			;;
+		d)	DELETEOLDCONFIGS="yes"
+			;;
+		e)	ENCRYPTION="aes-256-cbc" #hardcoded cyper for ssl, this can be expanded
+						 # to use different cyphers, the lbu_commit code
+						 # does not need to be changed
 			;;
 		h) 	usage_$SUBCMD
 			;;
@@ -448,8 +499,8 @@ while getopts "ahlM:nqrv" opt ; do
 	esac
 done
 shift `expr $OPTIND - 1`
-			
-cmd_$SUBCMD "$@"		
+
+cmd_$SUBCMD "$@"
 # cleanup
 rm -f "$CURRENT_TDB"
 exit $retcode
