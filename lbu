@@ -213,25 +213,25 @@ cmd_package() {
 	# create tar archive
 	[ -f "$EXCLUDE_LIST" ] && excl="-X $EXCLUDE_LIST"
 	[ -f "$INCLUDE_LIST" ] && incl="-T $INCLUDE_LIST"
-	if [ -z "$ENCRYPTION" ]; then
-		tar $VERBOSE $excl $incl -c $currentlist \
-			| gzip -c  >"$tmppkg"
+	if [ -n "$VERBOSE" ]; then
+		echo "Archiving the following files:" >&2
+		# we dont want to mess the tar output with the
+		# password prompt. Lets get the tar output first.
+		tar  $excl $incl -c -v $currentlist > /dev/null
 		rc=$?
-	else
-		if [ -n "$VERBOSE" ]; then
-			echo "Archiving the following files:" >&2
-			# we dont want to mess the tar output with the
-			# password prompt. Lets get the tar output first.
-			tar  $excl $incl -c -v $currentlist > /dev/null
+	fi
+	if [ $rc -eq 0 ]; then
+		if [ -z "$ENCRYPTION" ]; then
+			tar $excl $incl -c $currentlist | gzip -c  >"$tmppkg"
 			rc=$?
-		fi
-		if [ $rc -eq 0 ]; then
+		else
 			tar $excl $incl -c $currentlist | gzip -c \
 				| $OPENSSL enc "-$ENCRYPTION" -salt > "$tmppkg"
 			rc=$?
 		fi
 	fi
 
+	# actually commit unless dryrun mode
 	if [ $rc -eq 0 ]; then
 		[ -z "$DRYRUN" ] && cp "$tmppkg" "$pkg"
 	else
