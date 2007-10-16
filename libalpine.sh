@@ -21,6 +21,11 @@ echon () {
 	$ECHON "$*$NNL"
 }
 
+# echo if in verbose mode
+vecho() {
+	[ -n "$VERBOSE" ] && echo "$@"
+}
+
 init_tmpdir() {
 	local omask=`umask`
 	local __tmpd="/tmp/$PROGRAM-${$}-`date +%s`"
