@@ -287,7 +287,7 @@ used by setting the DEFAULT_CIPHER or ENCRYPTION environment variables.
 For possible ciphers, try: openssl -v
 
 The password used to encrypt the file, can either be specified on the command line
-(following -p) or using the ENCRYPTION environment variable in /etc/lbu/lbu.conf
+(following -p) or using the PASSWORD environment variable in /etc/lbu/lbu.conf
 
 The environment varialbes can also be set in $LBU_CONF
 "
@@ -370,6 +370,7 @@ cmd_commit() {
 
 	# move current to commited.
 	[ "$DRYRUN" ] || mv "$CURRENT_TDB" "$COMMITED_TDB"
+	vecho "Successfully saved apk overlay files"
 }
 
 #---------------------------------------------------------------------------
@@ -512,7 +513,7 @@ while getopts "adehlM:np:qrv" opt ; do
 			;;
 		d)	DELETEOLDCONFIGS="yes"
 			;;
-		e)	ENCRYPTION="$DEFAULT_CIPHER"
+		e)	[ -z "$ENCRYPTION" ] && ENCRYPTION="$DEFAULT_CIPHER"
 			;;
 		h) 	usage_$SUBCMD
 			;;
