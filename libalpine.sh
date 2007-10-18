@@ -26,6 +26,16 @@ vecho() {
 	[ -n "$VERBOSE" ] && echo "$@"
 }
 
+# echo unless quiet mode
+qecho() {
+	[ -z "$QUIET" ] && echo "$@"
+}
+
+# echo to stderr
+eecho() {
+	echo "$@" >&2
+}
+
 init_tmpdir() {
 	local omask=`umask`
 	local __tmpd="/tmp/$PROGRAM-${$}-`date +%s`"
