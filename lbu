@@ -233,6 +233,7 @@ cmd_package() {
 			rc=$?
 		fi
 	fi
+	cd "$owd"
 
 	# actually commit unless dryrun mode
 	if [ $rc -eq 0 ]; then
@@ -241,8 +242,6 @@ cmd_package() {
 	else
 		rm -f "$CURRENT_TDB"
 	fi
-
-	cd "$owd"
 	return $rc
 }
 
@@ -276,7 +275,7 @@ Options:
   -d	Remove old apk overlay files.
   -e	Protect configuration with a password.
   -n	Don't commit, just show what would have been commited.
-  -p <password> Give encryption password on the command-line
+  -p <password>	Give encryption password on the command-line
   -v	Verbose mode.
 
 The following values for <media> is supported: floppy usb
@@ -286,8 +285,8 @@ Password protection will use $DEFAULT_CIPHER encryption. Other ciphers can be
 used by setting the DEFAULT_CIPHER or ENCRYPTION environment variables.
 For possible ciphers, try: openssl -v
 
-The password used to encrypt the file, can either be specified on the command line
-(following -p) or using the PASSWORD environment variable in /etc/lbu/lbu.conf
+The password used to encrypt the file, can either be specified with the -p
+option or using the PASSWORD environment variable.
 
 The environment varialbes can also be set in $LBU_CONF
 "
