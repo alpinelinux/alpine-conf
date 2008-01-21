@@ -1,0 +1,55 @@
+#!/bin/sh
+
+PROGRAM=setup-acf
+VERSION=0.1
+
+PREFIX=
+. $PREFIX/lib/libalpine.sh
+
+usage() {
+	echo "$PROGRAM [-adh] [PACKAGE...]"
+	exit 0;
+}
+
+pkgs="acf-core acf-alpine-baselayout"
+
+while getopts "adh" opt ; do
+	case $opt in
+		a) pkgs=`apk_fetch -l | grep ^acf-`;;
+		d) pkgs="$pkgs acf-devtools";;
+		h) usage;;
+		*) usage;;
+	esac
+done
+shift `expr $OPTIND - 1`
+
+while [ $# -gt 0 ]; do
+	pkgs="$pkgs acf-$1"
+	shift
+done
+
+# install packages 
+apk_add mini_httpd $pkgs || exit 1
+
+# setup mini_httpd and start it
+mkdir -p /var/www/localhost/
+ln -s /usr/share/acf/www/ /var/www/localhost/htdocs
+
+cat <<EOF >/etc/mini_httpd.conf
+nochroot
+dir=/var/www/localhost/htdocs
+user=nobody
+logfile=/var/log/mini_httpd.log
+cgipat=cgi-bin**
+port=80
+EOF
+
+cat <<EOF >/etc/conf.d/mini_httpd
+MINI_HTTPD_OPTS="-C /etc/mini_httpd.conf"
+MINI_HTTPD_DOCROOT=/var/www/localhost/htdocs
+EOF
+
+pidof mini_httpd >/dev/null && /etc/init.d/mini_httpd stop
+rc_add -k mini_httpd
+/etc/init.d/mini_httpd start
+
