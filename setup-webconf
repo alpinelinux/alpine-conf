@@ -1,21 +1,93 @@
 #!/bin/sh
 
-# script to set up webconf
+PROGRAM=setup-acf
+VERSION=0.1
 
-apk_add mini_httpd acf-alpine-baselayout
+PREFIX=
+. $PREFIX/lib/libalpine.sh
 
-sed -i 's:MINI_HTTPD_OPTS=.*:MINI_HTTPD_OPTS="-C /etc/mini_httpd.conf":
-	s:#\?MINI_HTTPD_DOCROOT=.*:MINI_HTTPD_DOCROOT=/var/lib/acf/www:
-		' /etc/conf.d/mini_httpd
+usage() {
+	echo "$PROGRAM [-adh] [PACKAGE...]"
+	exit 0;
+}
 
-cat - > /etc/mini_httpd.conf <<EOF
+pkgs="acf-core acf-alpine-baselayout"
+
+while getopts "adh" opt ; do
+	case $opt in
+		a) pkgs=`apk_fetch -l | grep ^acf-`;;
+		d) pkgs="$pkgs acf-devtools";;
+		h) usage;;
+		*) usage;;
+	esac
+done
+shift `expr $OPTIND - 1`
+
+while [ $# -gt 0 ]; do
+	pkgs="$pkgs acf-$1"
+	shift
+done
+
+# issue warning so user knows what he is doing
+echo "!!!"
+echo "!!! WARNING !!! WARNING !!! WARNING !!!"
+echo "!!!"
+echo "!!! The webinterface is in alpha stage and will give *anyone* on the"
+echo "!!! network access to your box. The web interface is only for testing"
+echo "!!! purposes and should only be used in isolated secure networks."
+echo "!!!"
+echo "!!! Please send suggestions and patches to acf@lists.alpinelinux.org"
+echo "!!!"
+
+
+echon "Are you sure you want continue? (y/n) [n] "
+default_read  imsure n
+if [ "$imsure" != y ]; then
+	echo "Aborting."
+	exit
+fi
+
+# install packages 
+apk_add mini_httpd $pkgs || exit 1
+
+# setup mini_httpd and start it
+mkdir -p /var/www/localhost/
+ln -s /usr/share/acf/www/ /var/www/localhost/htdocs
+
+
+SSLDIR=/etc/ssl/mini_httpd
+KEYFILE=$SSLDIR/server.key
+CRTFILE=$SSLDIR/server.crt
+PEMFILE=$SSLDIR/server.pem
+
+if [ -f $PEMFILE ]; then
+	echo "$PEMFILE already exist."
+else
+	echo "Generating certificates for HTTPS..."
+	openssl genrsa 2048 > $KEYFILE
+	openssl req -new -x509 -nodes -sha1 -days 3650 -key $KEYFILE > $CRTFILE
+	cat $KEYFILE >> $CRTFILE
+	rm $KEYFILE
+	mv $CRTFILE $PEMFILE
+fi
+
+cat <<EOF >/etc/mini_httpd.conf
 nochroot
-dir=/var/lib/acf/www
+dir=/var/www/localhost/htdocs
 user=nobody
 logfile=/var/log/mini_httpd.log
 cgipat=cgi-bin**
-
+certfile=$PEMFILE
+port=443
+ssl
 EOF
 
-rc_add mini_httpd
+cat <<EOF >/etc/conf.d/mini_httpd
+MINI_HTTPD_OPTS="-C /etc/mini_httpd.conf"
+MINI_HTTPD_DOCROOT=/var/www/localhost/htdocs
+EOF
+
+pidof mini_httpd >/dev/null && /etc/init.d/mini_httpd stop
+rc_add -k mini_httpd
 /etc/init.d/mini_httpd start
+

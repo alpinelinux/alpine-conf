@@ -1,4 +1,4 @@
-V=1.3
+V=1.4
 P=alpine-conf
 PV=$(P)-$(V)
 APKF=$(PV).apk
@@ -9,7 +9,6 @@ TMP=$(PV)
 LIB_FILES=libalpine.sh
 SBIN_FILES=albootstrap\
 	lbu\
-	setup-acf\
 	setup-ads\
 	setup-alpine\
 	setup-cryptswap\
