@@ -1,0 +1,83 @@
+#!/bin/sh
+
+BRNUM=0
+CNET="10.$BRNUM.0"
+IFACE_LIST=/tmp/interfaces
+
+get_interfaces() {
+	[ -f "$IFACE_LIST" ] || tail -n +3 /proc/net/dev \
+		| awk -F: '$1 !~ /lo/ { print $1 }' > "$IFACE_LIST"
+	cat "$IFACE_LIST"
+}
+
+make_dhcp_subnet() {
+	local num=$1
+	local iface=$2
+	local network="$CNET.$num"
+	local netmask=255.255.255.240
+	local router="$CNET.$(( $num + 1 ))"
+	local poolstart="$CNET.$(( $num + 2 ))"
+	local poolend="$CNET.$(( $num + 14 ))"
+	echo "subnet $network netmask $netmask {"
+	echo "	range $poolstart $poolend;"
+	echo "	option routers $router;"
+	echo "}"
+	echo ""
+	ip addr add $router/28 dev $iface || echo "Failed to set address $router/28 on $iface" >&2
+	ip link set dev $iface up
+	iptables -t nat -A PREROUTING -i $iface -j DNAT --to-destination $router
+}
+
+make_dhcp_global() {
+	echo "option domain-name \"bootstrap.invalid\";"
+	echo "option domain-name-servers $CNET.1;"
+	echo "ddns-update-style none;"
+	echo ""
+}
+
+# parse args
+while getopts "b:" opts; do
+	case "$opts" in
+		b) BRNUM="$OPTARG";;
+		h) usage;;
+	esac
+done
+shift $(( $OPTIND - 1 ))
+
+hostname alpine
+
+# install needed packages
+apk_add dhcp iptables tinydns acf-apk "$@"
+
+# config dhcp server
+make_dhcp_global > /etc/dhcp/dhcpd.conf
+count=0
+for i in $(get_interfaces); do
+	# maximum 16 network interfaces
+	[ $count -ge 16 ] && break
+	make_dhcp_subnet $(( $count * 16 )) $i >> /etc/dhcp/dhcpd.conf
+	count=$(( $count + 1 ))
+done
+
+/etc/init.d/syslog start
+/etc/init.d/dhcpd start
+FORCE_SETUP_WEBCONF=yes setup-webconf apk "$@"
+
+# set up http listener/forwarder
+mkdir -p /var/www/redirect
+cat <<EOF >/var/www/redirect/index.html
+<html>
+<head>
+<meta HTTP-EQUIV="REFRESH" content="0; url=https://$(hostname)">
+</head>
+<body>
+</body>
+</html>
+EOF
+httpd -h /var/www/redirect
+
+# dummy dns
+echo "* $CNET.1" > /etc/dnsd.conf
+/etc/init.d/dnsd start
+
+exit 0

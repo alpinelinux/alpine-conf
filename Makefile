@@ -1,4 +1,4 @@
-V=1.4.1
+V=1.5
 P=alpine-conf
 PV=$(P)-$(V)
 APKF=$(PV).apk
@@ -11,6 +11,7 @@ SBIN_FILES=albootstrap\
 	lbu\
 	setup-ads\
 	setup-alpine\
+	setup-alpine-web\
 	setup-cryptswap\
 	setup-dns\
 	setup-hostname\
