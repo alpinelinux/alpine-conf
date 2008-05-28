@@ -74,7 +74,9 @@ cat <<EOF >/var/www/redirect/index.html
 </body>
 </html>
 EOF
-httpd -h /var/www/redirect
+echo "E404:/var/www/redirect/index.html" > /etc/httpd.conf
+echo "HTTPD_OPTS=\"-h /var/www/redirect\"" > /etc/conf.d/httpd
+/etc/init.d/httpd start
 
 # dummy dns
 echo "* $CNET.1" > /etc/dnsd.conf
