@@ -324,6 +324,7 @@ cmd_commit() {
 		outfile="$outfile.$ENCRYPTION"
 	fi
 
+
 	# remove old config files
 	if [ -n "$DELETEOLDCONFIGS" ] ; then
 		local rmfiles=$(ls "$mnt/"*.apkovl.tar.gz* 2>/dev/null)
@@ -337,7 +338,12 @@ cmd_commit() {
 		fi
 	else
        		lines=$(ls -1 "$mnt"/*.apkovl.tar.gz* 2>/dev/null)
-		if [ -n "$lines" ] && [ "$lines" != "$outfile" ]; then
+		if [ "$lines" = "$outfile" ]; then
+			local d=$( date -r "$outfile" "+%Y%m%d%H%m%S" )
+			local backup=$(echo "$outfile" | sed "s/\.apkovl\.tar\.gz/.$d.tar.gz/")
+			vecho "Creating backup $backup"
+			[ -z "$DRYRUN" ] && mv "$outfile" "$backup"
+		elif [ -n "$lines" ]; then
 	               	# More then one apkovl, this is a security concern
 			[ -z "$was_mounted" ] && umount "$mnt"
 			eecho "The following apkovl file(s) were found:"
