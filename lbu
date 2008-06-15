@@ -339,7 +339,7 @@ cmd_commit() {
 	else
        		lines=$(ls -1 "$mnt"/*.apkovl.tar.gz* 2>/dev/null)
 		if [ "$lines" = "$outfile" ]; then
-			local d=$( date -r "$outfile" "+%Y%m%d%H%m%S" )
+			local d=$( date -u -r "$outfile" "+%Y%m%d%H%m%S" )
 			local backup=$(echo "$outfile" | sed "s/\.apkovl\.tar\.gz/.$d.tar.gz/")
 			vecho "Creating backup $backup"
 			[ -z "$DRYRUN" ] && mv "$outfile" "$backup"
