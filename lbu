@@ -360,6 +360,16 @@ cmd_commit() {
 		die "Problems creating archive. aborting"
 	fi
 
+	# delete old backups if needed
+	# poor mans 'head -n -N' done with awk.
+	ls "$mnt"/$(hostname).[0-9][0-9][0-9][0-9]*[0-9].tar.gz \
+		| awk '{ a[++i] = $0; } END { 
+			print a[0]; 
+			while (i-- > '"${BACKUP_LIMIT:-0}"') { 
+				print a[++j] 
+			}
+		}' | xargs rm 2>/dev/null
+
 	# remove obsolete file. some older version of alpine needs this
 	# to be ble to upgrade
 	if [ -z "$DRYRUN" ] && [ -f $mnt/packages.list ]; then
