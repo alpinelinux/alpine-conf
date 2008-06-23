@@ -33,7 +33,8 @@ if [ -f "$LBU_CONF" ]; then
 	. "$LBU_CONF"
 fi
 
-retcode=0
+UMOUNT_LIST=
+
 usage() {
 	echo "$PROGRAM $VERSION"
 	echo "usage: $PROGRAM <subcommand> [options] [args]
@@ -46,6 +47,7 @@ Available subcommands:
   package (pkg)
   status (stat, st)
   update (up)
+  log
 
 Common options:
  -h	Show help for subcommand.
@@ -53,6 +55,26 @@ Common options:
  -v	Verbose mode.
 "
 	exit 1
+}
+
+cleanup() {
+	local i
+	rm -f "$CURRENT_TDB"
+	rm -f "$TMPCURRENT_TDB"
+	for i in $UMOUNT_LIST; do
+		umount $i
+	done
+}
+
+exit_clean() {
+	cleanup
+	exit 1
+}
+
+mount_once() {
+	if grep $1 /proc/mounts >/dev/null; then
+		mount $1 && UMOUNT_LIST="$1 $UMOUNT_LIST"
+	fi
 }
 
 # verify we have openssl if we want to encrypt
@@ -294,7 +316,7 @@ The environment varialbes can also be set in $LBU_CONF
 }
 
 cmd_commit() {
-	local media mnt was_mounted statuslist tmplist currentlist
+	local media mnt statuslist tmplist currentlist
 	local incl excl outfile ovls lines
 
 	check_openssl
@@ -303,20 +325,13 @@ cmd_commit() {
 	[ -n "$DRYRUN" ] && VERBOSE="-v"
 
 	# find what media to use
-	if [ "$1" ] ; then
-		media="$1"
-	else
-		media="$LBU_MEDIA"
-	fi
+	media="${1:-$LBU_MEDIA}"
 	[ -z "$media" ] && usage_commit
 
 	# mount media unles its already mounted
 	mnt=/media/$media
 	[ -d "$mnt" ] || usage
-	was_mounted=`grep $mnt /proc/mounts`
-	if [ -z "$was_mounted" ]; then
-		mount $mnt || die "failed to mount $mnt."
-	fi
+	mount_once "$mnt" || die "failed to mount $mnt"
 
 	# find the outfile
 	outfile="$mnt/$(hostname).apkovl.tar.gz"
@@ -345,7 +360,7 @@ cmd_commit() {
 			[ -z "$DRYRUN" ] && mv "$outfile" "$backup"
 		elif [ -n "$lines" ]; then
 	               	# More then one apkovl, this is a security concern
-			[ -z "$was_mounted" ] && umount "$mnt"
+			cleanup
 			eecho "The following apkovl file(s) were found:"
 			eecho "$lines"
 			eecho ""
@@ -355,8 +370,7 @@ cmd_commit() {
 
 	# create package
 	if ! cmd_package "$outfile"; then
-		[ -n "$was_mounted" ] && umount "$mnt"
-		rm -f "$CURRENT_TDB"
+		cleanup
 		die "Problems creating archive. aborting"
 	fi
 
@@ -378,10 +392,9 @@ cmd_commit() {
 		rm -f $mnt/packages.list
 	fi
 
-	# make sure data is written and unmount the media
+	# make sure data is written
 	sync
-	sleep 1
-	[ -z "$was_mounted" ] && umount "$mnt"
+	[ "$media" = "floppy" ] && sleep 1
 
 	# move current to commited.
 	[ "$DRYRUN" ] || mv "$CURRENT_TDB" "$COMMITED_TDB"
@@ -431,6 +444,39 @@ show_exclude() {
 
 #---------------------------------------------------------------------------
 # lbu_status - check what files have been changed since last save
+usage_log() 
+	cat <<EOF
+$PROGRAM $VERSION
+Show old commits.
+
+usage: $PROGRAM log [<media>]
+
+EOF
+	exit 1
+}
+
+cmd_log() {
+	local media=${1:-"$LBU_MEDIA"}
+	local mnt="/media/$media"
+	[ -z "$media" ] && usage_log
+
+	mount_once "$mnt" || die "failed to mount $mnt"
+	ls -1 "$mnt"/*.[0-9][0-9]*[0-9][0-9].tar.gz* 2>/dev/null | sed 's:.*/::'
+}
+
+#---------------------------------------------------------------------------
+# lbu_revert - revert to old config
+usage_revert() {
+
+}
+
+cmd_revert() {
+	local revertto=$1
+	local media=${2:-"$LBU_MEDIA"}
+}
+
+#---------------------------------------------------------------------------
+# lbu_status - check what files have been changed since last save
 usage_status() {
 	echo "$PROGRAM $VERSION
 Check what files have been changed since last commit.
@@ -465,7 +511,7 @@ cmd_status() {
 	fi
 
 	$SFIC $QUIET $VERBOSE --mask "$MASK" -t --old "$OLD" $NEW
-	retcode=$?
+	local retcode=$?
 
 	if [ "$VERBOSE" ] ; then
 		echo ""
@@ -473,6 +519,7 @@ cmd_status() {
 		echo ""
 		show_exclude
 	fi
+	return $retcode
 }
 
 #------------------------------------------------
@@ -552,7 +599,9 @@ while getopts "adehlM:np:qrv" opt ; do
 done
 shift `expr $OPTIND - 1`
 
+trap exit_clean SIGINT SIGTERM
 cmd_$SUBCMD "$@"
-# cleanup
-rm -f "$CURRENT_TDB"
+retcode=$?
+
+cleanup
 exit $retcode
