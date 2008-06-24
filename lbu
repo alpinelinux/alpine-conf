@@ -48,6 +48,7 @@ Available subcommands:
   status (stat, st)
   update (up)
   log
+  revert
 
 Common options:
  -h	Show help for subcommand.
@@ -74,6 +75,17 @@ exit_clean() {
 mount_once() {
 	if grep $1 /proc/mounts >/dev/null; then
 		mount $1 && UMOUNT_LIST="$1 $UMOUNT_LIST"
+	fi
+}
+
+# create backupfile
+backup_apkovl() {
+	local outfile="$1"
+	local d=$( date -u -r "$outfile" "+%Y%m%d%H%m%S" )
+	local backup=$(echo "$outfile" | sed "s/\.apkovl\.tar\.gz/.$d.tar.gz/")
+	vecho "Creating backup $backup"
+	if [ -z "$DRYRUN" ]; then
+		mv "$outfile" "$backup"
 	fi
 }
 
@@ -354,10 +366,7 @@ cmd_commit() {
 	else
        		lines=$(ls -1 "$mnt"/*.apkovl.tar.gz* 2>/dev/null)
 		if [ "$lines" = "$outfile" ]; then
-			local d=$( date -u -r "$outfile" "+%Y%m%d%H%m%S" )
-			local backup=$(echo "$outfile" | sed "s/\.apkovl\.tar\.gz/.$d.tar.gz/")
-			vecho "Creating backup $backup"
-			[ -z "$DRYRUN" ] && mv "$outfile" "$backup"
+			backup_apkovl "$outfile"
 		elif [ -n "$lines" ]; then
 	               	# More then one apkovl, this is a security concern
 			cleanup
@@ -467,12 +476,32 @@ cmd_log() {
 #---------------------------------------------------------------------------
 # lbu_revert - revert to old config
 usage_revert() {
+	cat <<EOF
+$PROGRAM $VERSION
+Revert to older commit.
 
+usage: $PROGRAM revert <REVISION> [<media>]
+
+The revision should be one of the files listed by 'lbu log'.
+
+EOF
 }
 
 cmd_revert() {
-	local revertto=$1
 	local media=${2:-"$LBU_MEDIA"}
+	[ -z "$media" ] && usage_revert
+	local mnt="/media/$media"
+	local revertto="$mnt/$1"
+	local current="$mnt/$(hostname).apkovl.tar.gz"
+
+	if [ -n "$ENCRYPTION" ]; then
+		outfile="$outfile.$ENCRYPTION"
+	fi
+	mount_once "$mnt" || die "failed to mount $mnt"
+	[ -f "$revertto" ] || die "file not found: $revertto"
+	backup_apkovl "$outfile"
+	vecho "Reverting to $1"
+	[ -z "$DRYRUN" ] && mv "$revertto" "$outfile"
 }
 
 #---------------------------------------------------------------------------
@@ -564,6 +593,8 @@ case "$cmd" in
 	package|pkg)		SUBCMD="package";;
 	status|stat|st)		SUBCMD="status";;
 	update|up)		SUBCMD="update";;
+	log)			SUBCMD="log";;
+	revert)			SUBCMD="revert";;
 	*)			usage;;
 esac
 

@@ -1,4 +1,4 @@
-V=1.5.1
+V=1.6
 P=alpine-conf
 PV=$(P)-$(V)
 APKF=$(PV).apk
