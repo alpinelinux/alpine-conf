@@ -9,7 +9,7 @@ PREFIX=
 # this one is from apk-tools
 . $PREFIX/lib/apk/libutil.sh
 
-VERSION=1.1
+VERSION=1.2
 [ "$SFIC" ] && SFIC="$SFIC -i d"
 
 # globals
@@ -47,7 +47,7 @@ Available subcommands:
   package (pkg)
   status (stat, st)
   update (up)
-  log
+  list-backup (lb) 
   revert
 
 Common options:
@@ -73,7 +73,7 @@ exit_clean() {
 }
 
 mount_once() {
-	if grep $1 /proc/mounts >/dev/null; then
+	if ! grep $1 /proc/mounts >/dev/null; then
 		mount $1 && UMOUNT_LIST="$1 $UMOUNT_LIST"
 	fi
 }
@@ -453,18 +453,18 @@ show_exclude() {
 
 #---------------------------------------------------------------------------
 # lbu_status - check what files have been changed since last save
-usage_log() 
+usage_listbackup() {
 	cat <<EOF
 $PROGRAM $VERSION
 Show old commits.
 
-usage: $PROGRAM log [<media>]
+usage: $PROGRAM list-backup [<media>]
 
 EOF
 	exit 1
 }
 
-cmd_log() {
+cmd_listbackup() {
 	local media=${1:-"$LBU_MEDIA"}
 	local mnt="/media/$media"
 	[ -z "$media" ] && usage_log
@@ -495,13 +495,13 @@ cmd_revert() {
 	local current="$mnt/$(hostname).apkovl.tar.gz"
 
 	if [ -n "$ENCRYPTION" ]; then
-		outfile="$outfile.$ENCRYPTION"
+		current="$current.$ENCRYPTION"
 	fi
 	mount_once "$mnt" || die "failed to mount $mnt"
 	[ -f "$revertto" ] || die "file not found: $revertto"
-	backup_apkovl "$outfile"
+	backup_apkovl "$current"
 	vecho "Reverting to $1"
-	[ -z "$DRYRUN" ] && mv "$revertto" "$outfile"
+	[ -z "$DRYRUN" ] && mv "$revertto" "$current"
 }
 
 #---------------------------------------------------------------------------
@@ -593,7 +593,7 @@ case "$cmd" in
 	package|pkg)		SUBCMD="package";;
 	status|stat|st)		SUBCMD="status";;
 	update|up)		SUBCMD="update";;
-	log)			SUBCMD="log";;
+	list-backup|lb)		SUBCMD="listbackup";;
 	revert)			SUBCMD="revert";;
 	*)			usage;;
 esac
