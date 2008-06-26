@@ -13,9 +13,10 @@ VERSION=1.2
 [ "$SFIC" ] && SFIC="$SFIC -i d"
 
 # globals
-CURRENT_TDB="$APK_DATA/current.tdb"
-TMPCURRENT_TDB="$APK_DATA/tmp-current.tdb"
-COMMITED_TDB="$APK_DATA/commited.tdb"
+[ -z "$LBU_DBDIR" ] && LBU_DBDIR="${APK_DATA:-$ROOT/var/lib/apk}"
+CURRENT_TDB="$LBU_DBDIR/current.tdb"
+TMPCURRENT_TDB="$LBU_DBDIR/tmp-current.tdb"
+COMMITED_TDB="$LBU_DBDIR/commited.tdb"
 
 EXCLUDE_LIST=/etc/lbu/exclude
 INCLUDE_LIST=/etc/lbu/include
@@ -101,8 +102,9 @@ check_openssl() {
 gen_current_tdb() {
 	# generate current tdb
 	rm -f "$CURRENT_TDB"
+	mkdir -p "$(dirname \"$CURRENT_TDB\")"
 	$SFIC -R -t --mask "$MASK" --old "$APK_DEFAULT_TDB" $LBUDIRS \
-		| grep -v ^D | awk '{print $2}' | $SFIC --add $CURRENT_TDB --file -
+		| grep -v ^D | awk '{print $2}' | $SFIC --add "$CURRENT_TDB" --file -
 }
 
 # list_add(char *listfile, char* file...)
