@@ -67,7 +67,7 @@ if [ -f $PEMFILE ]; then
 	echo "$PEMFILE already exist."
 else
 	mkdir -p $SSLDIR
-cat <<EOF >$SSLCNF
+cat >$SSLCNF <<EOF
 [ req ]
 default_bits = 1024
 encrypt_key = yes
@@ -92,7 +92,7 @@ EOF
 	mv $CRTFILE $PEMFILE
 fi
 
-cat <<EOF >/etc/mini_httpd.conf
+cat >/etc/mini_httpd.conf <<EOF
 nochroot
 dir=/var/www/localhost/htdocs
 user=nobody
@@ -103,7 +103,7 @@ port=443
 ssl
 EOF
 
-cat <<EOF >/etc/conf.d/mini_httpd
+cat >/etc/conf.d/mini_httpd <<EOF
 MINI_HTTPD_OPTS="-C /etc/mini_httpd.conf"
 MINI_HTTPD_DOCROOT=/var/www/localhost/htdocs
 EOF

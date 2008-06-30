@@ -59,7 +59,7 @@ do_setup() {
 
 	/etc/init.d/syslog start
 	/etc/init.d/dhcpd start
-	FORCE_SETUP_WEBCONF=yes setup-webconf apk "$@"
+	FORCE_SETUP_WEBCONF=yes setup-webconf "$@"
 
 	# set up http listener/forwarder
 	mkdir -p /var/www/redirect
