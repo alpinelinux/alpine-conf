@@ -469,7 +469,7 @@ EOF
 cmd_listbackup() {
 	local media=${1:-"$LBU_MEDIA"}
 	local mnt="/media/$media"
-	[ -z "$media" ] && usage_log
+	[ -z "$media" ] && usage_listbackup
 
 	mount_once "$mnt" || die "failed to mount $mnt"
 	ls -1 "$mnt"/*.[0-9][0-9]*[0-9][0-9].tar.gz* 2>/dev/null | sed 's:.*/::'
@@ -484,7 +484,7 @@ Revert to older commit.
 
 usage: $PROGRAM revert <REVISION> [<media>]
 
-The revision should be one of the files listed by 'lbu log'.
+The revision should be one of the files listed by 'lbu list-backup'.
 
 EOF
 }
