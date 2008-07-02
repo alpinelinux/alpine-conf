@@ -82,7 +82,7 @@ mount_once() {
 # create backupfile
 backup_apkovl() {
 	local outfile="$1"
-	local d=$( date -u -r "$outfile" "+%Y%m%d%H%m%S" )
+	local d=$( date -u -r "$outfile" "+%Y%m%d%H%M%S" )
 	local backup=$(echo "$outfile" | sed "s/\.apkovl\.tar\.gz/.$d.tar.gz/")
 	vecho "Creating backup $backup"
 	if [ -z "$DRYRUN" ]; then
@@ -387,7 +387,7 @@ cmd_commit() {
 
 	# delete old backups if needed
 	# poor mans 'head -n -N' done with awk.
-	ls "$mnt"/$(hostname).[0-9][0-9][0-9][0-9]*[0-9].tar.gz \
+	ls "$mnt"/$(hostname).[0-9][0-9][0-9][0-9]*[0-9].tar.gz 2>/dev/null \
 		| awk '{ a[++i] = $0; } END { 
 			print a[0]; 
 			while (i-- > '"${BACKUP_LIMIT:-0}"') { 
