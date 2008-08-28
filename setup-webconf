@@ -7,17 +7,18 @@ PREFIX=
 . $PREFIX/lib/libalpine.sh
 
 usage() {
-	echo "$PROGRAM [-adh] [PACKAGE...]"
+	echo "$PROGRAM [-adh] [-l address] [PACKAGE...]"
 	exit 0;
 }
 
 pkgs="acf-core acf-alpine-baselayout"
 
-while getopts "adh" opt ; do
+while getopts "adhl:" opt ; do
 	case $opt in
 		a) pkgs=`apk_fetch -l | grep ^acf-`;;
 		d) pkgs="$pkgs acf-devtools";;
 		h) usage;;
+		l) address="$OPTARG";;
 		*) usage;;
 	esac
 done
@@ -102,6 +103,9 @@ certfile=$PEMFILE
 port=443
 ssl
 EOF
+if [ -n "$address" ]; then
+	echo "host=$address" >> /etc/mini_httpd.conf
+fi
 
 cat >/etc/conf.d/mini_httpd <<EOF
 MINI_HTTPD_OPTS="-C /etc/mini_httpd.conf"
