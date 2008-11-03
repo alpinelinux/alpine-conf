@@ -56,6 +56,7 @@ $(TARGZ): $(DIST_FILES)
 	mkdir -p $(TMP)
 	cp $(DIST_FILES) $(TMP)
 	$(TAR) -czf $@ $(TMP)
+	rm -rf $(TMP)
 	
 install:
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/sbin
