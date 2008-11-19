@@ -273,7 +273,13 @@ cmd_package() {
 
 	# actually commit unless dryrun mode
 	if [ $rc -eq 0 ]; then
-		[ -z "$DRYRUN" ] && cp "$tmppkg" "$pkg"
+		if [ -z "$DRYRUN" ]; then
+			if [ "x$pkg" = "x-" ]; then
+				cat "$tmppkg"
+			else
+				cp "$tmppkg" "$pkg"
+			fi
+		fi
 		vecho "Created $pkg"
 	else
 		rm -f "$CURRENT_TDB"
