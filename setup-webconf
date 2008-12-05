@@ -11,7 +11,7 @@ usage() {
 	exit 0;
 }
 
-pkgs="acf-core acf-alpine-baselayout"
+pkgs="acf-core acf-alpine-baselayout acf-apk-tools"
 
 while getopts "adhl:" opt ; do
 	case $opt in
@@ -28,26 +28,6 @@ while [ $# -gt 0 ]; do
 	pkgs="$pkgs acf-$1"
 	shift
 done
-
-if [ "$FORCE_SETUP_WEBCONF" != yes ]; then
-	# issue warning so user knows what he is doing
-	echo "!!!"
-	echo "!!! WARNING !!! WARNING !!! WARNING !!!"
-	echo "!!!"
-	echo "!!! The webinterface is in alpha stage and will give *anyone* on the"
-	echo "!!! network access to your box. The web interface is only for testing"
-	echo "!!! purposes and should only be used in isolated secure networks."
-	echo "!!!"
-	echo "!!! Please send suggestions and patches to acf@lists.alpinelinux.org"
-	echo "!!!"
-
-	echon "Are you sure you want continue? (y/n) [n] "
-	default_read  imsure n
-	if [ "$imsure" != y ]; then
-		echo "Aborting."
-		exit
-	fi
-fi
 
 # install packages 
 apk_add mini_httpd $pkgs || exit 1
