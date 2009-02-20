@@ -2,7 +2,7 @@ V=2.0_alpha1
 P=alpine-conf
 PV=$(P)-$(V)
 APKF=$(PV).apk
-TARGZ=$(PV).tar.gz
+TARBZ2=$(PV).tar.bz2
 PREFIX?=/usr
 TMP=$(PV)
 
@@ -30,7 +30,7 @@ DIST_FILES=$(LIB_FILES) $(SBIN_FILES) $(ETC_LBU_FILES) $(EXTRA_DIST)
 DESC="Alpine configuration scripts"
 WWW="http://alpinelinux.org/alpine-conf"
 
-SHARE_DIR := /usr/share/lbu
+SHARE_DIR := share/lbu
 
 TAR=tar
 DB=$(TMP)/var/db/apk/$(PV)
@@ -41,7 +41,7 @@ all:
 
 apk:	$(APKF)
 
-dist:	$(TARGZ)
+dist:	$(TARBZ2)
 
 $(APKF): $(SBIN_FILES)
 	rm -rf $(TMP)
@@ -52,11 +52,11 @@ $(APKF): $(SBIN_FILES)
 	cd $(TMP) && $(TAR) -czf ../$@ .
 	rm -rf $(TMP)
 
-$(TARGZ): $(DIST_FILES)
+$(TARBZ2): $(DIST_FILES)
 	rm -rf $(TMP)
 	mkdir -p $(TMP)
 	cp $(DIST_FILES) $(TMP)
-	$(TAR) -czf $@ $(TMP)
+	$(TAR) -cjf $@ $(TMP)
 	rm -rf $(TMP)
 	
 install:
@@ -76,5 +76,5 @@ uninstall:
 	done
 	
 clean:
-	rm -rf $(APKF) $(TMP) $(TARGZ)
+	rm -rf $(APKF) $(TMP) $(TARBZ2)
 
