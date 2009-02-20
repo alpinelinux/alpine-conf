@@ -206,6 +206,9 @@ cmd_package() {
 
 	cd "${ROOT:-/}"
 	currentlist=$(apk audit --backup -q)
+	if [ -f var/lib/apk/world ]; then
+		currentlist="$currentlist var/lib/apk/world"
+	fi
 
 	# create tar archive
 	[ -f "$EXCLUDE_LIST" ] && excl="-X $EXCLUDE_LIST"
