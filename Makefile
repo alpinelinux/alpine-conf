@@ -3,7 +3,7 @@ P=alpine-conf
 PV=$(P)-$(V)
 APKF=$(PV).apk
 TARBZ2=$(PV).tar.bz2
-PREFIX?=/usr
+PREFIX?=
 TMP=$(PV)
 
 LIB_FILES=libalpine.sh
@@ -29,8 +29,6 @@ DIST_FILES=$(LIB_FILES) $(SBIN_FILES) $(ETC_LBU_FILES) $(EXTRA_DIST)
 
 DESC="Alpine configuration scripts"
 WWW="http://alpinelinux.org/alpine-conf"
-
-SHARE_DIR := share/lbu
 
 TAR=tar
 DB=$(TMP)/var/db/apk/$(PV)
@@ -62,8 +60,8 @@ $(TARBZ2): $(DIST_FILES)
 install:
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/sbin
 	install -m 755 $(SBIN_FILES) $(DESTDIR)/$(PREFIX)/sbin
-	install -m 755 -d $(DESTDIR)/$(PREFIX)/$(SHARE_DIR)
-	install -m 755 $(LIB_FILES) $(DESTDIR)/$(PREFIX)/$(SHARE_DIR)
+	install -m 755 -d $(DESTDIR)/$(PREFIX)/lib
+	install -m 755 $(LIB_FILES) $(DESTDIR)/$(PREFIX)/lib
 	install -m 755 -d $(DESTDIR)/etc/lbu
 	install -m 755 $(ETC_LBU_FILES) $(DESTDIR)/etc/lbu
 
