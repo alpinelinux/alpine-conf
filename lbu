@@ -8,6 +8,9 @@ VERSION=1.2
 
 if [ ! -f ${libalpine:="./libalpine.sh"} ]; then
 	libalpine=/usr/share/lbu/libalpine.sh
+	if [ ! -f "$libalpine" ]; then
+		libalpine=/lib/libalpine.sh
+	fi
 fi
 . $libalpine || exit 1
 
