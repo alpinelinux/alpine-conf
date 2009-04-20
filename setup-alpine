@@ -38,7 +38,7 @@ for i in devfs dmesg; do
 done
 
 # add some boot services
-for i in hwclock modules sysctl hostname keymap syslog bootmisc; do
+for i in hwclock modules sysctl hostname syslog bootmisc; do
 	rc-update add $i boot
 done
 
