@@ -33,18 +33,20 @@ grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
 # set root password
 [ -z "$NOCOMMIT" ] && while ! passwd ; do echo "Please retry." ; done
 
-# add some boot services
-rc_add -s 01 hwclock
-rc_add -s 04 modutils
-rc_add -s 06 procps
-rc_add -s 08 hostname
+for i in devfs dmesg; do
+	rc-update add $i sysinit
+done
 
-rc_add -s 20 keymap
-rc_add -s 20 -k syslog
-rc_add -s 22 bootmisc.sh
-rc_add -s 24 -k networking
+# add some boot services
+for i in hwclock modules sysctl hostname keymap syslog bootmisc; do
+	rc-update add $i boot
+done
+
+for i in networking; do
+	rc-update add $i default
+done
 
 # start up the services
-for i in hwclock modutils procps hostname syslog bootmisc.sh networking ; do
-	/etc/init.d/$i start
-done
+rc sysinit
+rc boot
+rc default

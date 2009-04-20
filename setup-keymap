@@ -5,8 +5,8 @@ PREFIX=
 
 MAPDIR="$ROOT/usr/share/bkeymaps"
 
-if [ -f "$ROOT/etc/conf.d/keymap" ]; then
-	. "$ROOT/etc/conf.d/keymap"
+if [ -f "$ROOT/etc/conf.d/keymaps" ]; then
+	. "$ROOT/etc/conf.d/keymaps"
 	variant=$(basename $KEYMAP .bmap.gz)
 fi
 
@@ -37,7 +37,7 @@ select_layout() {
 
 setup_mapfile() {
 	local name=$(basename $1)
-	local conf="$ROOT/etc/conf.d/keymap"
+	local conf="$ROOT/etc/conf.d/keymaps"
 	mkdir -p "$ROOT/etc/keymap"
 	mkdir -p "$ROOT/etc/conf.d/"
 	if gzip -9 -c "$1" > "$ROOT/etc/keymap/$name.gz" ; then
@@ -45,7 +45,7 @@ setup_mapfile() {
 		echo "KEYMAP=/etc/keymap/$name.gz" >> "$conf"
 		# we actually load the keymap now
 		zcat /etc/keymap/$name.gz | loadkmap
-		rc_add -s 20 keymap
+		rc-update add keymaps boot
 		goodbye 0
 	fi
 }
