@@ -1,0 +1,102 @@
+#!/bin/sh
+
+PREFIX=
+. "$PREFIX/lib/libalpine.sh"
+
+
+in_list() {
+	local i="$1"
+	shift
+	while [ $# -gt 0 ]; do
+		[ "$i" = "$1" ] && return 0
+		shift
+	done
+	return 1
+}
+
+useall() {
+	local i size
+	echo "Creating root partition..."
+	apk_add -q parted e2fsprogs
+	# erase all partitions
+	for i in $(parted /dev/$rootdisk print | awk '$1 ~ /[0-9]+/ {print $1}'); do
+		parted /dev/$rootdisk rm $i >/dev/null
+	done
+	# create new partition
+	size=$(parted /dev/$rootdisk print | awk '/^Disk / {print $3}')
+	parted /dev/$rootdisk mkpart primary 0 $size >/dev/null
+	parted /dev/$rootdisk set 1 boot on >/dev/null
+ 
+	# create device node if not exist
+	mdev -s
+	rootdev=/dev/${rootdisk}1
+
+	mkfs.ext3 -q $rootdev
+	# we are done with parted and dont want it in the lbu package
+	apk del -q parted e2fsprogs
+
+	mount -t ext3 $rootdev /mnt || return 1
+
+	echon "Installing system on $rootdev: "
+	lbu package - | tar -C /mnt -zx
+	apk add -q --progress --root /mnt $(cat /mnt/var/lib/apk/world) \
+		linux-grsec linux-grsec-mod acct mkinitfs
+	echo ""	
+	# make things bootable
+	kernel=$(ls /mnt/lib/modules)
+	chroot /mnt /sbin/mkinitfs -F "ata base bootchart ext3 ide scsi usb" $kernel
+
+	# create an extlinux.conf
+	sed '/append initrd/d' /media/*/syslinux.cfg > /mnt/boot/extlinux.conf
+	echo -e "\tappend initrd=/boot/grsec.gz root=$rootdev modules=ext3 quiet" >> /mnt/boot/extlinux.conf
+
+	# fix the fstab
+	echo -e "$rootdev\t/\t\text3\tdefaults\t1 1" >> /mnt/etc/fstab
+
+	# install extlinux
+	apk add -q syslinux
+	extlinux -i /mnt/boot
+	umount /mnt
+
+	# fix mbr
+	dd if=/usr/share/syslinux/mbr.bin of=/dev/$rootdisk
+	echo ""
+	echo "Installation is done. Please reboot."
+	apk del -q syslinux
+
+}
+
+usbdisk=$(readlink /dev/usbdisk)
+disks=
+cd /dev
+for i in sd[a-z] hd[a-z]; do
+	case "$usbdisk" in
+		$i[0-9]*);;
+		*) [ -b "$i" ] && disks="$disks $i";;
+	esac
+done
+
+# no disks so lets exit quietly.
+[ -z "$disks" ] && exit 0
+
+rootdisk=
+while ! in_list "$rootdisk" $disks "none" "abort"; do
+	echo "Available disks are: $disks"
+	echon "Which one is the root disk? (or none) [none] "
+	default_read rootdisk "none"
+done
+
+[ -b "/dev/$rootdisk" ] || exit 0
+
+echon "Do you want use *all* of $rootdisk for Alpine? (y/n) [n] "
+default_read useall "n"
+case "$useall" in
+	[Yy]*) useall="yes";;
+esac
+
+if [ "x$useall" != "xyes" ]; then
+	echo "Only 'use all' option is available at the moment. Sorry"
+	exit 1
+fi
+
+useall
