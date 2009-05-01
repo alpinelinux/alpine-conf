@@ -13,6 +13,7 @@ SBIN_FILES=albootstrap\
 	setup-alpine\
 	setup-alpine-web\
 	setup-cryptswap\
+	setup-disk\
 	setup-dns\
 	setup-hostname\
 	setup-interfaces\
