@@ -38,9 +38,9 @@ eecho() {
 
 init_tmpdir() {
 	local omask=`umask`
-	local __tmpd="/tmp/$PROGRAM-${$}-`date +%s`"
+	local __tmpd="/tmp/$PROGRAM-${$}-`date +%s`-$RANDOM"
 	umask 077 || die "umask"
-	mkdir "$__tmpd" || exit 1
+	mkdir -p "$__tmpd" || exit 1
 	trap "rm -fr \"$__tmpd\"; exit" 0
 	umask $omask
 	eval "$1=\"$__tmpd\""
