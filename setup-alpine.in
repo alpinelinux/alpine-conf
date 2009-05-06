@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PROGRAM=setup-alpine
-VERSION=0.1
+VERSION=2.0_alpha7
 
 PREFIX=
 . $PREFIX/lib/libalpine.sh

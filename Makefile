@@ -1,55 +1,70 @@
-V=2.0_alpha7
-P=alpine-conf
-PV=$(P)-$(V)
-APKF=$(PV).apk
-TARBZ2=$(PV).tar.bz2
-PREFIX?=
-TMP=$(PV)
+VERSION		:= 2.0_alpha7
 
-LIB_FILES=libalpine.sh
-SBIN_FILES=albootstrap\
-	lbu\
-	setup-ads\
-	setup-alpine\
-	setup-alpine-web\
-	setup-cryptswap\
-	setup-disk\
-	setup-dns\
-	setup-hostname\
-	setup-interfaces\
-	setup-keymap\
-	setup-mta\
-	setup-sendbug\
-	setup-webconf\
-	update-conf
+sysconfdir      ?= /etc/lbu
 
-ETC_LBU_FILES=lbu.conf
-EXTRA_DIST=Makefile README
+P		:= alpine-conf
+PV		:= $(P)-$(VERSION)
+TARBZ2		:= $(PV).tar.bz2
+PREFIX		?=
+TMP		:= $(PV)
 
-DIST_FILES=$(LIB_FILES) $(SBIN_FILES) $(ETC_LBU_FILES) $(EXTRA_DIST)
+LIB_FILES	:= libalpine.sh
+SBIN_FILES	:= albootstrap\
+		lbu\
+		setup-ads\
+		setup-alpine\
+		setup-alpine-web\
+		setup-cryptswap\
+		setup-disk\
+		setup-dns\
+		setup-hostname\
+		setup-interfaces\
+		setup-keymap\
+		setup-mta\
+		setup-sendbug\
+		setup-webconf\
+		update-conf
+
+SCRIPTS		:= $(LIB_FILES) $(SBIN_FILES)
+SCRIPT_SOURCES	:= $(addsuffix .in,$(SCRIPTS))
+
+ETC_LBU_FILES	:= lbu.conf
+EXTRA_DIST	:= Makefile README
+DIST_FILES	:= $(SCRIPT_SOURCES) $(ETC_LBU_FILES) $(EXTRA_DIST)
+
+GIT_REV		:= $(shell git describe || echo exported)
+ifneq ($(GIT_REV), exported)
+FULL_VERSION    := $(patsubst $(PACKAGE)-%,%,$(GIT_REV))
+FULL_VERSION    := $(patsubst v%,%,$(FULL_VERSION))
+else
+FULL_VERSION    := $(VERSION)
+endif
+
 
 DESC="Alpine configuration scripts"
 WWW="http://alpinelinux.org/alpine-conf"
 
-TAR=tar
-DB=$(TMP)/var/db/apk/$(PV)
+
+SED		:= sed
+TAR		:= tar
+
+SED_REPLACE	:= -i -e 's:@VERSION@:$(VERSION):g' \
+			-e 's:@PREFIX@:$(PREFIX):g'
+
+.SUFFIXES:	.sh.in .in
+.sh.in.sh:
+	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@
+
+.in:
+	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@
 
 .PHONY:	all apk clean dist install uninstall
-all:	
-	sed -i 's|^PREFIX=.*|PREFIX=$(PREFIX)|' $(SBIN_FILES)
+all:	$(SCRIPTS)
 
 apk:	$(APKF)
 
 dist:	$(TARBZ2)
 
-$(APKF): $(SBIN_FILES)
-	rm -rf $(TMP)
-	make all PREFIX=
-	make install DESTDIR=$(TMP) PREFIX=
-	mkdir -p $(DB)
-	echo $(DESC) > $(DB)/DESC
-	cd $(TMP) && $(TAR) -czf ../$@ .
-	rm -rf $(TMP)
 
 $(TARBZ2): $(DIST_FILES)
 	rm -rf $(TMP)
@@ -63,8 +78,8 @@ install:
 	install -m 755 $(SBIN_FILES) $(DESTDIR)/$(PREFIX)/sbin
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/lib
 	install -m 755 $(LIB_FILES) $(DESTDIR)/$(PREFIX)/lib
-	install -m 755 -d $(DESTDIR)/etc/lbu
-	install -m 755 $(ETC_LBU_FILES) $(DESTDIR)/etc/lbu
+	install -m 755 -d $(DESTDIR)/$(sysconfdir)
+	install -m 755 $(ETC_LBU_FILES) $(DESTDIR)/$(sysconfdir)
 
 uninstall:
 	for i in $(SBIN_FILES); do \
@@ -75,5 +90,5 @@ uninstall:
 	done
 	
 clean:
-	rm -rf $(APKF) $(TMP) $(TARBZ2)
+	rm -rf $(SCRIPTS) $(TMP) $(TARBZ2)
 

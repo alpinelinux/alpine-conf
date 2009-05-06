@@ -2,7 +2,7 @@
 
 # bootstrap an alpine installation
 
-VERSION=1.0
+VERSION=2.0_alpha7
 
 usage() {
 	echo "usage: $(basename $0) TARGETDIR"

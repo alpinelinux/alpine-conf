@@ -11,7 +11,7 @@
 # * suggest DC server(s) based on 
 #     $(dig _kerberos._tcp.dc._msdcs.$DOMAIN SRV  +short)
 
-VERSION=0.1
+VERSION=2.0_alpha7
 PROGRAM=setup-ads
 
 . $PREFIX/lib/libalpine.sh

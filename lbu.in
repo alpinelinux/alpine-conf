@@ -4,7 +4,8 @@
 # Copyright (c) 2006 Natanael Copa
 # May be distributed under GPL2
 
-VERSION=1.2
+VERSION=2.0_alpha7
+sysconfdir=@sysconfdir@
 
 if [ ! -f ${libalpine:="./libalpine.sh"} ]; then
 	libalpine=/usr/share/lbu/libalpine.sh
@@ -14,12 +15,12 @@ if [ ! -f ${libalpine:="./libalpine.sh"} ]; then
 fi
 . $libalpine || exit 1
 
-EXCLUDE_LIST=/etc/lbu/exclude
-INCLUDE_LIST=/etc/lbu/include
+EXCLUDE_LIST="$sysconfdir"/exclude
+INCLUDE_LIST="$sysconfdir"/include
 
 DEFAULT_CIPHER="aes-256-cbc"
 
-LBU_CONF=/etc/lbu/lbu.conf
+LBU_CONF="$sysconfdir"/lbu.conf
 if [ -f "$LBU_CONF" ]; then
 	. "$LBU_CONF"
 fi
@@ -126,7 +127,7 @@ list_delete() {
 #
 usage_include() {
 	echo "$PROGRAM $VERSION
-Add filename(s) to include list (/etc/lbu/include)
+Add filename(s) to include list ($sysconfdir/include)
 
 usage: $PROGRAM include|inc|add [-rv] <file> ...
        $PROGRAM include|inc|add [-v] -l
@@ -386,7 +387,7 @@ cmd_commit() {
 
 usage_exclude() {
 	echo "$PROGRAM $VERSION
-Add filename(s) to exclude list (/etc/lbu/exclude)
+Add filename(s) to exclude list ($sysconfdir/exclude)
 
 usage: $PROGRAM exclude|ex|delete [-rv] <file> ...
        $PROGRAM exclude|ex|delete [-v] -l
