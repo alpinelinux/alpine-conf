@@ -4,7 +4,7 @@
 # Copyright (c) 2006 Natanael Copa
 # May be distributed under GPL2
 
-VERSION=2.0_alpha7
+VERSION=@VERSION@
 sysconfdir=@sysconfdir@
 
 if [ ! -f ${libalpine:="./libalpine.sh"} ]; then
@@ -489,6 +489,18 @@ Options:
   -v	Also show include and exclude lists.
 "
 	exit 1
+}
+
+cmd_status() {
+	if [ -n "$USE_DEFAULT" ]; then
+		apk audit --backup
+		return 0
+	fi
+	# unpack old apkovl to tmpdir/a
+	# generate new apkovl and extract to tmpdir/b
+	# show files that exists in a but not in b as deleted
+	# compare files in b with files in a
+	# cleanup
 }
 
 
