@@ -120,7 +120,31 @@ list_delete() {
 	done
 }
 
-
+# unpack archive on LBU_MEDIA to given dir
+unpack_apkovl() {
+	local f="$(hostname).apkovl.tar.gz"
+	local dest="$1"
+	local mnt="/media/$LBU_MEDIA"
+	local count=0
+	mkdir -p "$dest"
+	mount_once "$mnt"
+	if [ ! -f "$mnt/$f" ]; then
+		return 1
+	fi
+	if [ -z "$ENCRYPTION" ]; then
+		tar -C "$dest" -zxf "$mnt/$f"
+		return
+	fi
+	f="$f.$ENCRYPTION"
+	check_openssl
+        while [ $count -lt 3 ]; do
+		$OPENSSL enc -d -$ENCRYPTION -in "$mnt/$f" | tar \
+			-C "$dest" -zx 2>/dev/null && return 0
+		count=$(( $count + 1 ))
+	done
+	cleanup
+	die "Failed to unpack $mnt/$f"
+}		
 
 #
 # lbu_include - add/remove files to include list
@@ -496,13 +520,63 @@ cmd_status() {
 		apk audit --backup
 		return 0
 	fi
-	# unpack old apkovl to tmpdir/a
+	LBU_MEDIA=${1:-"$LBU_MEDIA"}
+	[ -z "$LBU_MEDIA" ] && usage_status
+	local tmp
+	init_tmpdir tmp
+	mkdir -p "$tmpdir/a" "$tmp/b"
+
+	# unpack last commited apkovl to tmpdir/a
+	unpack_apkovl "$tmp/a"
+
 	# generate new apkovl and extract to tmpdir/b
+	cmd_package - | tar -C "$tmp/b" -zx
+
 	# show files that exists in a but not in b as deleted
+	local f
+	( cd "$tmp"/a && find ) | while read f; do
+		f=${f#./}
+		[ "$f" = "." ] && continue
+		[ -e "$tmp/b/$f" ] || echo "D $f"
+	done
+	
 	# compare files in b with files in a
-	# cleanup
+	( cd "$tmp"/b && find ) | while read f; do
+		f=${f#./}
+		[ "$f" = "." ] && continue
+		local a="$tmp/a/$f"
+		local b="$tmp/b/$f"
+		if [ ! -e "$a" ]; then
+			echo "A $f"
+		elif [ "$b" -nt "$a" ] && ! cmp -s "$a" "$b"; then
+			echo "U $f"
+		fi
+	done
 }
 
+
+#-----------------------------------------------------------
+# lbu_diff - run a diff against last commit
+usage_diff() {
+	echo "$PROGRAM $VERSION
+Run a diff against last commit
+
+usage: $PROGRAM diff [<media>]
+"
+	exit 1
+}
+
+cmd_diff() {
+	LBU_MEDIA=${1:-"$LBU_MEDIA"}
+	[ -z "$LBU_MEDIA" ] && usage_diff
+	local tmp
+	init_tmpdir tmp
+	mkdir -p "$tmpdir/a" "$tmp/b"
+	unpack_apkovl "$tmp/a"
+	cmd_package - | tar -C "$tmp/b" -zx
+	cd "$tmp" && diff -ruN a b 
+}
+	
 
 
 #-----------------------------------------------------------
@@ -526,6 +600,7 @@ case "$cmd" in
 	status|stat|st)		SUBCMD="status";;
 	list-backup|lb)		SUBCMD="listbackup";;
 	revert)			SUBCMD="revert";;
+	diff)			SUBCMD="diff";;
 	*)			usage;;
 esac
 
