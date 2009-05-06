@@ -48,8 +48,9 @@ WWW="http://alpinelinux.org/alpine-conf"
 SED		:= sed
 TAR		:= tar
 
-SED_REPLACE	:= -e 's:@VERSION@:$(VERSION):g' \
-			-e 's:@PREFIX@:$(PREFIX):g'
+SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
+			-e 's:@PREFIX@:$(PREFIX):g' \
+			-e 's:@sysconfdir@:$(sysconfdir):g'
 
 .SUFFIXES:	.sh.in .in
 .sh.in.sh:
