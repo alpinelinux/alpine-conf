@@ -32,7 +32,7 @@ ETC_LBU_FILES	:= lbu.conf
 EXTRA_DIST	:= Makefile README
 DIST_FILES	:= $(SCRIPT_SOURCES) $(ETC_LBU_FILES) $(EXTRA_DIST)
 
-GIT_REV		:= $(shell git describe || echo exported)
+GIT_REV		:= $(shell test -d .git && git describe || echo exported)
 ifneq ($(GIT_REV), exported)
 FULL_VERSION    := $(patsubst $(PACKAGE)-%,%,$(GIT_REV))
 FULL_VERSION    := $(patsubst v%,%,$(FULL_VERSION))
