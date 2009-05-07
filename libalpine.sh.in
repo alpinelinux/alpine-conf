@@ -47,11 +47,11 @@ init_tmpdir() {
 }
 
 pkg_inst() {
-	[ -z "$NOCOMMIT" ] && apk add $*
+	[ -z "$NOCOMMIT" ] && apk add -q $*
 }
 
 pkg_deinst() {
-	[ -z "$NOCOMMIT" ] && apk del $*
+	[ -z "$NOCOMMIT" ] && apk del -q $*
 }
 
 default_read() {
