@@ -7,16 +7,15 @@ PREFIX=
 . $PREFIX/lib/libalpine.sh
 
 usage() {
-	echo "$PROGRAM [-adh] [-l address] [PACKAGE...]"
+	echo "$PROGRAM [-ah] [-l address] [PACKAGE...]"
 	exit 0;
 }
 
 pkgs="acf-core acf-alpine-baselayout acf-apk-tools"
 
-while getopts "adhl:" opt ; do
+while getopts "ahl:" opt ; do
 	case $opt in
 		a) pkgs=`apk_fetch -l | grep ^acf-`;;
-		d) pkgs="$pkgs acf-devtools";;
 		h) usage;;
 		l) address="$OPTARG";;
 		*) usage;;
@@ -33,6 +32,9 @@ done
 apk_add mini_httpd $pkgs || exit 1
 
 # setup mini_httpd and start it
+if [ -d /var/www/localhost/htdocs ]; then
+	mv /var/www/localhost/htdocs /var/www/localhost/htdocs.old
+fi
 mkdir -p /var/www/localhost/
 ln -s /usr/share/acf/www/ /var/www/localhost/htdocs
 lbu add /var/www/localhost/htdocs
@@ -93,6 +95,6 @@ MINI_HTTPD_DOCROOT=/var/www/localhost/htdocs
 EOF
 
 pidof mini_httpd >/dev/null && /etc/init.d/mini_httpd stop
-rc_add -k mini_httpd
+rc-update add mini_httpd default
 /etc/init.d/mini_httpd start
 
