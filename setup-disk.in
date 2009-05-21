@@ -15,20 +15,28 @@ in_list() {
 }
 
 enumerate_fstab() {
-	[ -z "$1" ] && return
-	grep "/$1" /proc/mounts | \
-		sed "s-/$1-/-; s-//-/-"
+	local mnt="$1"
+	[ -z "$mnt" ] && return
+	awk "\$2 == \"$mnt\" {print \$0}" /proc/mounts | \
+		sed "s-$mnt-/-; s-/+-/-; s: :\t:g"
 }
 
 install_mounted_root() {
 	local mnt="$1"
+	local features="ata base bootchart cdrom ext2 ext3 ide scsi usb"
 
-	rootdev=$(awk "\$1 == \"$mnt\" { print \$1 }")
+	rootdev=$(awk "\$2 == \"$mnt\" { print \$1 }" /proc/mounts)
 	if [ -z "$rootdev" ]; then
 		echo "$mnt does not seem to be a mount point" >&2
 		return 1
 	fi
 
+	local fs=$(awk "\$1 == \"$rootdev\" {print \$3}" /proc/mounts)
+	if [ "$fs" != "ext2" ] && [ "$fs" != "ext3" ]; then
+		echo "$fs is not supported. Only ext2 and ext3 are supported" >&2
+		return 1
+	fi
+		
 	rootdisk=${rootdev%[0-9]*}
 
 	echon "Installing system on $rootdev: "
@@ -38,22 +46,36 @@ install_mounted_root() {
 	echo ""
 	# make things bootable
 	kernel=$(ls "$mnt"/lib/modules)
-	chroot "$mnt" /sbin/mkinitfs -F "ata base bootchart cdrom ext3 ide scsi usb" $kernel
+	if [ "$rootdisk" = "/dev/md" ]; then
+		local md=${rootdev#/dev/}
+		features="$features raid"
+		raidmod=$(cat /sys/block/$md/md/level)
+		raidmod=",$raidmod"
+		raidopt="-r"
+		# get a list of slaves
+		rootdisk=
+		for i in /sys/block/$md/slaves/*; do
+			rootdisk="$rootdisk /dev/${i##*/}"
+		done
+	fi
+	chroot "$mnt" /sbin/mkinitfs -F "$features" $kernel
 
 	# create an extlinux.conf
 	sed '/append initrd/d' /media/*/syslinux.cfg > "$mnt"/boot/extlinux.conf
-	echo -e "\tappend initrd=/boot/grsec.gz root=$rootdev modules=ext3 quiet" >> "$mnt"/boot/extlinux.conf
+	echo -e "\tappend initrd=/boot/grsec.gz root=$rootdev modules=ext3$raidmod quiet" >> "$mnt"/boot/extlinux.conf
 
 	# fix the fstab
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
 
 	# install extlinux
 	apk add -q syslinux
-	extlinux -i "$mnt"/boot
+	extlinux -i $raidopt "$mnt"/boot
 	umount "$mnt"
 
-	# fix mbr
-	dd if=/usr/share/syslinux/mbr.bin of=$rootdisk
+	# fix mbr for all disk devices
+	for i in $rootdisk; do
+		dd if=/usr/share/syslinux/mbr.bin of=$i
+	done
 	echo ""
 	echo "Installation is done. Please reboot."
 	apk del -q syslinux
