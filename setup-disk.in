@@ -14,6 +14,51 @@ in_list() {
 	return 1
 }
 
+enumerate_fstab() {
+	[ -z "$1" ] && return
+	grep "/$1" /proc/mounts | \
+		sed "s-/$1-/-; s-//-/-"
+}
+
+install_mounted_root() {
+	local mnt="$1"
+
+	rootdev=$(awk "\$1 == \"$mnt\" { print \$1 }")
+	if [ -z "$rootdev" ]; then
+		echo "$mnt does not seem to be a mount point" >&2
+		return 1
+	fi
+
+	rootdisk=${rootdev%[0-9]*}
+
+	echon "Installing system on $rootdev: "
+	lbu package - | tar -C "$mnt" -zx
+	apk add -q --progress --root "$mnt" $(cat "$mnt"/var/lib/apk/world) \
+		linux-grsec linux-grsec-mod acct mkinitfs
+	echo ""
+	# make things bootable
+	kernel=$(ls "$mnt"/lib/modules)
+	chroot "$mnt" /sbin/mkinitfs -F "ata base bootchart cdrom ext3 ide scsi usb" $kernel
+
+	# create an extlinux.conf
+	sed '/append initrd/d' /media/*/syslinux.cfg > "$mnt"/boot/extlinux.conf
+	echo -e "\tappend initrd=/boot/grsec.gz root=$rootdev modules=ext3 quiet" >> "$mnt"/boot/extlinux.conf
+
+	# fix the fstab
+	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
+
+	# install extlinux
+	apk add -q syslinux
+	extlinux -i "$mnt"/boot
+	umount "$mnt"
+
+	# fix mbr
+	dd if=/usr/share/syslinux/mbr.bin of=$rootdisk
+	echo ""
+	echo "Installation is done. Please reboot."
+	apk del -q syslinux
+}
+
 useall() {
 	local i size
 	echo "Creating root partition..."
@@ -36,35 +81,14 @@ useall() {
 	apk del -q parted e2fsprogs
 
 	mount -t ext3 $rootdev /mnt || return 1
-
-	echon "Installing system on $rootdev: "
-	lbu package - | tar -C /mnt -zx
-	apk add -q --progress --root /mnt $(cat /mnt/var/lib/apk/world) \
-		linux-grsec linux-grsec-mod acct mkinitfs
-	echo ""	
-	# make things bootable
-	kernel=$(ls /mnt/lib/modules)
-	chroot /mnt /sbin/mkinitfs -F "ata base bootchart cdrom ext3 ide scsi usb" $kernel
-
-	# create an extlinux.conf
-	sed '/append initrd/d' /media/*/syslinux.cfg > /mnt/boot/extlinux.conf
-	echo -e "\tappend initrd=/boot/grsec.gz root=$rootdev modules=ext3 quiet" >> /mnt/boot/extlinux.conf
-
-	# fix the fstab
-	echo -e "$rootdev\t/\t\text3\tdefaults\t1 1" >> /mnt/etc/fstab
-
-	# install extlinux
-	apk add -q syslinux
-	extlinux -i /mnt/boot
-	umount /mnt
-
-	# fix mbr
-	dd if=/usr/share/syslinux/mbr.bin of=/dev/$rootdisk
-	echo ""
-	echo "Installation is done. Please reboot."
-	apk del -q syslinux
-
+	install_mounted_root /mnt
 }
+
+if [ -d "$1" ]; then
+	# install to given mounted root
+	install_mounted_root "$1"
+	exit $?
+fi
 
 usbdisk=$(readlink /dev/usbdisk)
 disks=
