@@ -4,7 +4,6 @@ PREFIX=@PREFIX@
 
 PROGRAM=`basename $0`
 
-
 echon () {
 	if [ X"$ECHON" = X ]; then
 		# Determine how to "echo" without newline: "echo -n"
@@ -34,6 +33,12 @@ qecho() {
 # echo to stderr
 eecho() {
 	echo "$@" >&2
+}
+
+# echo to stderr and exit with error
+die() {
+	eecho "$@"
+	exit 1
 }
 
 init_tmpdir() {
