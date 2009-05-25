@@ -548,7 +548,8 @@ cmd_status() {
 		local b="$tmp/b/$f"
 		if [ ! -e "$a" ]; then
 			echo "A $f"
-		elif [ "$b" -nt "$a" ] && ! cmp -s "$a" "$b"; then
+		elif [ -f "$a" ] && [ -f "$b" ] && [ "$b" -nt "$a" ] \
+		     && ! cmp -s "$a" "$b"; then
 			echo "U $f"
 		fi
 	done
