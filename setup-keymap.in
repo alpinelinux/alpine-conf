@@ -45,7 +45,7 @@ setup_mapfile() {
 		echo "KEYMAP=/etc/keymap/$name.gz" >> "$conf"
 		# we actually load the keymap now
 		zcat /etc/keymap/$name.gz | loadkmap
-		rc-update add keymaps boot
+		rc-update -q add keymaps boot
 		goodbye 0
 	fi
 }

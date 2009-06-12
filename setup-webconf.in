@@ -94,7 +94,6 @@ MINI_HTTPD_OPTS="-C /etc/mini_httpd.conf"
 MINI_HTTPD_DOCROOT=/var/www/localhost/htdocs
 EOF
 
-pidof mini_httpd >/dev/null && /etc/init.d/mini_httpd stop
-rc-update add mini_httpd default
-/etc/init.d/mini_httpd start
+rc-update -q add mini_httpd default
+/etc/init.d/mini_httpd restart
 
