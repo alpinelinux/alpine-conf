@@ -65,7 +65,7 @@ install_mounted_root() {
 
 	# create an extlinux.conf
 	sed '/append initrd/d' /media/*/syslinux.cfg > "$mnt"/boot/extlinux.conf
-	echo -e "\tappend initrd=/boot/grsec.gz root=$rootdev modules=ext3$raidmod quiet" >> "$mnt"/boot/extlinux.conf
+	echo -e "\tappend initrd=/boot/grsec.gz root=$rootdev modules=sd-mod,usb-storage,ext3$raidmod quiet" >> "$mnt"/boot/extlinux.conf
 
 	# fix the fstab
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
