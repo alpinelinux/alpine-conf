@@ -43,7 +43,7 @@ install_mounted_root() {
 	echon "Installing system on $rootdev: "
 	lbu package - | tar -C "$mnt" -zx
 	apk add -q --progress --root "$mnt" $(cat "$mnt"/var/lib/apk/world) \
-		linux-grsec linux-grsec-mod acct mkinitfs
+		linux-grsec acct mkinitfs
 	echo ""
 	# make things bootable
 	kernel=$(ls "$mnt"/lib/modules)
