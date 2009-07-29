@@ -233,6 +233,12 @@ cmd_package() {
 	tmppkg="$tmpdir/$(basename $pkg)"
 
 	cd "${ROOT:-/}"
+	# remove old package.list
+	if [ -f etc/lbu/packages.list && -f var/lib/apk/world ]; then
+		echo "Note: Removing /etc/lbu/packages.list."
+		echo "      /var/lib/apk/world will be used."
+		rm -f etc/lbu/packages.list
+	fi
 	currentlist=$(apk audit --backup -q)
 	if [ -f var/lib/apk/world ]; then
 		currentlist="$currentlist var/lib/apk/world"
@@ -391,10 +397,10 @@ cmd_commit() {
 		}' | xargs rm 2>/dev/null
 
 	# remove obsolete file. some older version of alpine needs this
-	# to be ble to upgrade
+	# to be able to upgrade
 	if [ -z "$DRYRUN" ] && [ -f $mnt/packages.list ]; then
 		echo "Note: Removing packages.list from $(basename $mnt)."
-		echo "      $PACKAGES_LIST will be used."
+		echo "      /var/lib/apk/world will be used."
 		rm -f $mnt/packages.list
 	fi
 
