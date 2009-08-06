@@ -42,8 +42,12 @@ install_mounted_root() {
 
 	echon "Installing system on $rootdev: "
 	lbu package - | tar -C "$mnt" -zx
+	# apk reads config from target root so we need to copy the config
+	mkdir -p "$mnt"/etc/apk/keys/
+	cp /etc/apk/keys/* "$mnt"/etc/apk/keys/
+
 	apk add -q --progress --root "$mnt" $(cat "$mnt"/var/lib/apk/world) \
-		linux-grsec acct mkinitfs
+		acct linux-grsec alpine-base >/dev/null || return 1
 	echo ""
 	# make things bootable
 	kernel=$(ls "$mnt"/lib/modules)
@@ -61,7 +65,6 @@ install_mounted_root() {
 			rootdisk="$rootdisk /dev/${i}"
 		done
 	fi
-	chroot "$mnt" /sbin/mkinitfs -F "$features" $kernel
 
 	# create an extlinux.conf
 	sed '/append initrd/d' /media/*/syslinux.cfg > "$mnt"/boot/extlinux.conf
