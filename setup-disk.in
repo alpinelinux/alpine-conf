@@ -18,8 +18,9 @@ in_list() {
 enumerate_fstab() {
 	local mnt="$1"
 	[ -z "$mnt" ] && return
-	awk "\$2 == \"$mnt\" {print \$0}" /proc/mounts | \
-		sed "s-$mnt-/-; s-/+-/-; s: :\t:g"
+	local escaped_mnt=$(echo $mnt | sed 's:/:\\/:g')
+	awk "\$2 ~ /^$escaped_mnt/ {print \$0}" /proc/mounts | \
+		sed "s:$mnt:/:g; s: :\t:g" | sed 's:/\+:/:g'
 }
 
 install_mounted_root() {
@@ -46,7 +47,8 @@ install_mounted_root() {
 	mkdir -p "$mnt"/etc/apk/keys/
 	cp /etc/apk/keys/* "$mnt"/etc/apk/keys/
 
-	apk add -q --progress --root "$mnt" $(cat "$mnt"/var/lib/apk/world) \
+	apk add -q --progress --update-cache --root "$mnt" \
+		$(cat "$mnt"/var/lib/apk/world) \
 		acct linux-grsec alpine-base >/dev/null || return 1
 	echo ""
 	# make things bootable
@@ -66,17 +68,30 @@ install_mounted_root() {
 		done
 	fi
 
-	# create an extlinux.conf
-	sed '/append initrd/d' /media/*/syslinux.cfg > "$mnt"/boot/extlinux.conf
-	echo -e "\tappend initrd=/boot/grsec.gz root=$rootdev modules=sd-mod,usb-storage,ext3$raidmod quiet" >> "$mnt"/boot/extlinux.conf
+	ln -s boot/grsec.gz "$mnt"/grsec.gz
+	ln -s boot/grsec "$mnt"/grsec
 
+	# create an extlinux.conf
+	sed -e '/append initrd/d' \
+		-e ':kernel /boot/grsec:d' \
+		/media/*/syslinux.cfg > "$mnt"/boot/extlinux.conf
+	cat >"$mnt"/boot/extlinux.conf <<EOF
+timeout 20
+prompt 1
+default grsec
+label grsec
+	kernel /grsec
+	append initrd=/grsec.gz root=$rootdev modules=sd-mod,usb-storage,ext3$raidmod quiet
+EOF
 	# fix the fstab
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
 
 	# install extlinux
 	apk add -q syslinux
-	extlinux -i $raidopt "$mnt"/boot
-	umount "$mnt"
+	extlinux -i $raidopt "$mnt"/boot/
+
+	# unmount the partitions
+	umount $(awk '{print $2}' /proc/mounts | grep ^"$mnt" | sort -r)
 
 	# fix mbr for all disk devices
 	for i in $rootdisk; do
@@ -90,30 +105,164 @@ install_mounted_root() {
 	apk del -q syslinux
 }
 
-useall() {
-	local i size
-	echo "Creating root partition..."
-	apk_add -q parted e2fsprogs
-	# erase all partitions
-	for i in $(parted /dev/$rootdisk print | awk '$1 ~ /[0-9]+/ {print $1}'); do
-		parted /dev/$rootdisk rm $i >/dev/null
+
+
+# figure out decent default swap size in mega bytes
+find_swap_size() {
+	local memtotal_kb=$(awk '$1 == "MemTotal:" {print $2}' /proc/meminfo)
+	# use 2 * avaiable ram
+	echo $(( $memtotal_kb * 2 / 1024 ))
+}
+
+# try figure out what disk devices we have that we might want
+# create partitions on
+find_available_disks() {
+	local i= p= disks= 
+	local usbdisk=$(readlink /dev/usbdisk)
+
+	# we only want stuff that are "real" devices
+	for p in /sys/block/*/device; do
+		p=${p%/device}
+		# replace the !'s in device name with / for cciss and similar
+		i=$(echo ${p#/sys/block/} | sed 's:!:/:g')
+		case "$usbdisk" in
+			$i[0-9]*);;
+			*) [ -b /dev/"$i" ] && disks="$disks $i";;
+		esac
 	done
-	# create new partition
-	size=$(parted /dev/$rootdisk print | awk '/^Disk / {print $3}')
-	parted /dev/$rootdisk mkpart primary 0 $size >/dev/null
-	parted /dev/$rootdisk set 1 boot on >/dev/null
- 
-	# create device node if not exist
+	echo $disks
+}
+
+has_mounted_part() {
+	local p
+	# parse /proc/mounts for moutned devices
+	for p in $(awk '$1 ~ /^\/dev\// {gsub("/dev/", "", $1); print $1}' \
+			/proc/mounts); do
+		if [ -e /sys/block/$1/$p ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+find_disks() {
+	local p
+	for p in $(awk '$1 ~ /[0-9]+/ {print $4}' /proc/partitions); do
+		b=$(echo $p | sed 's:/:!:g')
+		if [ -e /sys/block/$b/device ] && ! has_mounted_part $p; then
+			echo $p
+		fi
+	done
+}
+
+useall() {
+
+	local rootdisk_dev="$1"
+	local i size
+	local boot_size=100 boot_part_type="83" 
+	local swap_size=$(find_swap_size) swap_part_type="82"
+	local root_part_type="83"
+	local raidpkg= partitions=
+	local minimum_root_size=$(($boot_size * 2));
+
+	if [ -n "$USE_RAID" ]; then
+		boot_part_type="fd"
+		swap_part_type="fd"
+		root_part_type="fd"
+		raidpkg="mdadm"
+	fi
+
+	apk_add -q sfdisk e2fsprogs $raidpkg
+	local root_size=$(( $(sfdisk -s $rootdisk_dev) / 1024 - $swap_size - $boot_size))
+	if [ "$root_size" -lt "$minimum_root_size" ]; then
+		echo "The $rootdisk_dev is too small. At least $(( $boot_size + $swap_size + $minimum_root_size)) is needed." >&2
+		return 1
+	fi
+
+	echo ""
+	echo "Creating the following partitions on $rootdisk_dev:"
+	echo " /boot	${boot_size}MB"
+	echo " swap	${swap_size}MB"
+	echo " /	${root_size}MB"
+	echo ""
+	echo -n "WARNING: All contents of $rootdisk_dev will be erased. Continue? [y/N]: "
+	read i
+	case "$i" in
+		y*|Y*);;
+		*) return 1;;
+	esac
+
+	if [ -n "$USE_RAID" ]; then
+		local rd
+		for rd in md0 md1 md2; do
+			[ -b /dev/$rd ] && mdadm --stop /dev/$rd
+		done
+	fi
+
+	# create new partitions
+	(cat <<EOF
+0,$boot_size,$boot_part_type,*
+,$swap_size,$swap_part_type
+,,$root_part_type
+EOF
+	) | sfdisk -uM $rootdisk_dev >>/tmp/sfdisk.out 2>&1 || return 1
+
+	# create device nodes if not exist
 	mdev -s
-	rootdev=/dev/${rootdisk}1
 
-	mkfs.ext3 -q $rootdev
-	# we are done with parted and dont want it in the lbu package
-	apk del -q parted e2fsprogs
+	if [ -n "$USE_RAID" ]; then
+		local p= rd=
+		for p in $(sfdisk -l $rootdisk_dev 2>/dev/null \
+				| awk '/Linux raid/ {print $1}'); do
+			case "$p" in
+				*1) rd=/dev/md0; boot_dev=/dev/md0;;
+				*2) rd=/dev/md1; swap_dev=/dev/md1;;
+				*3) rd=/dev/md2; root_dev=/dev/md2;;
+			esac
+			mdadm --create $rd --level=1 --raid-devices=2 \
+				--quiet --run $p missing
+		done
+	else
+		local p=
+		for p in $(sfdisk -l $rootdisk_dev 2>/dev/null \
+				| awk '$1 ~ /^\/dev/ {print $1}'); do
+			case "$p" in
+				*1) boot_dev=$p;;
+				*2) swap_dev=$p;;
+				*3) root_dev=$p;;
+			esac
+		done
+	fi
+			
+	mkfs.ext3 -q $boot_dev >/dev/null \
+		&& mkswap $swap_dev >/dev/null \
+		&& mkfs.ext3 -q >/dev/null $root_dev \
+		|| return 1
 
-	mount -t ext3 $rootdev /mnt || return 1
+	mkdir -p /mnt
+	mount -t ext3 $root_dev /mnt || return 1
+	mkdir -p /mnt/boot
+	mount -t ext3 $boot_dev /mnt/boot || return 1
+
+	if [ -n "$USE_RAID" ]; then
+		mdadm --detail --scan > /etc/mdadm.conf
+		rc-update --quiet add mdadm-raid boot
+	fi
+	rc-update --quiet add swap boot
+	# the func to generate fstab does not detect swap. add it manually
+	sed -i -e '/swap/d' /etc/fstab
+	echo -e "$swap_dev\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
+
 	install_mounted_root /mnt
 }
+
+# Parse args
+while getopts "r" opt; do
+	case $opt in
+		r) USE_RAID=1;;
+	esac
+done
+shift $(( OPTIND - 1))
 
 if [ -d "$1" ]; then
 	# install to given mounted root
@@ -121,37 +270,49 @@ if [ -d "$1" ]; then
 	exit $?
 fi
 
-usbdisk=$(readlink /dev/usbdisk)
-disks=
-cd /dev
-for i in sd[a-z] hd[a-z]; do
-	case "$usbdisk" in
-		$i[0-9]*);;
-		*) [ -b "$i" ] && disks="$disks $i";;
-	esac
-done
+disks=$(find_disks)
 
 # no disks so lets exit quietly.
 [ -z "$disks" ] && exit 0
 
-rootdisk=
-while ! in_list "$rootdisk" $disks "none" "abort"; do
-	echo "Available disks are: $disks"
-	echon "Which one is the root disk? (or none) [none] "
-	default_read rootdisk "none"
-done
+if [ $# -gt 0 ]; then
+	# check that they are 
+	for i in "$@"; do
+		j=$(readlink -f "$i" | sed 's:^/dev/::; s:/:!:g')
+		if ! [ -e "/sys/block/$j/device" ]; then
+			echo "$i is not a suitable for partining"
+			exit 1
+		fi
+	done
 
-[ -b "/dev/$rootdisk" ] || exit 0
+else
+	rootdisk=
+	while ! in_list "$rootdisk" $disks "none" "abort"; do
+		echo "Available disks are: $disks"
+		echon "Which one is the root disk? (or none) [none] "
+		default_read rootdisk "none"
+	done
+	case "$rootdisk" in
+		none|abort) exit 0;;
+	esac
+fi
 
-echon "Do you want use *all* of $rootdisk for Alpine? (y/n) [n] "
-default_read useall "n"
-case "$useall" in
-	[Yy]*) useall="yes";;
-esac
+#echon "Do you want use *all* of $rootdisk for Alpine? (y/n) [n] "
+#default_read useall "n"
+#case "$useall" in
+#	[Yy]*) useall="yes";;
+#esac
+#
+#if [ "x$useall" != "xyes" ]; then
+#	echo "Only 'use all' option is available at the moment. Sorry"
+#	exit 1
+#fi
 
-if [ "x$useall" != "xyes" ]; then
-	echo "Only 'use all' option is available at the moment. Sorry"
+rootdisk_dev=${rootdisk_dev:-"/dev/$rootdisk"}
+
+if ! [ -b "$rootdisk_dev" ]; then
+	echo "$rootdisk_dev is not a block device" >&2
 	exit 1
 fi
 
-useall
+useall $rootdisk_dev
