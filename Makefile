@@ -22,7 +22,7 @@ SBIN_FILES	:= albootstrap\
 		setup-keymap\
 		setup-mta\
 		setup-sendbug\
-		setup-webconf\
+		setup-acf\
 		update-conf
 
 SCRIPTS		:= $(LIB_FILES) $(SBIN_FILES)
