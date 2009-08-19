@@ -76,3 +76,40 @@ invalid_ip() {
 cfg_add() {
 	[ -z "$NOCOMMIT" ] && lbu_add "$@"
 }
+
+# from OpenBSD installer
+
+# Ask for a password, saving the input in $resp.
+#    Display $1 as the prompt.
+#    *Don't* allow the '!' options that ask does.
+#    *Don't* echo input.
+#    *Don't* interpret "\" as escape character.
+askpass() {
+	echo -n "$1 "
+	set -o noglob
+	stty -echo
+	read -r resp
+	stty echo
+	set +o noglob
+	echo
+}
+
+# Ask for a password twice, saving the input in $_password
+askpassword() {
+	local _oifs=$IFS
+	IFS=
+	while :; do
+		askpass "Password for $1 account? (will not echo)"
+		_password=$resp
+
+		askpass "Password for $1 account? (again)"
+		# N.B.: Need quotes around $resp and $_password to preserve leading
+		#       or trailing spaces.
+		[ "$resp" = "$_password" ] && break
+
+		echo "Passwords do not match, try again."
+	done
+	IFS=$_oifs
+}
+
+
