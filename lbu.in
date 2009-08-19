@@ -234,7 +234,7 @@ cmd_package() {
 
 	cd "${ROOT:-/}"
 	# remove old package.list
-	if [ -f etc/lbu/packages.list && -f var/lib/apk/world ]; then
+	if [ -f etc/lbu/packages.list ] && [ -f var/lib/apk/world ]; then
 		echo "Note: Removing /etc/lbu/packages.list."
 		echo "      /var/lib/apk/world will be used."
 		rm -f etc/lbu/packages.list
