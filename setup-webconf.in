@@ -7,17 +7,18 @@ PREFIX=
 . $PREFIX/lib/libalpine.sh
 
 usage() {
-	echo "$PROGRAM [-ah] [-l address] [PACKAGE...]"
+	echo "$PROGRAM [-ahn] [-l address] [PACKAGE...]"
 	exit 0;
 }
 
 pkgs="acf-core acf-alpine-baselayout acf-apk-tools"
 
-while getopts "ahl:" opt ; do
+while getopts "ahl:n" opt ; do
 	case $opt in
 		a) pkgs=`apk_fetch -l | grep ^acf-`;;
 		h) usage;;
 		l) address="$OPTARG";;
+		n) create_passwd=no;;
 		*) usage;;
 	esac
 done
@@ -27,6 +28,17 @@ while [ $# -gt 0 ]; do
 	pkgs="$pkgs acf-$1"
 	shift
 done
+
+if [ "$create_passwd" != "no" ]; then
+	askpassword "root ACF"
+	if [ -f /etc/acf/passwd ]; then
+		mv /etc/acf/passwd /etc/acf/passwd.backup
+	fi
+	# this will show password on process list but we assume user is alone 
+	# on the box at this stage
+	_md5passwd=$(echo -n "$_password" | md5sum)
+	echo "root:$_md5passwd:Admin account:ADMIN" >/etc/acf/passwd
+fi
 
 # install packages 
 apk_add mini_httpd $pkgs || exit 1
