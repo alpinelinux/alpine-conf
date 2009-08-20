@@ -37,7 +37,7 @@ if [ "$create_passwd" != "no" ]; then
 	fi
 	# this will show password on process list but we assume user is alone 
 	# on the box at this stage
-	_md5passwd=$(echo -n "$_password" | md5sum)
+	_md5passwd=$(echo -n "$_password" | md5sum | cut -d' ' -f1)
 	echo "root:$_md5passwd:Admin account:ADMIN" >/etc/acf/passwd
 fi
 
