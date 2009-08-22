@@ -114,25 +114,6 @@ find_swap_size() {
 	echo $(( $memtotal_kb * 2 / 1024 ))
 }
 
-# try figure out what disk devices we have that we might want
-# create partitions on
-find_available_disks() {
-	local i= p= disks= 
-	local usbdisk=$(readlink /dev/usbdisk)
-
-	# we only want stuff that are "real" devices
-	for p in /sys/block/*/device; do
-		p=${p%/device}
-		# replace the !'s in device name with / for cciss and similar
-		i=$(echo ${p#/sys/block/} | sed 's:!:/:g')
-		case "$usbdisk" in
-			$i[0-9]*);;
-			*) [ -b /dev/"$i" ] && disks="$disks $i";;
-		esac
-	done
-	echo $disks
-}
-
 has_mounted_part() {
 	local p
 	# parse /proc/mounts for moutned devices
@@ -146,13 +127,14 @@ has_mounted_part() {
 }
 
 find_disks() {
-	local p
+	local p= disks=
 	for p in $(awk '$1 ~ /[0-9]+/ {print $4}' /proc/partitions); do
 		b=$(echo $p | sed 's:/:!:g')
 		if [ -e /sys/block/$b/device ] && ! has_mounted_part $p; then
-			echo $p
+			disks="$disks $p"
 		fi
 	done
+	echo $disks
 }
 
 useall() {
@@ -172,7 +154,8 @@ useall() {
 		raidpkg="mdadm"
 	fi
 
-	apk_add -q sfdisk e2fsprogs $raidpkg
+	dmesg -n1
+	apk_add -q sfdisk e2fsprogs $raidpkg || return 1
 	local root_size=$(( $(sfdisk -s $rootdisk_dev) / 1024 - $swap_size - $boot_size))
 	if [ "$root_size" -lt "$minimum_root_size" ]; then
 		echo "The $rootdisk_dev is too small. At least $(( $boot_size + $swap_size + $minimum_root_size)) is needed." >&2
@@ -191,7 +174,8 @@ useall() {
 		y*|Y*);;
 		*) return 1;;
 	esac
-
+	
+	echo "Initializing partitions..."
 	if [ -n "$USE_RAID" ]; then
 		local rd
 		for rd in md0 md1 md2; do
@@ -205,7 +189,7 @@ useall() {
 ,$swap_size,$swap_part_type
 ,,$root_part_type
 EOF
-	) | sfdisk -uM $rootdisk_dev >>/tmp/sfdisk.out 2>&1 || return 1
+	) | sfdisk -q -L -uM $rootdisk_dev >>/tmp/sfdisk.out || return 1
 
 	# create device nodes if not exist
 	mdev -s
@@ -233,7 +217,6 @@ EOF
 			esac
 		done
 	fi
-			
 	mkfs.ext3 -q $boot_dev >/dev/null \
 		&& mkswap $swap_dev >/dev/null \
 		&& mkfs.ext3 -q >/dev/null $root_dev \
@@ -243,7 +226,6 @@ EOF
 	mount -t ext3 $root_dev /mnt || return 1
 	mkdir -p /mnt/boot
 	mount -t ext3 $boot_dev /mnt/boot || return 1
-
 	if [ -n "$USE_RAID" ]; then
 		mdadm --detail --scan > /etc/mdadm.conf
 		rc-update --quiet add mdadm-raid boot
@@ -252,7 +234,6 @@ EOF
 	# the func to generate fstab does not detect swap. add it manually
 	sed -i -e '/swap/d' /etc/fstab
 	echo -e "$swap_dev\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
-
 	install_mounted_root /mnt
 }
 
@@ -286,11 +267,12 @@ if [ $# -gt 0 ]; then
 	done
 
 else
+	set -- $disks
 	rootdisk=
 	while ! in_list "$rootdisk" $disks "none" "abort"; do
 		echo "Available disks are: $disks"
-		echon "Which one is the root disk? (or none) [none] "
-		default_read rootdisk "none"
+		echon "Which one is the root disk? (or none) [$1] "
+		default_read rootdisk $1
 	done
 	case "$rootdisk" in
 		none|abort) exit 0;;
