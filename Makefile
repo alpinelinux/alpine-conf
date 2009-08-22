@@ -1,4 +1,4 @@
-VERSION		:= 2.0_beta5
+VERSION		:= 2.0_beta6
 
 sysconfdir      ?= /etc/lbu
 
