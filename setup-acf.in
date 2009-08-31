@@ -73,8 +73,8 @@ prompt = no
 
 [ req_dn ]
 OU=HTTPS server
-CN=$(hostname)
-emailAddress=postmaster@example.com
+CN=$(hostname -f)
+emailAddress=${EMAIL:-postmaster@example.com}
 
 [ cert_type ]
 nsCertType = server
