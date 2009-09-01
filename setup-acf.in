@@ -7,15 +7,16 @@ PREFIX=
 . $PREFIX/lib/libalpine.sh
 
 usage() {
-	echo "$PROGRAM [-ahn] [-l address] [PACKAGE...]"
+	echo "$PROGRAM [-ahn] [-e email] [-l address] [PACKAGE...]"
 	exit 0;
 }
 
 pkgs="acf-core acf-alpine-baselayout acf-apk-tools"
 
-while getopts "ahl:n" opt ; do
+while getopts "ae:hl:n" opt ; do
 	case $opt in
 		a) pkgs=`apk_fetch -l | grep ^acf-`;;
+		e) EMAIL="$OPTARG";;
 		h) usage;;
 		l) address="$OPTARG";;
 		n) create_passwd=no;;
