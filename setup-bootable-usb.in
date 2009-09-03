@@ -1,0 +1,52 @@
+#!/bin/sh
+
+cleanup() {
+	if [ "$install_syslinux" = "yes" ]; then
+		apk del -q syslinux
+	fi
+	if [ "$mount_dest" = "yes" ]; then
+		umount "$dest"
+	fi
+}
+
+die() {
+	echo "$@" >&2
+	cleanup
+	exit 1
+}
+
+apk info -q -e syslinux || install_syslinux=yes
+
+
+if [ "$install_syslinux" = "yes" ]; then
+	apk add -q syslinux
+fi
+
+src=${1:-/media/cdrom}
+
+[ -f "$src"/.alpine-release ] || die "$src/.alpine-release not found"
+
+
+dest=${2:-/media/usb}
+
+if ! awk '{print $2}' /proc/mounts | grep -q "^$dest\$"; then
+	mount "$dest" || die "Failed to mount $dest"
+	mount_dest=yes
+fi
+
+echo "Copying files..."
+cp -r "$src"/* "$src"/.[a-z]* "$dest" || die "Failed to copy files"
+
+echo "Making usb bootable..."
+dev=$(awk "\$2 == \"$dest\" {print \$1}" /proc/mounts)
+parent=$(basename $(dirname /sys/block/*/$(basename $dev)))
+
+syslinux $dev
+
+if [ -b /dev/$parent ]; then
+	dd if=/usr/share/syslinux/mbr.bin of=/dev/$parent
+else
+	echo "Warning: Could not find the parent device for $dev"
+fi
+
+cleanup
