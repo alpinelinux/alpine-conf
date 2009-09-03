@@ -1,4 +1,4 @@
-VERSION		:= 2.0_beta6
+VERSION		:= 2.0_rc1
 
 sysconfdir      ?= /etc/lbu
 
@@ -23,6 +23,7 @@ SBIN_FILES	:= albootstrap\
 		setup-mta\
 		setup-sendbug\
 		setup-acf\
+		setup-bootable-usb\
 		update-conf
 
 SCRIPTS		:= $(LIB_FILES) $(SBIN_FILES)
