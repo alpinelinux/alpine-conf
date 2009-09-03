@@ -93,7 +93,6 @@ cat >/etc/mini_httpd.conf <<EOF
 nochroot
 dir=/var/www/localhost/htdocs
 user=nobody
-logfile=/var/log/mini_httpd.log
 cgipat=cgi-bin**
 certfile=$PEMFILE
 port=443
@@ -102,11 +101,6 @@ EOF
 if [ -n "$address" ]; then
 	echo "host=$address" >> /etc/mini_httpd.conf
 fi
-
-cat >/etc/conf.d/mini_httpd <<EOF
-MINI_HTTPD_OPTS="-C /etc/mini_httpd.conf"
-MINI_HTTPD_DOCROOT=/var/www/localhost/htdocs
-EOF
 
 rc-update -q add mini_httpd default
 /etc/init.d/mini_httpd restart
