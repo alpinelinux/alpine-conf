@@ -72,9 +72,6 @@ install_mounted_root() {
 	ln -s boot/grsec "$mnt"/grsec
 
 	# create an extlinux.conf
-	sed -e '/append initrd/d' \
-		-e ':kernel /boot/grsec:d' \
-		/media/*/syslinux.cfg > "$mnt"/boot/extlinux.conf
 	cat >"$mnt"/boot/extlinux.conf <<EOF
 timeout 20
 prompt 1
