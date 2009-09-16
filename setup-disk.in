@@ -23,6 +23,11 @@ enumerate_fstab() {
 		sed "s:$mnt:/:g; s: :\t:g" | sed 's:/\+:/:g'
 }
 
+is_vmware() {
+	grep -q VMware /proc/scsi/scsi 2>/dev/null \
+		|| grep -q VMware /proc/ide/hd*/model 2>/dev/null
+}
+
 install_mounted_root() {
 	local mnt="$1"
 	local features="ata base bootchart cdrom ext2 ext3 ide scsi usb"
@@ -71,6 +76,12 @@ install_mounted_root() {
 	ln -s boot/grsec.gz "$mnt"/grsec.gz
 	ln -s boot/grsec "$mnt"/grsec
 
+	if is_vmware; then
+		pax_nouderef="pax_nouderef "
+	else
+		pax_nouderef=
+	fi
+
 	# create an extlinux.conf
 	cat >"$mnt"/boot/extlinux.conf <<EOF
 timeout 20
@@ -78,7 +89,7 @@ prompt 1
 default grsec
 label grsec
 	kernel /grsec
-	append initrd=/grsec.gz root=$rootdev modules=sd-mod,usb-storage,ext3$raidmod quiet
+	append initrd=/grsec.gz root=$rootdev modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
 EOF
 	# fix the fstab
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
