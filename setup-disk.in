@@ -15,12 +15,37 @@ in_list() {
 	return 1
 }
 
+# wrapper to only show given device
+_blkid() {
+	blkid | grep "^$1:"
+}
+
+# if given device have an UUID display it, otherwise return the device
+uuid_or_device() {
+	local i=
+	for i in $(_blkid "$1"); do
+		case "$i" in
+			UUID=*) eval $i;;
+		esac
+	done
+	if [ -n "$UUID" ]; then
+		echo "UUID=$UUID"
+	else
+		echo "$1"
+	fi
+}
+
+# generate an fstab from a given mountpoint. Convert to UUID if possible
 enumerate_fstab() {
 	local mnt="$1"
+	local fs_spec= fs_file= fs_vfstype= fs_mntops= fs_freq= fs_passno=
 	[ -z "$mnt" ] && return
 	local escaped_mnt=$(echo $mnt | sed 's:/:\\/:g')
 	awk "\$2 ~ /^$escaped_mnt/ {print \$0}" /proc/mounts | \
-		sed "s:$mnt:/:g; s: :\t:g" | sed 's:/\+:/:g'
+		sed "s:$mnt:/:g; s: :\t:g" | sed 's:/\+:/:g' | \
+		while read fs_spec fs_file fs_vfstype fs_mntops fs_freq fs_passno; do
+			echo -e "$(uuid_or_device $fs_spec)\t${fs_file}\t${fs_vfstype}\t${fs_mntops} ${fs_freq} ${fs_passno}"
+		done
 }
 
 is_vmware() {
@@ -89,7 +114,7 @@ prompt 1
 default grsec
 label grsec
 	kernel /grsec
-	append initrd=/grsec.gz root=$rootdev modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
+	append initrd=/grsec.gz root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
 EOF
 	# fix the fstab
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
@@ -247,7 +272,7 @@ EOF
 	rc-update --quiet add swap boot
 	# the func to generate fstab does not detect swap. add it manually
 	sed -i -e '/swap/d' /etc/fstab
-	echo -e "$swap_dev\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
+	echo -e "$(uuid_or_device $swap_dev)\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
 	install_mounted_root /mnt
 }
 
