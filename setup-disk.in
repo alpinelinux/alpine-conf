@@ -98,9 +98,6 @@ install_mounted_root() {
 		done
 	fi
 
-	ln -s boot/grsec.gz "$mnt"/grsec.gz
-	ln -s boot/grsec "$mnt"/grsec
-
 	if is_vmware; then
 		pax_nouderef="pax_nouderef "
 	else
@@ -113,8 +110,8 @@ timeout 20
 prompt 1
 default grsec
 label grsec
-	kernel /grsec
-	append initrd=/grsec.gz root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
+	kernel /boot/vmlinuz-grsec
+	append initrd=/boot/initramfs-grsec root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
 EOF
 	# fix the fstab
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
