@@ -75,7 +75,16 @@ backup_apkovl() {
 	vecho "Creating backup $backup"
 	if [ -z "$DRYRUN" ]; then
 		mv "$outfile" "$backup"
+		APKOVL_BACKUP="$backup"
 	fi
+}
+
+restore_apkovl() {
+	local outfile="$1"
+	if [ -n "$DRYRUN" ] || [ -z "$APKOVL_BACKUP" ]; then
+		return 0
+	fi
+	mv "$APKOVL_BACKUP" "$outfile"
 }
 
 # verify we have openssl if we want to encrypt
@@ -274,10 +283,16 @@ cmd_package() {
 			if [ "x$pkg" = "x-" ]; then
 				cat "$tmppkg"
 			else
-				cp "$tmppkg" "$pkg"
+				if cp "$tmppkg" "$pkg.new"; then
+					mv "$pkg.new" "$pkg"
+					rc=$?
+				else
+					rm -f "$pkg.new"
+					rc=1
+				fi
 			fi
 		fi
-		vecho "Created $pkg"
+		[ $rc -eq 0 ] && vecho "Created $pkg"
 	fi
 	return $rc
 }
@@ -354,7 +369,6 @@ cmd_commit() {
 		outfile="$outfile.$ENCRYPTION"
 	fi
 
-
 	# remove old config files
 	if [ -n "$DELETEOLDCONFIGS" ] ; then
 		local rmfiles=$(ls "$mnt/"*.apkovl.tar.gz* 2>/dev/null)
@@ -382,6 +396,7 @@ cmd_commit() {
 
 	# create package
 	if ! cmd_package "$outfile"; then
+		restore_apkovl "$outfile"
 		cleanup
 		die "Problems creating archive. aborting"
 	fi
