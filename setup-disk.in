@@ -149,6 +149,7 @@ has_mounted_part() {
 	# parse /proc/mounts for mounted devices
 	for p in $(awk '$1 ~ /^\/dev\// {gsub("/dev/", "", $1); print $1}' \
 			/proc/mounts); do
+		[ "$p" = "$1" ] && return 0
 		[ -e /sys/block/$1/$p ] && return 0
 	done
 	return 1
