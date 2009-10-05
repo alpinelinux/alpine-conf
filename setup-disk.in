@@ -23,6 +23,9 @@ _blkid() {
 # if given device have an UUID display it, otherwise return the device
 uuid_or_device() {
 	local i=
+	case "$1" in
+		/dev/md*) echo "$1" && return 0;;
+	esac
 	for i in $(_blkid "$1"); do
 		case "$i" in
 			UUID=*) eval $i;;
