@@ -53,6 +53,17 @@ is_vmware() {
 		|| grep -q VMware /proc/ide/hd*/model 2>/dev/null
 }
 
+# Find the disk device from given partition
+disk_from_part() {
+	local i= part=${1#/dev/}
+	for i in /sys/block/*/$part; do
+		i=${i%/*}
+		echo "/dev/${i##*/}"
+		return 0
+	done
+	return 1
+}
+
 install_mounted_root() {
 	local mnt="$1"
 	local features="ata base bootchart cdrom ext2 ext3 ide scsi usb"
@@ -69,7 +80,7 @@ install_mounted_root() {
 		return 1
 	fi
 		
-	rootdisk=${rootdev%[0-9]*}
+	rootdisk=$(disk_from_part $rootdev)
 
 	echon "Installing system on $rootdev: "
 	lbu package - | tar -C "$mnt" -zx
@@ -82,8 +93,7 @@ install_mounted_root() {
 		acct linux-grsec alpine-base >/dev/null || return 1
 	echo ""
 	# make things bootable
-	kernel=$(ls "$mnt"/lib/modules)
-	if [ "$rootdisk" = "/dev/md" ]; then
+	if [ -e "/sys/block/${rootdev#/dev/}/md" ]; then
 		local md=${rootdev#/dev/}
 		features="$features raid"
 		raidmod=$(cat /sys/block/$md/md/level)
@@ -134,8 +144,6 @@ EOF
 	echo "Installation is done. Please reboot."
 	apk del -q syslinux
 }
-
-
 
 # figure out decent default swap size in mega bytes
 find_swap_size() {
