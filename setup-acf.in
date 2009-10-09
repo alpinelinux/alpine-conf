@@ -40,6 +40,7 @@ if [ "$create_passwd" != "no" ]; then
 	# on the box at this stage
 	_md5passwd=$(echo -n "$_password" | md5sum | cut -d' ' -f1)
 	echo "root:$_md5passwd:Admin account:ADMIN" >/etc/acf/passwd
+	chmod 600 /etc/acf/passwd
 fi
 
 # install packages 
