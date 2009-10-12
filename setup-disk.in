@@ -58,10 +58,12 @@ is_vmware() {
 
 # Find the disk device from given partition
 disk_from_part() {
-	local i= part=${1#/dev/}
+	# we need convert cciss/c0d0* cciss!c0d0*...
+	local i= part=$(echo ${1#/dev/} | sed 's:/:!:g')
 	for i in /sys/block/*/$part; do
 		i=${i%/*}
-		echo "/dev/${i##*/}"
+		# ...and back from cciss!c0d0 to cciss/c0d0
+		echo "/dev/${i##*/}" | sed 's:!:/:g'
 		return 0
 	done
 	return 1
