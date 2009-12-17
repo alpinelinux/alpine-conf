@@ -555,7 +555,7 @@ cmd_status() {
 	[ -z "$LBU_MEDIA" ] && usage_status
 	local tmp
 	init_tmpdir tmp
-	mkdir -p "$tmpdir/a" "$tmp/b"
+	mkdir -p "$tmp/a" "$tmp/b"
 
 	# unpack last commited apkovl to tmpdir/a
 	unpack_apkovl "$tmp/a"
@@ -567,8 +567,11 @@ cmd_status() {
 	local f
 	( cd "$tmp"/a && find ) | while read f; do
 		f=${f#./}
-		[ "$f" = "." ] && continue
-		[ -e "$tmp/b/$f" ] || echo "D $f"
+		local b="$tmp/b/$f"
+		if [ "$f" = "." ] || [ -e "$b" ] || [ -L "$b" ]; then
+			continue
+		fi
+		echo "D $f"
 	done
 	
 	# compare files in b with files in a
@@ -577,7 +580,7 @@ cmd_status() {
 		[ "$f" = "." ] && continue
 		local a="$tmp/a/$f"
 		local b="$tmp/b/$f"
-		if [ ! -e "$a" ]; then
+		if [ ! -e "$a" ] && [ ! -L "$a" ]; then
 			echo "A $f"
 		elif [ -f "$a" ] && [ -f "$b" ] && [ "$b" -nt "$a" ] \
 		     && ! cmp -s "$a" "$b"; then
