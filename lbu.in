@@ -21,6 +21,9 @@ INCLUDE_LIST="$sysconfdir"/include
 DEFAULT_CIPHER="aes-256-cbc"
 
 LBU_CONF="$sysconfdir"/lbu.conf
+LBU_PREPACKAGE="$sysconfdir"/pre-package.d
+LBU_POSTPACKAGE="$sysconfdir"/post-package.d
+
 if [ -f "$LBU_CONF" ]; then
 	. "$LBU_CONF"
 fi
@@ -230,6 +233,10 @@ cmd_package() {
 	check_openssl
 	init_tmpdir tmpdir
 
+	if [ -d "$LBU_PREPACKAGE" ]; then
+		run-parts "$LBU_PREPACKAGE" || return 1
+	fi
+
 	[ -n "$ENCRYPTION" ] && suff="$suff.$ENCRYPTION"
 
 	# find filename
@@ -293,6 +300,9 @@ cmd_package() {
 			fi
 		fi
 		[ $rc -eq 0 ] && vecho "Created $pkg"
+	fi
+	if [ -d "$LBU_POSTPACKAGE" ]; then
+		run-parts "$LBU_POSTPACKAGE"
 	fi
 	return $rc
 }
