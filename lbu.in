@@ -65,7 +65,7 @@ exit_clean() {
 }
 
 mount_once() {
-	if ! grep $1 /proc/mounts >/dev/null; then
+	if awk "\$2 == \"$1\" {exit 1}" /proc/mounts; then
 		mount $1 && UMOUNT_LIST="$1 $UMOUNT_LIST"
 	fi
 }
