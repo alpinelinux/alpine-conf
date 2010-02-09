@@ -87,8 +87,13 @@ install_mounted_root() {
 		
 	rootdisk=$(disk_from_part $rootdev)
 
+	if [ -z "$APKOVL" ]; then
+		lbu package - | tar -C "$mnt" -zx
+	else
+		echo "Restoring backup from $APKOVL to $rootdev..."
+		tar -C "$mnt" -zxf "$APKOVL"
+	fi
 	echon "Installing system on $rootdev: "
-	lbu package - | tar -C "$mnt" -zx
 	# apk reads config from target root so we need to copy the config
 	mkdir -p "$mnt"/etc/apk/keys/
 	cp /etc/apk/keys/* "$mnt"/etc/apk/keys/
@@ -188,7 +193,10 @@ is_available_disk() {
 	has_mounted_part $dev && return 1
 
 	# check so its not part of an md setup
-	has_holders /sys/block/$b && return 1
+	if has_holders /sys/block/$b; then
+		[ -n "$USE_RAID" ] && echo "Warning: $dev is part of a running raid" >&2
+		return 1
+	fi
 
 	# check so its not an md device
 	[ -e /sys/block/$b/md ] && return 1
@@ -204,7 +212,6 @@ find_disks() {
 }
 
 useall() {
-
 	local rootdisk_dev="$1"
 	local i size
 	local boot_size=100 boot_part_type="83" 
@@ -234,6 +241,9 @@ useall() {
 	echo " swap	${swap_size}MB"
 	echo " /	${root_size}MB"
 	echo ""
+	if [ -n "$APKOVL" ]; then
+		echo "System from $APKOVL will be restored"
+	fi
 	echo -n "WARNING: All contents of $rootdisk_dev will be erased. Continue? [y/N]: "
 	read i
 	case "$i" in
@@ -310,9 +320,10 @@ EOF
 }
 
 # Parse args
-while getopts "r" opt; do
+while getopts "ro:" opt; do
 	case $opt in
 		r) USE_RAID=1;;
+		o) APKOVL="$OPTARG";;
 	esac
 done
 shift $(( OPTIND - 1))
