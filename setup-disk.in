@@ -69,6 +69,41 @@ disk_from_part() {
 	return 1
 }
 
+unpack_apkovl() {
+	local ovl="$1"
+	local dest="$2"
+	local suffix=${ovl##*.}
+	local i
+	ovlfiles=/tmp/ovlfiles
+	if [ "$suffix" = "gz" ]; then
+		if ! tar -C "$dest" --numeric-owner -zxvf "$ovl" > $ovlfiles; then
+			echo -n "Continue anyway? [Y/n]: "
+			read i
+			case "$i" in
+				n*|N*) return 1;;
+			esac
+		fi
+		return 0 
+	fi
+
+	apk add -q openssl
+
+	if ! openssl list-cipher-commands | grep "^$suffix$" > /dev/null; then
+		errstr="Cipher $suffix is not supported"
+		return 1
+	fi
+	local count=0
+	# beep
+	echo -e "\007"
+	while [ $count -lt 3 ]; do
+		openssl enc -d -$suffix -in "$ovl" | tar --numeric-owner \
+			-C "$dest" -zxv >$ovlfiles 2>/dev/null && return 0
+		count=$(( $count + 1 ))
+	done
+	ovlfiles=
+	return 1
+}
+
 install_mounted_root() {
 	local mnt="$1"
 	local features="ata base bootchart cdrom ext2 ext3 ide scsi usb"
@@ -88,20 +123,28 @@ install_mounted_root() {
 	rootdisk=$(disk_from_part $rootdev)
 
 	if [ -z "$APKOVL" ]; then
-		lbu package - | tar -C "$mnt" -zx
+		ovlfiles=/tmp/ovlfiles
+		lbu package - | tar -C "$mnt" -zxv > "$ovlfiles"
 	else
 		echo "Restoring backup from $APKOVL to $rootdev..."
-		tar -C "$mnt" -zxf "$APKOVL"
+		unpack_apkovl "$APKOVL" "$mnt" || return 1
 	fi
+	# remove the installed db in case its there so we force re-install
+	rm -f "$mnt"/var/lib/apk/installed
 	echon "Installing system on $rootdev: "
 	# apk reads config from target root so we need to copy the config
 	mkdir -p "$mnt"/etc/apk/keys/
 	cp /etc/apk/keys/* "$mnt"/etc/apk/keys/
 
-	apk add -q --progress --update-cache --root "$mnt" \
-		$(cat "$mnt"/var/lib/apk/world) \
-		acct linux-grsec alpine-base >/dev/null || return 1
+	local apkflags="--quiet --progress --update-cache --clean-protected"
+	local pkgs=$(cat "$mnt"/var/lib/apk/world)
+	pkgs="$pkgs acct linux-grsec alpine-base"
+	
+	apk add --root "$mnt" $apkflags --overlay-from-stdin \
+		--repositories-file /etc/apk/repositories \
+		$pkgs <$ovlfiles>/dev/null || return 1
 	echo ""
+
 	# make things bootable
 	if [ -e "/sys/block/${rootdev#/dev/}/md" ]; then
 		local md=${rootdev#/dev/}
