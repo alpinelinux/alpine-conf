@@ -139,10 +139,14 @@ install_mounted_root() {
 	local apkflags="--quiet --progress --update-cache --clean-protected"
 	local pkgs=$(cat "$mnt"/var/lib/apk/world)
 	pkgs="$pkgs acct linux-grsec alpine-base"
+	local repos=$(sed -e 's/\#.*//' /etc/apk/repositories)
+	local repoflags=
+	for i in $repos; do
+		repoflags="$repoflags --repository $i"
+	done
 	
 	apk add --root "$mnt" $apkflags --overlay-from-stdin \
-		--repositories-file /etc/apk/repositories \
-		$pkgs <$ovlfiles>/dev/null || return 1
+		$repoflags $pkgs <$ovlfiles>/dev/null || return 1
 	echo ""
 
 	# make things bootable
