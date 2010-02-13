@@ -327,13 +327,15 @@ EOF
 		local p= rd=
 		for p in $(sfdisk -l $rootdisk_dev 2>/dev/null \
 				| awk '/Linux raid/ {print $1}'); do
+			local opt="--metadata=0.90"
 			case "$p" in
 				*1) rd=/dev/md0; boot_dev=/dev/md0;;
-				*2) rd=/dev/md1; swap_dev=/dev/md1;;
+				*2) rd=/dev/md1; swap_dev=/dev/md1
+				    opt= ;;
 				*3) rd=/dev/md2; root_dev=/dev/md2;;
 			esac
 			mdadm --create $rd --level=1 --raid-devices=2 \
-				--quiet --run $p missing
+				$opt --quiet --run $p missing
 		done
 	else
 		local p=
