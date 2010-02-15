@@ -138,11 +138,7 @@ install_mounted_root() {
 
 	local apkflags="--quiet --progress --update-cache --clean-protected"
 	local pkgs=$(cat "$mnt"/var/lib/apk/world)
-	local kernelpkg=linux-grsec
-	case "$(uname -r)" in
-		*-vs[0-9]*) kernelpkg=linux-vserver;;
-	esac
-	pkgs="$pkgs acct $kernelpkg alpine-base"
+	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base"
 	local repos=$(sed -e 's/\#.*//' /etc/apk/repositories)
 	local repoflags=
 	for i in $repos; do
@@ -179,10 +175,10 @@ install_mounted_root() {
 	cat >"$mnt"/boot/extlinux.conf <<EOF
 timeout 20
 prompt 1
-default grsec
-label grsec
-	kernel /boot/vmlinuz-grsec
-	append initrd=/boot/initramfs-grsec root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
+default $KERNEL_FLAVOR
+label $KERNEL_FLAVOR
+	kernel /boot/vmlinuz-$KERNEL_FLAVOR
+	append initrd=/boot/initramfs-$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
 EOF
 	# fix the fstab
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
@@ -372,9 +368,15 @@ EOF
 	install_mounted_root /mnt
 }
 
+KERNEL_FLAVOR=grsec
+case "$(uname -r)" in
+	*-vs[0-9]*) KERNEL_FLAVOR=vserver;;
+esac
+
 # Parse args
-while getopts "ro:" opt; do
+while getopts "k:o:r" opt; do
 	case $opt in
+		k) KERNEL_FLAVOR="$OPTARG";;
 		r) USE_RAID=1;;
 		o) APKOVL="$OPTARG";;
 	esac
