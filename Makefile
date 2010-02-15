@@ -9,8 +9,7 @@ PREFIX		?=
 TMP		:= $(PV)
 
 LIB_FILES	:= libalpine.sh
-SBIN_FILES	:= albootstrap\
-		lbu\
+SBIN_FILES	:= lbu\
 		setup-ads\
 		setup-alpine\
 		setup-alpine-web\
