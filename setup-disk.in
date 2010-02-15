@@ -138,7 +138,11 @@ install_mounted_root() {
 
 	local apkflags="--quiet --progress --update-cache --clean-protected"
 	local pkgs=$(cat "$mnt"/var/lib/apk/world)
-	pkgs="$pkgs acct linux-grsec alpine-base"
+	local kernelpkg=linux-grsec
+	case "$(uname -r)" in
+		*-vs[0-9]*) kernelpkg=linux-vserver;;
+	esac
+	pkgs="$pkgs acct $kernelpkg alpine-base"
 	local repos=$(sed -e 's/\#.*//' /etc/apk/repositories)
 	local repoflags=
 	for i in $repos; do
