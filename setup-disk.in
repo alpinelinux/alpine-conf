@@ -368,17 +368,34 @@ EOF
 	install_mounted_root /mnt
 }
 
+usage() {
+	cat <<__EOF__
+usage: setup-disk [-hr] [-k kernelflavor] [-o apkovl] [MOUNTPOINT]
+
+Install alpine on harddisk.
+
+options:
+ -h  Show this help
+ -o  Restore system from given apkovl file
+ -k  Use kernelflavor instead of $KERNEL_FLAVOR
+ -r  Enable software raid1 with single disk
+
+__EOF__
+	exit 1
+}
+
 KERNEL_FLAVOR=grsec
 case "$(uname -r)" in
 	*-vs[0-9]*) KERNEL_FLAVOR=vserver;;
 esac
 
 # Parse args
-while getopts "k:o:r" opt; do
+while getopts "hk:o:r" opt; do
 	case $opt in
 		k) KERNEL_FLAVOR="$OPTARG";;
 		r) USE_RAID=1;;
 		o) APKOVL="$OPTARG";;
+		*) usage;;
 	esac
 done
 shift $(( OPTIND - 1))
