@@ -289,6 +289,8 @@ cmd_package() {
 		if [ -z "$DRYRUN" ]; then
 			if [ "x$pkg" = "x-" ]; then
 				cat "$tmppkg"
+			elif [ -b "$pkg" ] || [ -c "$pkg" ]; then
+				cat "$tmppkg" > "$pkg"
 			else
 				if cp "$tmppkg" "$pkg.new"; then
 					mv "$pkg.new" "$pkg"
@@ -321,6 +323,7 @@ usage: $PROGRAM list|ls
 
 cmd_list() {
 	VERBOSE="-v"
+	DRYRUN="-n"
 	cmd_package /dev/null
 }
 
