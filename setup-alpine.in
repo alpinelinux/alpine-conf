@@ -45,6 +45,7 @@ grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
 
 rc-update -q add networking boot 
 rc-update -q add acpid
+rc-update -q add cron
 
 # enable new hostname
 /etc/init.d/hostname --quiet restart
