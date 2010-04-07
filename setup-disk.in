@@ -180,7 +180,10 @@ label $KERNEL_FLAVOR
 	kernel /boot/vmlinuz-$KERNEL_FLAVOR
 	append initrd=/boot/initramfs-$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
 EOF
-	# fix the fstab
+	# generate the fstab
+	if [ -f "$mnt"/etc/fstab ]; then
+		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
+	fi
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
 
 	# install extlinux
@@ -362,10 +365,10 @@ EOF
 		rc-update --quiet add mdadm-raid boot
 	fi
 	rc-update --quiet add swap boot
+	install_mounted_root /mnt || return 1
 	# the func to generate fstab does not detect swap. add it manually
 	sed -i -e '/swap/d' /etc/fstab
 	echo -e "$(uuid_or_device $swap_dev)\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
-	install_mounted_root /mnt
 }
 
 usage() {
