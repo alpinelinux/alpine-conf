@@ -56,6 +56,10 @@ is_vmware() {
 		|| grep -q VMware /proc/ide/hd*/model 2>/dev/null
 }
 
+is_xen() {
+	[ -d /proc/xen ]
+}
+
 # Find the disk device from given partition
 disk_from_part() {
 	# we need convert cciss/c0d0* cciss!c0d0*...
@@ -171,8 +175,19 @@ install_mounted_root() {
 		pax_nouderef=
 	fi
 
-	# create an extlinux.conf
-	cat >"$mnt"/boot/extlinux.conf <<EOF
+	if is_xen; then
+		# create a menu.lst
+		mkdir -p "$mnt"/boot/grub
+		cat >"$mnt"/boot/grub/menu.lst <<EOF
+default 0
+title $KERNEL_FLAVOR
+root (hd0,0)
+kernel /boot/$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=ext3$raidmod quiet xen BOOT_IMAGE=/boot/$KERNEL_FLAVOR
+initrd=/boot/initramfs-$KERNEL_FLAVOR
+EOF
+	else
+		# create an extlinux.conf
+		cat >"$mnt"/boot/extlinux.conf <<EOF
 timeout 20
 prompt 1
 default $KERNEL_FLAVOR
@@ -180,6 +195,8 @@ label $KERNEL_FLAVOR
 	kernel /boot/vmlinuz-$KERNEL_FLAVOR
 	append initrd=/boot/initramfs-$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
 EOF
+	fi
+
 	# generate the fstab
 	if [ -f "$mnt"/etc/fstab ]; then
 		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
@@ -188,7 +205,7 @@ EOF
 
 	# install extlinux
 	apk add -q syslinux
-	extlinux -i $raidopt "$mnt"/boot/
+	is_xen || extlinux -i $raidopt "$mnt"/boot/
 
 	# unmount the partitions
 	umount $(awk '{print $2}' /proc/mounts | grep ^"$mnt" | sort -r)
@@ -390,6 +407,7 @@ __EOF__
 KERNEL_FLAVOR=grsec
 case "$(uname -r)" in
 	*-vs[0-9]*) KERNEL_FLAVOR=vserver;;
+	*-pae) KERNEL_FLAVOR=pae;;
 esac
 
 # Parse args
