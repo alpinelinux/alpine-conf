@@ -401,7 +401,7 @@ while getopts "hk:o:r" opt; do
 		*) usage;;
 	esac
 done
-shift $(( OPTIND - 1))
+shift $(( $OPTIND - 1))
 
 if [ -d "$1" ]; then
 	# install to given mounted root
