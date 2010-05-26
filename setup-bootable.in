@@ -1,6 +1,7 @@
 #!/bin/sh
 
 prog=${0##*/}
+version=@VERSION@
 
 cleanup() {
 	if [ -n "$uninstalls" ]; then
@@ -17,46 +18,45 @@ die() {
 	exit 1
 }
 
-# get alpine dev from boot cmdline
-get_alpine_dev() {
-
-}
-
 usage() {
 	cat <<__EOF__
+$prog $version
 usage: $prog [-hu] SOURCE [DEST]
 
 Copy the contents of SOURCE to DEST and make DEST bootable.
 
 SOURCE can be a directory or a ISO image. DEST can be a mounted directory 
-or a device. If DEST is ommitted it will be autodetected.
+or a device. If DEST is ommitted /media/usb will be used.
 
 Options:
- -d  Delete existing files first. Unsafe.
- -f  Force overwriting of existing syslinux.cfg
- -h  Show this help
- -s  Run syslinux and install mbr.bin to make it bootable
+ -f  Force overwrite existing files. Will overwrite syslinux.cfg if upgrade.
+ -h  Show this help.
+ -u  Upgrade mode. Keep existing syslinux.cfg and don't run syslinux.
+ -s  Force run syslinux, even if upgrade mode.
  -v  Verbose mode. Display whats going on.
 
 __EOF__
 	exit 1
 }
 
-while getopts "ih" opt; do
+while getopts "fhusv" opt; do
 	case "$opt" in
-	-d) delete_first=1;;
 	-f) force=1;;
 	-h) usage;;
+	-u) upgrade=1;;
 	-s) syslinux=1;;
 	-v) verbose=1;;
 	esac
 done
 
+shift $(($OPTIND - 1))
 
-src=${1:-/media/cdrom}
+src=${1}
 dest=${2:-/media/usb}
 
 srcmnt=${MNT:-/mnt}
+
+[ -z "$src" ] && usage
 
 # Find the srcdir, mount loopback if needed
 if [ -f "$src"/.alpine-release ]; then
@@ -68,10 +68,7 @@ else
 	[ -n "$verbose" ] && echo "Using image $src as source"
 	umounts="$srcmnt"
 	srcdir="$srcmnt"
-	if ! [ -f "$srcdir"/.alpine-release ]; then
-		echo "Warning! No .alpine-release found on image $src"
-		[ -z "$force" ] && die "Aborting."
-	fi
+	[ -f "$srcdir"/.alpine-release ] || die "No .alpine-release found on image $src"
 fi
 
 # find target device
@@ -87,6 +84,13 @@ elif [ -b "$dest" ]; then
 	mkdir -p "$destdir"
 	mount "$dest" "$destdir" || die "Failed to mount $dest on $destdir"
 	[ -n "$vserbose" ] && echo "Using $dest (mounted on $destdir) as target"
+fi
+
+# check if this files exist and not in upgrade mode
+if [ -z "$upgrade" ] && [ -z "$force" ]; then
+	for i in boot apks syslinux.cfg .alpine-release; do
+		[ -e "$destdir"/$i ] && die "$destdir/$i already exists. Aborting"
+	done
 fi
 
 # remove partial upgrades if any.
