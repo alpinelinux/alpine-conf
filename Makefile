@@ -20,7 +20,6 @@ SBIN_FILES	:= lbu\
 		setup-interfaces\
 		setup-keymap\
 		setup-mta\
-		setup-sendbug\
 		setup-acf\
 		setup-bootable\
 		update-conf
