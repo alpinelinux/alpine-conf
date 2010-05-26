@@ -18,6 +18,21 @@ die() {
 	exit 1
 }
 
+# find device for mountpoint
+find_dev() {
+	local mnt="${1%/}" # strip trailing /
+	awk "\$2 == \"$mnt\" {print \$1}" /proc/mounts
+}
+
+# check if given device is on usb bus
+on_usb_bus() {
+	local dev="$1"
+	[ -e /sys/block/$dev ] || return 1
+	local sysdev=$(readlink -f /sys/block/$dev/device)
+	test "${sysdev##*/usb[0-9]}" != "$sysdev"
+}
+
+
 usage() {
 	cat <<__EOF__
 $prog $version
@@ -41,11 +56,11 @@ __EOF__
 
 while getopts "fhusv" opt; do
 	case "$opt" in
-	-f) force=1;;
-	-h) usage;;
-	-u) upgrade=1;;
-	-s) syslinux=1;;
-	-v) verbose=1;;
+	f) force=1;;
+	h) usage;;
+	u) upgrade=1;;
+	s) syslinux=1;;
+	v) verbose=1;;
 	esac
 done
 
@@ -61,36 +76,60 @@ srcmnt=${MNT:-/mnt}
 # Find the srcdir, mount loopback if needed
 if [ -f "$src"/.alpine-release ]; then
 	srcdir="$src"
-	[ -n "$verbose" ] && echo "Using directory $src as source"
 else
 	mount -o loop -t iso9660 "$src" $srcmnt \
 		|| die "Failed to mount loopback $src"
-	[ -n "$verbose" ] && echo "Using image $src as source"
 	umounts="$srcmnt"
 	srcdir="$srcmnt"
 	[ -f "$srcdir"/.alpine-release ] || die "No .alpine-release found on image $src"
 fi
+to_version=$(cat "$srcdir"/.alpine-release)
 
 # find target device
 if [ -d "$dest" ]; then
+	dest=${dest%/} # strip trailing /
 	if ! awk '{print $2}' /proc/mounts | grep -q "^$dest\$"; then
 		mount "$dest" || die "Failed to mount $dest"
 		umounts="$umounts $dest"
 	fi
 	destdir="$dest"
-	[ -n "$vserbose" ] && echo "Using $destdir as target"
+	dest=$(find_dev "$destdir")
 elif [ -b "$dest" ]; then
 	destdir="/media/${dest##*/}"
 	mkdir -p "$destdir"
 	mount "$dest" "$destdir" || die "Failed to mount $dest on $destdir"
-	[ -n "$vserbose" ] && echo "Using $dest (mounted on $destdir) as target"
+	umounts="$umounts $destdir"
 fi
+[ -n "$verbose" ] && echo "Using $dest as target (mounted on $destdir)"
+
+
+# find parent device (i.e sda)
+dev="$dest"
+while [ -L "$dev" ]; do
+	dev=$(readlink -f $dev)
+done
+parent_dev=/dev/$(basename $(dirname /sys/block/*/$(basename $dev)))
 
 # check if this files exist and not in upgrade mode
 if [ -z "$upgrade" ] && [ -z "$force" ]; then
 	for i in boot apks syslinux.cfg .alpine-release; do
 		[ -e "$destdir"/$i ] && die "$destdir/$i already exists. Aborting"
 	done
+fi
+
+# check if its same version
+if [ -n "$upgrade" ] && [ -e "$destdir"/.alpine-release ]; then
+	from_version=$(cat "$destdir"/.alpine-release)
+	if [ -z "$force" ] && [ "$from_version" = "$to_version" ]; then
+		die "Source and target seems to have same version ($from_version). Aborting."
+	fi
+fi
+
+# Display what versions we are installing/upgrading
+if [ -n "$from_version" ]; then
+	echo "Upgrading $dest from $from_version to $to_version"
+else
+	echo "Copying $to_version to $dest (mounted on $destdir)"
 fi
 
 # remove partial upgrades if any.
@@ -105,23 +144,30 @@ available_space=$(df -k "$destdir" | tail -n 1 | awk '{print $4}')
 [ $available_space -lt $needed_space ] && die "Not enough space on $destdir. Aborting."
 
 # copy the files to .new
-echo "Copying new files to $destdir/.new..."
 mkdir -p "$destdir"/.new || die "Failed to create $destdir/.new"
 for i in boot apks syslinux.cfg .alpine-release; do
-	[ -n "$verbose" 
+	[ -n "$verbose" ] && echo "Copying $srcdir/$i to $destdir/.new/"
 	cp -a "$srcdir"/$i "$destdir"/.new/
 done
 
 # make sure files are really there before we replace existing
+[ -n "$verbose" ] && echo "Flushing cache..."
 sync
 
-echo "Replacing existing files..."
+[ -n "$verbose" ] && echo "Replacing existing files..."
 mkdir -p "$destdir"/.old || die "Failed to create $destdir/.old"
 
 # do we want keep existing syslinux.cfg?
 tomove="boot apks .alpine-release"
 if [ -n "$force" ] || ! [ -e "$destdir"/syslinux.cfg ]; then
 	tomove="$tomove syslinux.cfg"
+	# update syslinux.cfg unless device is on usb bus
+	# this is so we can boot from CF's and harddisk 
+	if ! on_usb_bus $parent_dev; then
+		[ -n "$verbose" ] && echo "Updating syslinux.cfg to use $dest"
+		sed -i -e "s/usbdisk/${dest##*/}/g" \
+			"$destdir"/.new/syslinux.cfg
+	fi
 fi
 
 # move current files to .old
@@ -142,27 +188,25 @@ sync
 
 
 # If we only copy then we are done.
-if [ -z "$syslinux" ]; then
+if [ -n "$upgrade" ] && [ -z "$syslinux" ]; then
 	cleanup
-	echo "Done."
 	exit 0
 fi
 
-echo "Making usb bootable..."
-dev=$(awk "\$2 == \"$dest\" {print \$1}" /proc/mounts)
-parent=$(basename $(dirname /sys/block/*/$(basename $dev)))
-if ! apk info -q -e syslinux; then
+echo "Making $dest bootable..."
+
+if ! [ -x "$(which syslinux)" ]; then
 	apk add -q syslinux || die "Failed to install syslinux"
 	uninstalls="syslinux"
 fi
 
-syslinux $dev
+syslinux $dest
 
-if [ -b /dev/$parent ]; then
-	dd if=/usr/share/syslinux/mbr.bin of=/dev/$parent
+if [ -b $parent_dev ]; then
+	dd if=/usr/share/syslinux/mbr.bin of=$parent_dev
 else
-	echo "Warning: Could not find the parent device for $dev"
+	echo "Warning: Could not find the parent device for $dest"
 fi
 
 cleanup
-echo "Done."
+sync
