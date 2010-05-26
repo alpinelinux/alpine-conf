@@ -22,7 +22,7 @@ SBIN_FILES	:= lbu\
 		setup-mta\
 		setup-sendbug\
 		setup-acf\
-		setup-bootable-usb\
+		setup-bootable\
 		update-conf
 
 SCRIPTS		:= $(LIB_FILES) $(SBIN_FILES)
