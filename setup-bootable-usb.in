@@ -1,11 +1,13 @@
 #!/bin/sh
 
+prog=${0##*/}
+
 cleanup() {
-	if [ "$install_syslinux" = "yes" ]; then
+	if [ -n "$uninstalls" ]; then
 		apk del -q syslinux
 	fi
-	if [ "$mount_dest" = "yes" ]; then
-		umount "$dest"
+	if [ -n "$umounts" ]; then
+		umount $umounts
 	fi
 }
 
@@ -15,31 +17,140 @@ die() {
 	exit 1
 }
 
-apk info -q -e syslinux || install_syslinux=yes
+# get alpine dev from boot cmdline
+get_alpine_dev() {
 
+}
 
-if [ "$install_syslinux" = "yes" ]; then
-	apk add -q syslinux
-fi
+usage() {
+	cat <<__EOF__
+usage: $prog [-hu] SOURCE [DEST]
+
+Copy the contents of SOURCE to DEST and make DEST bootable.
+
+SOURCE can be a directory or a ISO image. DEST can be a mounted directory 
+or a device. If DEST is ommitted it will be autodetected.
+
+Options:
+ -d  Delete existing files first. Unsafe.
+ -f  Force overwriting of existing syslinux.cfg
+ -h  Show this help
+ -s  Run syslinux and install mbr.bin to make it bootable
+ -v  Verbose mode. Display whats going on.
+
+__EOF__
+	exit 1
+}
+
+while getopts "ih" opt; do
+	case "$opt" in
+	-d) delete_first=1;;
+	-f) force=1;;
+	-h) usage;;
+	-s) syslinux=1;;
+	-v) verbose=1;;
+	esac
+done
+
 
 src=${1:-/media/cdrom}
-
-[ -f "$src"/.alpine-release ] || die "$src/.alpine-release not found"
-
-
 dest=${2:-/media/usb}
 
-if ! awk '{print $2}' /proc/mounts | grep -q "^$dest\$"; then
-	mount "$dest" || die "Failed to mount $dest"
-	mount_dest=yes
+srcmnt=${MNT:-/mnt}
+
+# Find the srcdir, mount loopback if needed
+if [ -f "$src"/.alpine-release ]; then
+	srcdir="$src"
+	[ -n "$verbose" ] && echo "Using directory $src as source"
+else
+	mount -o loop -t iso9660 "$src" $srcmnt \
+		|| die "Failed to mount loopback $src"
+	[ -n "$verbose" ] && echo "Using image $src as source"
+	umounts="$srcmnt"
+	srcdir="$srcmnt"
+	if ! [ -f "$srcdir"/.alpine-release ]; then
+		echo "Warning! No .alpine-release found on image $src"
+		[ -z "$force" ] && die "Aborting."
+	fi
 fi
 
-echo "Copying files..."
-cp -r "$src"/* "$src"/.[a-z]* "$dest" || die "Failed to copy files"
+# find target device
+if [ -d "$dest" ]; then
+	if ! awk '{print $2}' /proc/mounts | grep -q "^$dest\$"; then
+		mount "$dest" || die "Failed to mount $dest"
+		umounts="$umounts $dest"
+	fi
+	destdir="$dest"
+	[ -n "$vserbose" ] && echo "Using $destdir as target"
+elif [ -b "$dest" ]; then
+	destdir="/media/${dest##*/}"
+	mkdir -p "$destdir"
+	mount "$dest" "$destdir" || die "Failed to mount $dest on $destdir"
+	[ -n "$vserbose" ] && echo "Using $dest (mounted on $destdir) as target"
+fi
+
+# remove partial upgrades if any.
+rm -rf "$destdir"/.new "$destdir"/.old
+
+# check that we have the space we need
+needed_space=$(cd "$srcdir" && du -s -c boot apks syslinux.cfg .alpine-release | awk '$2 == "total" {print $1}')
+[ -n "$verbose" ] && echo "Needed space:    $needed_space kB"
+
+available_space=$(df -k "$destdir" | tail -n 1 | awk '{print $4}')
+[ -n "$verbose" ] && echo "Available space: $available_space kB"
+[ $available_space -lt $needed_space ] && die "Not enough space on $destdir. Aborting."
+
+# copy the files to .new
+echo "Copying new files to $destdir/.new..."
+mkdir -p "$destdir"/.new || die "Failed to create $destdir/.new"
+for i in boot apks syslinux.cfg .alpine-release; do
+	[ -n "$verbose" 
+	cp -a "$srcdir"/$i "$destdir"/.new/
+done
+
+# make sure files are really there before we replace existing
+sync
+
+echo "Replacing existing files..."
+mkdir -p "$destdir"/.old || die "Failed to create $destdir/.old"
+
+# do we want keep existing syslinux.cfg?
+tomove="boot apks .alpine-release"
+if [ -n "$force" ] || ! [ -e "$destdir"/syslinux.cfg ]; then
+	tomove="$tomove syslinux.cfg"
+fi
+
+# move current files to .old
+for i in $tomove; do
+	if [ -e "$destdir"/$i ]; then
+		mv "$destdir"/$i "$destdir"/.old/ || die "Failed to move $destdir/$i to $destdir/.old/"
+	fi
+done
+
+# move .new to current
+for i in $tomove; do
+	mv "$destdir"/.new/$i "$destdir"/ || die "Failed to move $destdir/.new/ to $destdir"
+done
+
+# cleanup
+[ -z "$keep_old" ] && rm -rf "$destdir"/.old "$destdir"/.new
+sync
+
+
+# If we only copy then we are done.
+if [ -z "$syslinux" ]; then
+	cleanup
+	echo "Done."
+	exit 0
+fi
 
 echo "Making usb bootable..."
 dev=$(awk "\$2 == \"$dest\" {print \$1}" /proc/mounts)
 parent=$(basename $(dirname /sys/block/*/$(basename $dev)))
+if ! apk info -q -e syslinux; then
+	apk add -q syslinux || die "Failed to install syslinux"
+	uninstalls="syslinux"
+fi
 
 syslinux $dev
 
@@ -50,3 +161,4 @@ else
 fi
 
 cleanup
+echo "Done."
