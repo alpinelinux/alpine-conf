@@ -20,7 +20,7 @@ get_default_addr() {
 		echo dhcp
 	else
 		ip addr show $1 | awk '/inet / {print $2}' | head -n 1 | sed 's:/.*::'
-	fi	
+	fi
 }
 
 get_default_mask() {
@@ -43,6 +43,7 @@ config_iface() {
 	local gateway
 	while invalid_ip $address ; do
 		address=`get_default_addr $iface`
+		[ -z "$address" ] && address="dhcp"
 		echon "Ip address for $iface? (or 'dhcp') [$address] "
 		default_read address $address
 		[ "$address" = "abort" ] && return
@@ -112,9 +113,9 @@ for i in *.conf ; do
 	echo "auto $iface" >> interfaces
 	echo "iface $iface inet $type" >> interfaces
 	[ "$type" = "static" ] || continue
-	echo "    address $address" >> interfaces
-	echo "    netmask $netmask" >> interfaces
-	[ "$gateway" ] && echo "    gateway $gateway" >> interfaces
+	echo -e "\taddress $address" >> interfaces
+	echo -e "\tnetmask $netmask" >> interfaces
+	[ "$gateway" ] && echo -e "\tgateway $gateway" >> interfaces
 done
 
 while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
