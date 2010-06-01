@@ -1,1 +1,17 @@
 *.tar.gz
+lbu
+libalpine.sh
+setup-acf
+setup-ads
+setup-alpine-web
+setup-alpine
+setup-bootable
+setup-cryptswap
+setup-desktop
+setup-disk
+setup-dns
+setup-hostname
+setup-interfaces
+setup-keymap
+setup-mta
+update-conf
