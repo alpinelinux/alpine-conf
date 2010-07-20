@@ -11,7 +11,7 @@ usage() {
 	exit 0;
 }
 
-pkgs="acf-core acf-alpine-baselayout acf-apk-tools"
+pkgs="acf-core acf-alpine-baselayout acf-apk-tools openssl"
 
 while getopts "ae:hl:n" opt ; do
 	case $opt in
