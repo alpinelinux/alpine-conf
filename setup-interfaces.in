@@ -41,7 +41,11 @@ config_iface() {
 	local address
 	local netmask
 	local gateway
-	while invalid_ip $address ; do
+
+	# use ipcalc to validate the address. we do accept /mask
+	# we are no interested in the result, only error code, so
+	# we send result to /dev/null
+	while ! ipcalc -s -m $address >/dev/null 2>&1; do
 		address=`get_default_addr $iface`
 		[ -z "$address" ] && address="dhcp"
 		echon "Ip address for $iface? (or 'dhcp') [$address] "
@@ -55,14 +59,23 @@ config_iface() {
 		fi
 	done
 
-	while invalid_ip $netmask ; do
+	# extract netmask if entered together with address
+	if [ "$address" != "${address%%/*}" ]; then
+		netmask=$(ipcalc -s -m $address | cut -d= -f2)
+	fi
+
+	# use ipcalc -m to validate netmask. we dont accept <addr>/mask suffix
+	# so we pass on a dummy mask to ipcalc.
+	while ! ipcalc -s -m $netmask/0 >/dev/null 2>&1; do
 		netmask=`get_default_mask $address`
 		echon "Netmask? [$netmask] "
 		default_read netmask "$netmask"
 		[ "$netmask" = "abort" ] && return
 	done
 
-	while invalid_ip $gateway ; do
+	# use ipcalc -m to validate netmask. we dont accept <addr>/mask suffix
+	# so we pass on a dummy mask to ipcalc.
+	while ! ipcalc -s -m $gateway/0 >/dev/null 2>&1; do
 		gateway=`get_default_gateway $iface`
 		[ -z "$gateway" ] && gateway=none
 		echon "Gateway? (or 'none') [$gateway] "
@@ -73,9 +86,13 @@ config_iface() {
 	done
 	
 	echo "type=static" > $iface.conf
-	echo "address=$address" >> $iface.conf
+	echo "address=${address%%/*}" >> $iface.conf  #strip off /mask if there
 	echo "netmask=$netmask" >> $iface.conf
 	echo "gateway=$gateway" >> $iface.conf
+
+	# print summary
+	echo "Configuration for $iface:"
+	sed 's/^/  /' $iface.conf
 	
 	rm $iface.noconf
 }
