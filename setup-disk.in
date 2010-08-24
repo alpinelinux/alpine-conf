@@ -202,6 +202,11 @@ EOF
 		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
 	fi
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
+	cat >>"$mnt"/etc/fstab <<EOF
+/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
+/dev/fd0	/media/floppy	vfat	noauto	0 0
+/dev/usbdisk	/media/usb	vfat	noauto	0 0
+EOF
 
 	# install extlinux
 	apk add -q syslinux
