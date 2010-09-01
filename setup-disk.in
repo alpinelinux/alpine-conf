@@ -211,10 +211,16 @@ EOF
 	# install extlinux
 	apk add -q syslinux
 	is_xen || extlinux -i $raidopt "$mnt"/boot/
+}
+
+unmount_partitions() {
+	local mnt="$1"
 
 	# unmount the partitions
 	umount $(awk '{print $2}' /proc/mounts | grep ^"$mnt" | sort -r)
+}
 
+fix_mbr_all_disks() {
 	# fix mbr for all disk devices
 	for i in $rootdisk; do
 		local errmsg
@@ -222,9 +228,6 @@ EOF
 		errmsg=$(dd if="$MBR" of=$i 2>&1) \
 			|| echo "$errmsg"
 	done
-	echo ""
-	echo "Installation is done. Please reboot."
-	apk del -q syslinux
 }
 
 # figure out decent default swap size in mega bytes
@@ -386,11 +389,25 @@ EOF
 		mdadm --detail --scan > /etc/mdadm.conf
 		rc-update --quiet add mdadm-raid boot
 	fi
-	rc-update --quiet add swap boot
-	install_mounted_root /mnt || return 1
-	# the func to generate fstab does not detect swap. add it manually
+
+	# manually add swap to local fstab and swapon (in case the install needs swap)
 	sed -i -e '/swap/d' /etc/fstab
 	echo -e "$(uuid_or_device $swap_dev)\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
+	swapon -a
+
+	install_mounted_root /mnt || return 1
+
+	# manually add swap to mounted fstab and add the swap service to the boot runlevel
+	echo -e "$(uuid_or_device $swap_dev)\tswap\t\tswap\tdefaults 0 0" >> /mnt/etc/fstab
+	chroot /mnt ""rc-update --quiet add swap boot""
+
+	unmount_partitions /mnt
+	swapoff -a
+	fix_mbr_all_disks
+
+	echo ""
+	echo "Installation is done. Please reboot."
+	apk del -q syslinux
 }
 
 usage() {
