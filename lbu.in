@@ -353,7 +353,7 @@ For possible ciphers, try: openssl -v
 The password used to encrypt the file, can either be specified with the -p
 option or using the PASSWORD environment variable.
 
-The environment varialbes can also be set in $LBU_CONF
+The environment variables can also be set in $LBU_CONF
 "
 	exit 1
 }
