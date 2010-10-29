@@ -234,7 +234,7 @@ cmd_package() {
 	init_tmpdir tmpdir
 
 	if [ -d "$LBU_PREPACKAGE" ]; then
-		run-parts "$LBU_PREPACKAGE" || return 1
+		run-parts "$LBU_PREPACKAGE" >&2 || return 1
 	fi
 
 	[ -n "$ENCRYPTION" ] && suff="$suff.$ENCRYPTION"
@@ -304,7 +304,7 @@ cmd_package() {
 		[ $rc -eq 0 ] && vecho "Created $pkg"
 	fi
 	if [ -d "$LBU_POSTPACKAGE" ]; then
-		run-parts "$LBU_POSTPACKAGE"
+		run-parts "$LBU_POSTPACKAGE" >&2
 	fi
 	return $rc
 }
