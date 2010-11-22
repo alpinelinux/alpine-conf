@@ -225,6 +225,17 @@ If <dirname> nor <filename> is not specified, a package named
 	exit 1
 }
 
+_gen_filelist() {
+	apk audit --backup -q
+	if [ -f var/lib/apk/world ]; then
+		echo var/lib/apk/world
+	fi
+}
+
+_gen_filelist_0() {
+	_gen_filelist | tr '\n' '\0'
+}
+
 cmd_package() {
 	local pkg="$1"
 	local rc=0
@@ -257,11 +268,6 @@ cmd_package() {
 		echo "      /var/lib/apk/world will be used."
 		rm -f etc/lbu/packages.list
 	fi
-	currentlist=$(apk audit --backup -q)
-	if [ -f var/lib/apk/world ]; then
-		currentlist="$currentlist var/lib/apk/world"
-	fi
-
 	# create tar archive
 	[ -f "$EXCLUDE_LIST" ] && excl="-X $EXCLUDE_LIST"
 	[ -f "$INCLUDE_LIST" ] && incl="-T $INCLUDE_LIST"
@@ -269,17 +275,19 @@ cmd_package() {
 		echo "Archiving the following files:" >&2
 		# we dont want to mess the tar output with the
 		# password prompt. Lets get the tar output first.
-		tar  $excl $incl -c -v $currentlist > /dev/null
+		_gen_filelist_0 | xargs -0 tar  $excl $incl -c -v > /dev/null
 		rc=$?
 	fi
 	if [ $rc -eq 0 ]; then
 		if [ -z "$ENCRYPTION" ]; then
-			tar $excl $incl -c $currentlist | gzip -c  >"$tmppkg"
+			_gen_filelist_0 | xargs -0 tar $excl $incl -c \
+				| gzip -c  >"$tmppkg"
 			rc=$?
 		else
 			set -- enc "-$ENCRYPTION" -salt
 			[ -n "$PASSWORD" ] && set -- "$@" -pass pass:"$PASSWORD"
-			tar $excl $incl -c $currentlist | gzip -c \
+			_gen_filelist_0 | xargs -0 tar $excl $incl -c \
+				| gzip -c \
 				| $OPENSSL "$@" > "$tmppkg"
 			rc=$?
 		fi
@@ -361,7 +369,7 @@ The environment variables can also be set in $LBU_CONF
 }
 
 cmd_commit() {
-	local media mnt statuslist tmplist currentlist
+	local media mnt statuslist tmplist
 	local incl excl outfile ovls lines
 
 	check_openssl
