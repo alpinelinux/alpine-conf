@@ -334,6 +334,7 @@ usage: $PROGRAM list|ls
 cmd_list() {
 	VERBOSE="-v"
 	DRYRUN="-n"
+	ENCRYPTION=
 	cmd_package /dev/null
 }
 
@@ -624,6 +625,7 @@ cmd_diff() {
 	init_tmpdir tmp
 	mkdir -p "$tmpdir/a" "$tmp/b"
 	unpack_apkovl "$tmp/a"
+	ENCRYPTION=
 	cmd_package - | tar -C "$tmp/b" -zx
 	cd "$tmp" && diff -ruN a b 
 }
