@@ -1,0 +1,35 @@
+#!/bin/sh
+
+PROGRAM=setup-apkrepos
+PREFIX=
+
+. $PREFIX/lib/libalpine.sh
+
+while true; do
+	printf "Enter repository branch : \n"
+	printf "1  1.10 \n"
+	printf "2  2.0\n"
+	printf "3  2.1\n"
+	printf "4  edge\n"
+	default_read REPO "3"
+	if [ $REPO -gt 0 ] && [ $REPO -lt 5 ]; then
+		break
+	fi
+done
+if [ $REPO == 1 ]; then
+	echo "v1.10 repos selected"
+	echo "http://dl-3.alpinelinux.org/alpine/v1.10/packages/main" >> /etc/apk/repositories
+	apk update
+elif [ $REPO == 2 ]; then
+	echo "v2.0 repos selected";
+	echo "http://dl-3.alpinelinux.org/alpine/v2.0/packages/main" >> /etc/apk/repositories
+	apk update
+elif [ $REPO == 3 ]; then
+	echo "v2.1 repos selected";
+	echo "http://dl-3.alpinelinux.org/alpine/v2.1/packages/main" >> /etc/apk/repositories
+	apk update
+elif [ $REPO == 4 ]; then
+	echo "edge repos selected";
+	echo "http://dl-3.alpinelinux.org/alpine/edge/packages/main" >> /etc/apk/repositories
+	apk update
+fi

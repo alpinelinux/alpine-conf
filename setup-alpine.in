@@ -67,3 +67,9 @@ _hn=${_hn%%.*}
 
 sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn)} ${_hn} localhost.localdomain localhost/" /etc/hosts
 
+printf "Setup internet apk repositories? [y/N]?"
+default_read setuprepos "n"
+
+if [ $setuprepos == "Y" ] || [ $setuprepos == "y" ]; then
+	$PREFIX/sbin/setup-apkrepos
+fi
