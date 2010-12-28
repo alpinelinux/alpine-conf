@@ -141,12 +141,11 @@ while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
 done
 
 if [ "$answer" = "yes" ]; then
-	[ -z "$EDITOR" ] && EDITOR=nano
-	case $EDITOR in
+	case "$EDITOR" in
 		nano)	pkg_inst nano;;
 		vim)	pkg_inst vim;;
 	esac
-	$EDITOR interfaces
+	${EDITOR:-vi} interfaces
 fi
 
 mkdir -p $ROOT/etc/network
