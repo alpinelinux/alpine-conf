@@ -5,31 +5,40 @@ PREFIX=
 
 . $PREFIX/lib/libalpine.sh
 
-while true; do
-	printf "Enter repository branch : \n"
-	printf "1  1.10 \n"
-	printf "2  2.0\n"
-	printf "3  2.1\n"
-	printf "4  edge\n"
-	default_read REPO "3"
-	if [ $REPO -gt 0 ] && [ $REPO -lt 5 ]; then
-		break
-	fi
-done
-if [ $REPO == 1 ]; then
-	echo "v1.10 repos selected"
-	echo "http://dl-3.alpinelinux.org/alpine/v1.10/packages/main" >> /etc/apk/repositories
-	apk update
-elif [ $REPO == 2 ]; then
-	echo "v2.0 repos selected";
-	echo "http://dl-3.alpinelinux.org/alpine/v2.0/packages/main" >> /etc/apk/repositories
-	apk update
-elif [ $REPO == 3 ]; then
-	echo "v2.1 repos selected";
-	echo "http://dl-3.alpinelinux.org/alpine/v2.1/packages/main" >> /etc/apk/repositories
-	apk update
-elif [ $REPO == 4 ]; then
-	echo "edge repos selected";
-	echo "http://dl-3.alpinelinux.org/alpine/edge/packages/main" >> /etc/apk/repositories
-	apk update
+# TODO: change tail command to a random mirror instead of last one in MIRRORS.txt
+MIRROR=`wget -O - http://www.alpinelinux.org/alpine/MIRRORS.txt 2>&1 | grep http | awk -F 'ETA' '{print $NF}' | tail -n 1`
+
+# Retrieve version from alpine-release if available
+if [ -e /etc/alpine-release ]; then
+	release=$(cut -f1 /etc/alpine-release)
+	case "$release" in
+		*_git*) repo="edge";;
+		[0-9]*.[0-9]*.[0-9]*)
+			# release in x.y.z format, cut last digit
+			repo=v${release%.[0-9]*};;
+	esac
+	echo "$repo"
+else
+	while true; do
+		printf "Enter repository branch from list below [v2.2]: \n"
+		# Retrieve list of versions available on mirror 2.0 and above
+		wget "$MIRROR" > /dev/null 2>&1 
+		availablerepos=""
+		for version in `links ./index.html -dump | grep "v[2-9]" | awk -F '/' '{print $1}'`; do
+
+			availablerepos="$availablerepos $version"
+		done
+		rm index.html
+		availablerepos="$availablerepos edge"
+		for i in `echo $availablerepos`; do
+			printf "$i\n"
+		done
+		default_read repo "v2.2"
+		if [ $repo ]; then
+			break
+		fi
+	done
 fi
+
+echo "${MIRROR}${repo}/main" >> /etc/apk/repositories
+apk update
