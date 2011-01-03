@@ -22,7 +22,7 @@ else
 	while true; do
 		printf "Enter repository branch from list below [v2.2]: \n"
 		# Retrieve list of versions available on mirror 2.0 and above
-		wget "$MIRROR" > /dev/null 2>&1 
+		wget "$MIRROR" > /dev/null 2>&1
 		availablerepos=""
 		for version in `links ./index.html -dump | grep "v[2-9]" | awk -F '/' '{print $1}'`; do
 
