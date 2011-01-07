@@ -399,7 +399,8 @@ EOF
 
 	# manually add swap to mounted fstab and add the swap service to the boot runlevel
 	echo -e "$(uuid_or_device $swap_dev)\tswap\t\tswap\tdefaults 0 0" >> /mnt/etc/fstab
-	chroot /mnt ""rc-update --quiet add swap boot""
+	chroot /mnt rc-update --quiet add swap boot
+	chroot /mnt rc-update --quiet add urandom boot
 
 	unmount_partitions /mnt
 	swapoff -a
