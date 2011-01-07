@@ -80,7 +80,7 @@ mount_once() {
 
 # check if given dir is read-only
 is_ro() {
-	local tmpfile=$(mktemp -p "$1")
+	local tmpfile=$(mktemp -p "$1" 2>/dev/null)
 	[ -z "$tmpfile" ] && return 0
 	rm -f "$tmpfile"
 	return 1
