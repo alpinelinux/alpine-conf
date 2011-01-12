@@ -60,6 +60,11 @@ is_xen() {
 	[ -d /proc/xen ]
 }
 
+# return true (0) if given device is lvm
+is_lvm() {
+	lvs "$1" >/dev/null 2>&1
+}
+
 # Find the disk device from given partition
 disk_from_part() {
 	# we need convert cciss/c0d0* cciss!c0d0*...
@@ -134,7 +139,7 @@ supported_boot_fs() {
 
 install_mounted_root() {
 	local mnt="$1" mnt_boot="$1" boot_fs= root_fs=
-	local features="ata base bootchart cdrom ext2 ext3 ext4 ide scsi usb"
+	local initfs_features="ata base ide scsi usb virtio"
 
 	rootdev=$(find_mount_dev "$mnt")
 	if [ -z "$rootdev" ]; then
@@ -142,6 +147,12 @@ install_mounted_root() {
 		return 1
 	fi
 	root_fs=$(find_mount_fs "$mnt")
+	initfs_features="$initfs_features $root_fs"
+
+	if is_lvm "$rootdev"; then
+		initfs_features="$initfs_features lvm"
+	fi
+
 
 	bootdev=$(find_mount_dev "$mnt"/boot)
 	if [ -z "$bootdev" ]; then
@@ -156,7 +167,7 @@ install_mounted_root() {
 	mbrdisk=$(disk_from_part $bootdev)
 	if [ -e "/sys/block/${rootdev#/dev/}/md" ]; then
 		local md=${rootdev#/dev/}
-		features="$features raid"
+		initfs_features="$initfs_features raid"
 		raidmod=$(cat /sys/block/$md/md/level)
 		raidmod=",$raidmod"
 		raidopt="-r"
@@ -185,6 +196,10 @@ install_mounted_root() {
 		echo "Restoring backup from $APKOVL to $rootdev..."
 		unpack_apkovl "$APKOVL" "$mnt" || return 1
 	fi
+
+	# generate mkinitfs.conf
+	mkdir -p "$mnt"/etc/mkinitfs
+	echo "features=\"$initfs_features\"" > "$mnt"/etc/mkinitfs/mkinitfs.conf
 
 	# generate the fstab
 	if [ -f "$mnt"/etc/fstab ]; then
