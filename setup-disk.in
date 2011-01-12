@@ -168,6 +168,13 @@ install_mounted_root() {
 			bootdisk="$bootdisk /dev/${i}"
 		done
 	fi
+	if [ -n "$VERBOSE" ]; then
+		echo "Root device:     $rootdev"
+		echo "Root filesystem: $root_fs"
+		echo "Boot device:     $bootdev"
+		echo "Boot filesystem: $boot_fs"
+		echo "Boot disk(s):    $bootdisk"
+	fi
 
 	if [ -z "$APKOVL" ]; then
 		ovlfiles=/tmp/ovlfiles
@@ -176,12 +183,25 @@ install_mounted_root() {
 		echo "Restoring backup from $APKOVL to $rootdev..."
 		unpack_apkovl "$APKOVL" "$mnt" || return 1
 	fi
+
+	# generate the fstab
+	if [ -f "$mnt"/etc/fstab ]; then
+		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
+	fi
+	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
+	cat >>"$mnt"/etc/fstab <<EOF
+/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
+/dev/fd0	/media/floppy	vfat	noauto	0 0
+/dev/usbdisk	/media/usb	vfat	noauto	0 0
+EOF
+
 	# remove the installed db in case its there so we force re-install
 	rm -f "$mnt"/var/lib/apk/installed
 	echon "Installing system on $rootdev: "
 	# apk reads config from target root so we need to copy the config
 	mkdir -p "$mnt"/etc/apk/keys/
 	cp /etc/apk/keys/* "$mnt"/etc/apk/keys/
+
 
 	local apkflags="--quiet --progress --update-cache --clean-protected"
 	local pkgs=$(cat "$mnt"/var/lib/apk/world)
@@ -224,17 +244,6 @@ label $KERNEL_FLAVOR
 	append initrd=/boot/initramfs-$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,${root_fs}${raidmod} ${pax_nouderef}quiet
 EOF
 	fi
-
-	# generate the fstab
-	if [ -f "$mnt"/etc/fstab ]; then
-		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
-	fi
-	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
-	cat >>"$mnt"/etc/fstab <<EOF
-/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
-/dev/fd0	/media/floppy	vfat	noauto	0 0
-/dev/usbdisk	/media/usb	vfat	noauto	0 0
-EOF
 
 	# install extlinux
 	apk add -q syslinux
@@ -462,11 +471,12 @@ case "$(uname -r)" in
 esac
 
 # Parse args
-while getopts "hk:o:r" opt; do
+while getopts "hk:o:rv" opt; do
 	case $opt in
 		k) KERNEL_FLAVOR="$OPTARG";;
 		r) USE_RAID=1;;
 		o) APKOVL="$OPTARG";;
+		v) VERBOSE=1;;
 		*) usage;;
 	esac
 done
