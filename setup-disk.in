@@ -153,7 +153,7 @@ install_mounted_root() {
 	boot_fs=$(find_mount_fs "$mnt_boot")
 	supported_boot_fs "$boot_fs" || return 1
 
-	bootdisk=$(disk_from_part $bootdev)
+	mbrdisk=$(disk_from_part $bootdev)
 	if [ -e "/sys/block/${rootdev#/dev/}/md" ]; then
 		local md=${rootdev#/dev/}
 		features="$features raid"
@@ -161,11 +161,13 @@ install_mounted_root() {
 		raidmod=",$raidmod"
 		raidopt="-r"
 		# get a list of slaves
-		bootdisk=
+		mbrdisk=
 		for i in /sys/block/$md/slaves/*; do
 			j=${i##*/}
 			i=${j%[0-9]*}
-			bootdisk="$bootdisk /dev/${i}"
+			if [ -b "/dev/$i" ]; then
+				mbrdisk="$mbrdisk /dev/${i}"
+			fi
 		done
 	fi
 	if [ -n "$VERBOSE" ]; then
@@ -173,7 +175,7 @@ install_mounted_root() {
 		echo "Root filesystem: $root_fs"
 		echo "Boot device:     $bootdev"
 		echo "Boot filesystem: $boot_fs"
-		echo "Boot disk(s):    $bootdisk"
+		echo "MBR disk(s):    $mbrdisk"
 	fi
 
 	if [ -z "$APKOVL" ]; then
@@ -259,7 +261,7 @@ unmount_partitions() {
 
 fix_mbr_all_disks() {
 	# fix mbr for all disk devices
-	for i in $bootdisk; do
+	for i in $mbrdisk; do
 		local errmsg
 		echo "Writing MBR to $i"
 		errmsg=$(dd if="$MBR" of=$i 2>&1) \
