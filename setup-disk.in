@@ -67,8 +67,10 @@ disk_from_part() {
 	for i in /sys/block/*/$part; do
 		i=${i%/*}
 		# ...and back from cciss!c0d0 to cciss/c0d0
-		echo "/dev/${i##*/}" | sed 's:!:/:g'
-		return 0
+		if [ -b "/dev/${i##*/}" ]; then
+			echo "/dev/${i##*/}" | sed 's:!:/:g'
+			return 0
+		fi
 	done
 	return 1
 }
@@ -108,23 +110,64 @@ unpack_apkovl() {
 	return 1
 }
 
-install_mounted_root() {
-	local mnt="$1"
-	local features="ata base bootchart cdrom ext2 ext3 ide scsi usb"
+# find filesystem of given mounted dir
+find_mount_fs() {
+	local mount_point="$1"
+	awk "\$2 == \"$mount_point\" {print \$3}" /proc/mounts | tail -n 1
+}
 
-	rootdev=$(awk "\$2 == \"$mnt\" { print \$1 }" /proc/mounts)
+# find device for given mounted dir
+find_mount_dev() {
+	local mnt="$1"
+	awk "\$2 == \"$mnt\" { print \$1 }" /proc/mounts | tail -n 1
+}
+
+supported_boot_fs() {
+	local supported="ext2 ext3 ext4"
+	local fs=
+	for fs in $supported; do
+		[ "$fs" = "$1" ] && return 0
+	done
+	echo "$1 is not supported. Only supported are: $supported" >&2
+	return 1
+}
+
+install_mounted_root() {
+	local mnt="$1" mnt_boot="$1" boot_fs= root_fs=
+	local features="ata base bootchart cdrom ext2 ext3 ext4 ide scsi usb"
+
+	rootdev=$(find_mount_dev "$mnt")
 	if [ -z "$rootdev" ]; then
 		echo "$mnt does not seem to be a mount point" >&2
 		return 1
 	fi
+	root_fs=$(find_mount_fs "$mnt")
 
-	local fs=$(awk "\$1 == \"$rootdev\" {print \$3}" /proc/mounts)
-	if [ "$fs" != "ext2" ] && [ "$fs" != "ext3" ]; then
-		echo "$fs is not supported. Only ext2 and ext3 are supported" >&2
-		return 1
+	bootdev=$(find_mount_dev "$mnt"/boot)
+	if [ -z "$bootdev" ]; then
+		bootdev=$rootdev
+	else
+		mnt_boot="$mnt"/boot
+		bootdev=$(find_mount_dev "$mnt_boot")
 	fi
-		
-	rootdisk=$(disk_from_part $rootdev)
+	boot_fs=$(find_mount_fs "$mnt_boot")
+	supported_boot_fs "$boot_fs" || return 1
+
+	bootdisk=$(disk_from_part $bootdev)
+	if [ -e "/sys/block/${rootdev#/dev/}/md" ]; then
+		local md=${rootdev#/dev/}
+		features="$features raid"
+		raidmod=$(cat /sys/block/$md/md/level)
+		raidmod=",$raidmod"
+		raidopt="-r"
+		# get a list of slaves
+		bootdisk=
+		for i in /sys/block/$md/slaves/*; do
+			j=${i##*/}
+			i=${j%[0-9]*}
+			bootdisk="$bootdisk /dev/${i}"
+		done
+	fi
 
 	if [ -z "$APKOVL" ]; then
 		ovlfiles=/tmp/ovlfiles
@@ -154,21 +197,6 @@ install_mounted_root() {
 	echo ""
 
 	# make things bootable
-	if [ -e "/sys/block/${rootdev#/dev/}/md" ]; then
-		local md=${rootdev#/dev/}
-		features="$features raid"
-		raidmod=$(cat /sys/block/$md/md/level)
-		raidmod=",$raidmod"
-		raidopt="-r"
-		# get a list of slaves
-		rootdisk=
-		for i in /sys/block/$md/slaves/*; do
-			j=${i##*/}
-			i=${j%[0-9]*}
-			rootdisk="$rootdisk /dev/${i}"
-		done
-	fi
-
 	if is_vmware; then
 		pax_nouderef="pax_nouderef "
 	else
@@ -182,7 +210,7 @@ install_mounted_root() {
 default 0
 title $KERNEL_FLAVOR
 root (hd0,0)
-kernel /boot/$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=ext3$raidmod quiet xen BOOT_IMAGE=/boot/$KERNEL_FLAVOR
+kernel /boot/$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=${root_fs}${raidmod} quiet xen BOOT_IMAGE=/boot/$KERNEL_FLAVOR
 initrd=/boot/initramfs-$KERNEL_FLAVOR
 EOF
 	else
@@ -193,7 +221,7 @@ prompt 1
 default $KERNEL_FLAVOR
 label $KERNEL_FLAVOR
 	kernel /boot/vmlinuz-$KERNEL_FLAVOR
-	append initrd=/boot/initramfs-$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,ext3$raidmod ${pax_nouderef}quiet
+	append initrd=/boot/initramfs-$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,${root_fs}${raidmod} ${pax_nouderef}quiet
 EOF
 	fi
 
@@ -222,7 +250,7 @@ unmount_partitions() {
 
 fix_mbr_all_disks() {
 	# fix mbr for all disk devices
-	for i in $rootdisk; do
+	for i in $bootdisk; do
 		local errmsg
 		echo "Writing MBR to $i"
 		errmsg=$(dd if="$MBR" of=$i 2>&1) \
@@ -470,11 +498,11 @@ else
 	rootdisk=
 	while ! in_list "$rootdisk" $disks "none" "abort"; do
 		echo "Available disks are: $disks"
-		echon "Which one is the root disk? (or none) [$1] "
+		echon "Which one is the root disk? (or 'none' for tmpfs root) [$1] "
 		default_read rootdisk $1
 	done
 	case "$rootdisk" in
-		none|abort) exit 0;;
+		abort) exit 0;;
 	esac
 fi
 
@@ -489,8 +517,11 @@ fi
 #	exit 1
 #fi
 
-rootdisk_dev=${rootdisk_dev:-"/dev/$rootdisk"}
+if [ "$rootdisk" = "none" ]; then
+	exit
+fi
 
+rootdisk_dev=${rootdisk_dev:-"/dev/$rootdisk"}
 if ! [ -b "$rootdisk_dev" ]; then
 	echo "$rootdisk_dev is not a block device" >&2
 	exit 1
