@@ -5,8 +5,44 @@ PREFIX=
 
 . $PREFIX/lib/libalpine.sh
 
-# TODO: change tail command to a random mirror instead of last one in MIRRORS.txt
-MIRROR=`wget -O - http://www.alpinelinux.org/alpine/MIRRORS.txt 2>&1 | grep http | awk -F 'ETA' '{print $NF}' | tail -n 1`
+echo -n "Fetching mirrors list... "
+MIRRORS=`wget -qO - http://www.alpinelinux.org/alpine/MIRRORS.txt 2>&1 || (echo "failed." && exit 1)`
+echo "done."
+
+echo -n "Finding fastest mirror... "
+mirror_lowest_rtt=-1
+for mirror in $MIRRORS; do
+	mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
+	tmp_mirror_nslookup=`nslookup $mirror_hostname | grep "Non-authoritative answer"`
+	if [ ${#tmp_mirror_nslookup} -gt 0 ]; then
+		tmp_mirror_time="`(time wget -qO - $mirror) 2>&1 || echo "E_MIRROR_FAILED"`"
+		tmp_mirror_time_failed=`echo $tmp_mirror_time | grep "E_MIRROR_FAILED"`
+		if [ ${#tmp_mirror_time_failed} -eq 0 ]; then
+			tmp_mirror_rtt=`echo "$tmp_mirror_time" | grep -E "^real" | sed -r "s/^real[ 	]+[0-9]+m[ 	]+([0-9]+)\.([0-9]+)s$/\1\2/"`
+
+			if [ $mirror_lowest_rtt -eq -1 ]; then
+				mirror_lowest_rtt=$tmp_mirror_rtt
+				mirror_lowest_rtt_hostname=$mirror_hostname
+			else
+				if [ $tmp_mirror_rtt -lt $mirror_lowest_rtt ]; then
+					mirror_lowest_rtt=$tmp_mirror_rtt
+					mirror_lowest_rtt_hostname=$mirror_hostname
+				fi
+			fi
+		fi
+	fi
+done
+echo "done."
+
+echo "Selected mirror: $mirror_lowest_rtt_hostname"
+
+# Get URL for lowest-RTT mirror (will be $mirror)
+for mirror in $MIRRORS; do
+	tmp_mirror_lowest_rtt_url="`echo $mirror | grep $mirror_lowest_rtt_hostname`"
+	if [ ${#tmp_mirror_lowest_rtt_url} -gt 0 ]; then
+		break
+	fi
+done
 
 # Retrieve version from alpine-release if available
 if [ -e /etc/alpine-release ]; then
@@ -17,12 +53,12 @@ if [ -e /etc/alpine-release ]; then
 			# release in x.y.z format, cut last digit
 			repo=v${release%.[0-9]*};;
 	esac
-	echo "$repo"
+	echo "Using current repository: $repo"
 else
 	while true; do
 		printf "Enter repository branch from list below [v2.2]: \n"
 		# Retrieve list of versions available on mirror 2.0 and above
-		wget "$MIRROR" > /dev/null 2>&1
+		wget "$mirror" > /dev/null 2>&1
 		availablerepos=""
 		for version in `links ./index.html -dump | grep "v[2-9]" | awk -F '/' '{print $1}'`; do
 
@@ -40,5 +76,61 @@ else
 	done
 fi
 
-echo "${MIRROR}${repo}/main" >> /etc/apk/repositories
-apk update
+echo -n "Updating /etc/apk/repositories... "
+APKREPOS=`cat /etc/apk/repositories`
+new_repos=
+main_repo_exists=0
+testing_repo_exists=0
+# Update existing repositories to the new mirror selection
+for apkrepo in $APKREPOS; do
+	case "$apkrepo" in
+		*${repo}/main*)
+			new_repo="${mirror}${repo}/main"
+			main_repo_exists=1
+			;;
+		*${repo}/testing*)
+			new_repo="${mirror}${repo}/testing"
+			testing_repo_exists=1
+			;;
+		*)
+			new_repo="$apkrepo"
+			;;
+	esac
+
+	if [ ${#new_repos} -eq 0 ]; then
+		new_repos="$new_repo"
+	else
+		new_repos=`echo -e "$new_repos\n$new_repo"`
+	fi
+done
+# Add main repo if not found
+if [ $main_repo_exists -eq 0 ]; then
+	new_repo="${mirror}${repo}/main"
+
+	if [ ${#new_repos} -eq 0 ]; then
+		new_repos="$new_repo"
+	else
+		new_repos=`echo -e "$new_repos\n$new_repo"`
+	fi
+fi
+# Add (commented out) testing repo if not found
+if [ $testing_repo_exists -eq 0 ]; then
+	new_repo="#${mirror}${repo}/testing"
+
+	if [ ${#new_repos} -eq 0 ]; then
+		new_repos="$new_repo"
+	else
+		new_repos=`echo -e "$new_repos\n$new_repo"`
+	fi
+fi
+# Update repositories file
+echo "$new_repos" > /etc/apk/repositories || (echo "failed." && exit 1)
+echo "done."
+
+echo -n "Updating repository indexes... "
+apkupdate_errors=`apk update 2>&1 | grep -E "^(WARNING|ERROR)" | sed -r "s/(WARNING|ERROR)/\n\1/g"`
+if [ ${#apkupdate_errors} -gt 0 ]; then
+	echo "$apkupdate_errors"
+else
+	echo "done."
+fi
