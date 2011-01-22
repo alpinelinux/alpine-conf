@@ -5,132 +5,340 @@ PREFIX=
 
 . $PREFIX/lib/libalpine.sh
 
-echo -n "Fetching mirrors list... "
-MIRRORS=`wget -qO - http://www.alpinelinux.org/alpine/MIRRORS.txt 2>&1 || (echo "failed." && exit 1)`
-echo "done."
+MIRRORS_PATH=/usr/share/alpine-mirrors/MIRRORS.txt
+MIRRORS=`cat $MIRRORS_PATH`
 
-echo -n "Finding fastest mirror... "
-mirror_lowest_rtt=-1
-for mirror in $MIRRORS; do
-	mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
-	tmp_mirror_nslookup=`nslookup $mirror_hostname | grep "Non-authoritative answer"`
-	if [ ${#tmp_mirror_nslookup} -gt 0 ]; then
-		tmp_mirror_time="`(time wget -qO - $mirror) 2>&1 || echo "E_MIRROR_FAILED"`"
-		tmp_mirror_time_failed=`echo $tmp_mirror_time | grep "E_MIRROR_FAILED"`
-		if [ ${#tmp_mirror_time_failed} -eq 0 ]; then
-			tmp_mirror_rtt=`echo "$tmp_mirror_time" | grep -E "^real" | sed -r "s/^real[ 	]+[0-9]+m[ 	]+([0-9]+)\.([0-9]+)s$/\1\2/"`
+RELEASES_PATH=/usr/share/alpine-mirrors/RELEASES.txt
+RELEASES=`cat $RELEASES_PATH`
 
-			if [ $mirror_lowest_rtt -eq -1 ]; then
-				mirror_lowest_rtt=$tmp_mirror_rtt
-				mirror_lowest_rtt_hostname=$mirror_hostname
-			else
-				if [ $tmp_mirror_rtt -lt $mirror_lowest_rtt ]; then
+APKREPOS_PATH=/etc/apk/repositories
+APKREPOS=`cat "$APKREPOS_PATH"`
+
+prompt_setup_method() {
+	while true; do
+		echo -e "\n1) Automatically pick a random mirror"
+		echo -e "2) Automatically pick the fastest mirror (must be connected)"
+		echo -e "3) Manually pick mirror from list"
+		echo -e "4) Manually enter local/remote mirror(s)"
+		echo -en "\nPlease select how to setup APK repositories [1]: "
+		default_read setup_method 1
+		case "$setup_method" in
+			1) setup_method="random"; break;;
+			2) setup_method="fastest"; break;;
+			3) setup_method="mirror_list"; break;;
+			4) setup_method="custom_mirror"; break;;
+		esac
+	done
+}
+
+get_random_mirror() {
+	local i=0
+	local mirror_count=`echo $MIRRORS | sed 's/ /\n/g' | wc -l`
+	local random_mirror_index=`expr $RANDOM % $mirror_count`
+	local random_mirror_hostname
+	
+	echo -n "Picking random mirror... "
+	for mirror in $MIRRORS; do
+		if [ $i -eq $random_mirror_index ]; then
+			break
+		fi
+		i=`expr $i + 1`
+	done
+
+	random_mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
+
+	echo "using $random_mirror_hostname."
+}
+
+get_fastest_mirror() {
+	local mirror_hostname
+	local tmp_mirror_nslookup
+	local tmp_mirror_time
+	local tmp_mirror_time_failed
+	local tmp_mirror_rtt
+	local mirror_lowest_rtt
+	local mirror_lowest_rtt_hostname
+	local mirror_lowest_rtt_mirror
+
+	echo -n "Finding fastest mirror... "
+	mirror_lowest_rtt=-1
+	for mirror in $MIRRORS; do
+		mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
+		tmp_mirror_nslookup=`nslookup $mirror_hostname | grep "Non-authoritative answer"`
+		if [ ${#tmp_mirror_nslookup} -gt 0 ]; then
+			tmp_mirror_time="`(time wget -qO - $mirror) 2>&1 || echo "E_MIRROR_FAILED"`"
+			tmp_mirror_time_failed=`echo $tmp_mirror_time | grep "E_MIRROR_FAILED"`
+			if [ ${#tmp_mirror_time_failed} -eq 0 ]; then
+				tmp_mirror_rtt=`echo "$tmp_mirror_time" | grep -E "^real" | sed -r "s/^real[ 	]+[0-9]+m[ 	]+([0-9]+)\.([0-9]+)s$/\1\2/"`
+
+				if [ $mirror_lowest_rtt -eq -1 ]; then
 					mirror_lowest_rtt=$tmp_mirror_rtt
 					mirror_lowest_rtt_hostname=$mirror_hostname
+					mirror_lowest_rtt_mirror=$mirror
+				else
+					if [ $tmp_mirror_rtt -lt $mirror_lowest_rtt ]; then
+						mirror_lowest_rtt=$tmp_mirror_rtt
+						mirror_lowest_rtt_hostname=$mirror_hostname
+						mirror_lowest_rtt_mirror=$mirror
+					fi
 				fi
 			fi
 		fi
+	done
+	echo "using $mirror_lowest_rtt_hostname."
+	mirror=$mirror_lowest_rtt_mirror
+}
+
+prompt_mirror_list() {
+	local i
+	local mirror_hostname
+	local mirror_index
+	local mirror_count=`echo $MIRRORS | sed 's/ /\n/g' | wc -l`
+
+	while true; do
+		echo -en "\n"
+		i=1
+		for mirror in $MIRRORS; do
+			mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
+			echo "$i) $mirror_hostname"
+			i=`expr $i + 1`
+		done
+
+		echo -en "\nPlease select a mirror from the above list: "
+		read mirror_index
+		case $mirror_index in
+			[1-9]|[1-9][0-9])
+				if [ $mirror_index -ge 1 -a $mirror_index -le $mirror_count ]; then
+					break
+				fi
+				;;
+		esac
+	done
+
+	set $MIRRORS
+	_tmp="\$$mirror_index"
+	mirror=`eval echo $_tmp`
+	mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
+
+	echo "Mirror chosen: $mirror_hostname"
+}
+
+add_repo() {
+	local new_repo=$1
+
+	if [ ${#new_repos} -eq 0 ]; then
+		new_repos="$new_repo"
+	else
+		new_repos=`echo -e "$new_repos\n$new_repo"`
 	fi
-done
-echo "done."
+}
 
-echo "Selected mirror: $mirror_lowest_rtt_hostname"
+prompt_custom_mirror() {
+	local start_fresh=$1
+	local called_by_self=${2-0}
+	local new_repo
+	local add_another
 
-# Get URL for lowest-RTT mirror (will be $mirror)
-for mirror in $MIRRORS; do
-	tmp_mirror_lowest_rtt_url="`echo $mirror | grep $mirror_lowest_rtt_hostname`"
-	if [ ${#tmp_mirror_lowest_rtt_url} -gt 0 ]; then
-		break
+	while true; do
+		echo -e "\nPlease enter a local path or URL to the mirror:"
+		read new_repo
+		case "$new_repo" in
+			/*|http://*|ftp://*|https://*)
+				# Allow for local paths and http/ftp/https URLs
+				break;;
+		esac
+	done
+
+	add_repo "$new_repo"
+
+	while true; do
+		echo -en "\nDo you want to add another mirror? [y/n]: "
+		read add_another
+		case "$add_another" in
+			[yY]) prompt_custom_mirror 0 1; break;;
+			[nN]) break;;
+		esac
+	done
+
+	if [ $called_by_self -eq 0 ]; then
+		echo -n "Updating ${APKREPOS_PATH}... "
+		if [ $start_fresh -eq 1 ]; then
+			echo "$new_repos" > "$APKREPOS_PATH" || die "failed."
+		elif [ $start_fresh -eq 0 ]; then
+			echo "$new_repos" >> "$APKREPOS_PATH" || die "failed."
+		fi
+		echo "done."
 	fi
-done
+}
 
-# Retrieve version from alpine-release if available
-if [ -e /etc/alpine-release ]; then
-	release=$(cut -f1 /etc/alpine-release)
+prompt_clear_repositories() {
+	local start_fresh
+
+	while true; do
+		echo -en "\nBefore adding custom mirrors, do you want to clear\n"
+		echo -n "${APKREPOS_PATH} and start fresh? [y/n]: "
+		read start_fresh
+		case "$start_fresh" in
+			[yY]) start_fresh=1; break;;
+			[nN]) start_fresh=0; break;;
+		esac
+	done
+
+	prompt_custom_mirror $start_fresh
+}
+
+prompt_alpine_release() {
+	local i
+	local release_index
+	local release_count=`echo $RELEASES | sed 's/ /\n/g' | wc -l`
+
+	while true; do
+		echo -en "\n"
+		i=1
+		for _release in $RELEASES; do
+			echo "$i) $_release"
+			i=`expr $i + 1`
+		done
+
+		echo -n "Please select a release from the above list: "
+		read release_index
+		case "$release_index" in
+			[1-9]|[1-9][0-9])
+				if [ $release_index -ge 1 -a $release_index -le $release_count ]; then
+					break
+				fi
+				;;
+		esac
+	done
+
+	set $RELEASES
+	_tmp="\$$release_index"
+	release=`eval echo $_tmp`
+
+	echo "Release chosen: $release"
+}
+
+get_alpine_release() {
+	local change_release
+
+	release=`apk version "alpine-base" 2>/dev/null | sed -r -e '/alpine-base/!d' -e 's/alpine-base-//' -e 's/^([^ 	]+)-r[0-9]+[ 	]*=.*$/\1/'`
 	case "$release" in
-		*_git*) repo="edge";;
+		*_git*) release="edge";;
 		[0-9]*.[0-9]*.[0-9]*)
 			# release in x.y.z format, cut last digit
-			repo=v${release%.[0-9]*};;
+			release=v${release%.[0-9]*};;
 	esac
-	echo "Using current repository: $repo"
-else
 	while true; do
-		printf "Enter repository branch from list below [v2.2]: \n"
-		# Retrieve list of versions available on mirror 2.0 and above
-		wget "$mirror" > /dev/null 2>&1
-		availablerepos=""
-		for version in `links ./index.html -dump | grep "v[2-9]" | awk -F '/' '{print $1}'`; do
-
-			availablerepos="$availablerepos $version"
-		done
-		rm index.html
-		availablerepos="$availablerepos edge"
-		for i in `echo $availablerepos`; do
-			printf "$i\n"
-		done
-		default_read repo "v2.2"
-		if [ $repo ]; then
-			break
-		fi
+		echo -en "\nSystem release is: $release.  Change? (i.e., to upgrade) [y/N]: "
+		default_read change_release "n"
+		case "$change_release" in
+			[nN]) break;;
+			[yY]) prompt_alpine_release; break;;
+		esac
 	done
-fi
+}
 
-echo -n "Updating /etc/apk/repositories... "
-APKREPOS=`cat /etc/apk/repositories`
-new_repos=
-main_repo_exists=0
-testing_repo_exists=0
-# Update existing repositories to the new mirror selection
-for apkrepo in $APKREPOS; do
-	case "$apkrepo" in
-		*${repo}/main*)
-			new_repo="${mirror}${repo}/main"
-			main_repo_exists=1
-			;;
-		*${repo}/testing*)
-			new_repo="${mirror}${repo}/testing"
-			testing_repo_exists=1
-			;;
-		*)
-			new_repo="$apkrepo"
-			;;
-	esac
+update_apk_repositories() {
+	new_repos=
+	local apkrepo
+	local new_repo
+	local main_repo_exists=0
+	local testing_repo_exists=0
+	local enable_testing
 
-	if [ ${#new_repos} -eq 0 ]; then
-		new_repos="$new_repo"
-	else
-		new_repos=`echo -e "$new_repos\n$new_repo"`
+	# Prompt user to enable the testing repo.
+	while true; do
+		echo -en "\nDo you want to enable the testing repository? [y/N]: "
+		default_read enable_testing "n"
+		case "$enable_testing" in
+			[yY]) enable_testing=1; break;;
+			[nN]) enable_testing=0; break;;
+		esac
+	done
+
+	# Update existing repositories to the new mirror selection
+	echo -n "Updating ${APKREPOS_PATH}... "
+	for apkrepo in $APKREPOS; do
+		case "$apkrepo" in
+			*/alpine/*/main*)
+				new_repo="${mirror}${release}/main"
+				main_repo_exists=1
+				;;
+			*/alpine/*/testing*)
+				if [ $enable_testing -eq 1 ]; then
+					new_repo="${mirror}${release}/testing"
+				else
+					new_repo="#${mirror}${release}/testing"
+				fi
+				testing_repo_exists=1
+				;;
+			*)
+				new_repo="$apkrepo"
+				;;
+		esac
+
+		add_repo "$new_repo"
+	done
+
+	# Add main repo if not found
+	if [ $main_repo_exists -eq 0 ]; then
+		add_repo "${mirror}${release}/main"
 	fi
-done
-# Add main repo if not found
-if [ $main_repo_exists -eq 0 ]; then
-	new_repo="${mirror}${repo}/main"
 
-	if [ ${#new_repos} -eq 0 ]; then
-		new_repos="$new_repo"
-	else
-		new_repos=`echo -e "$new_repos\n$new_repo"`
+	# Add testing repo if not found
+	if [ $testing_repo_exists -eq 0 ]; then
+		if [ $enable_testing -eq 1 ]; then
+			add_repo "${mirror}${release}/testing"
+		else
+			add_repo "#${mirror}${release}/testing"
+		fi
 	fi
-fi
-# Add (commented out) testing repo if not found
-if [ $testing_repo_exists -eq 0 ]; then
-	new_repo="#${mirror}${repo}/testing"
 
-	if [ ${#new_repos} -eq 0 ]; then
-		new_repos="$new_repo"
-	else
-		new_repos=`echo -e "$new_repos\n$new_repo"`
-	fi
-fi
-# Update repositories file
-echo "$new_repos" > /etc/apk/repositories || (echo "failed." && exit 1)
-echo "done."
-
-echo -n "Updating repository indexes... "
-apkupdate_errors=`apk update 2>&1 | grep -E "^(WARNING|ERROR)" | sed -r "s/(WARNING|ERROR)/\n\1/g"`
-if [ ${#apkupdate_errors} -gt 0 ]; then
-	echo "$apkupdate_errors"
-else
+	# Update repositories file
+	echo "$new_repos" > "$APKREPOS_PATH" || die "failed."
 	echo "done."
+}
+
+prompt_update_apk() {
+	while true; do
+		echo -e "\nDo you want to update repository indexes?"
+		echo -n "(You must be connected when using remote repositories.) [y/N]: "
+		default_read update_repo_indexes "n"
+		case "$update_repo_indexes" in
+			[yY])
+				echo -n "Updating repository indexes... "
+				local apkupdate_errors=`apk update 2>&1 | grep -E "^(WARNING|ERROR)" | sed -r "s/(WARNING|ERROR)/\n\1/g"`
+				if [ ${#apkupdate_errors} -gt 0 ]; then
+					echo "$apkupdate_errors"
+				else
+					echo "done."
+				fi
+				break
+			;;
+			[nN]) break;;
+		esac
+	done
+}
+
+# main
+prompt_setup_method
+
+if [ "$setup_method" == "random" ]; then
+	get_random_mirror
+elif [ "$setup_method" == "fastest" ]; then
+	get_fastest_mirror
+elif [ "$setup_method" == "mirror_list" ]; then
+	prompt_mirror_list
+elif [ "$setup_method" == "custom_mirror" ]; then
+	prompt_clear_repositories	# calls prompt_custom_mirror
 fi
+
+if [ "$setup_method" != "custom_mirror" ]; then
+	# It doesn't make sense to run get_alpine_release for custom_mirror
+	get_alpine_release
+
+	# prompt_custom_mirror() will update the apk repositories file instead
+	update_apk_repositories
+fi
+
+prompt_update_apk
