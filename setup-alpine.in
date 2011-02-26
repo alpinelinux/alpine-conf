@@ -73,3 +73,10 @@ default_read setuprepos "n"
 if [ $setuprepos == "Y" ] || [ $setuprepos == "y" ]; then
 	$PREFIX/sbin/setup-apkrepos
 fi
+
+printf "Change timezone (default is UTC)? [y/N]?"
+default_read setuptz "n"
+
+if [ $setuptz == "Y" ] || [ $setuprtz == "y" ]; then
+	$PREFIX/sbin/setup-timezone
+fi

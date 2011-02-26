@@ -23,6 +23,7 @@ SBIN_FILES	:= lbu\
 		setup-mta\
 		setup-acf\
 		setup-bootable\
+		setup-timezone\
 		update-conf
 
 SCRIPTS		:= $(LIB_FILES) $(SBIN_FILES)
