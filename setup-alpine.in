@@ -77,6 +77,6 @@ fi
 printf "Change timezone (default is UTC)? [y/N]?"
 default_read setuptz "n"
 
-if [ $setuptz == "Y" ] || [ $setuprtz == "y" ]; then
+if [ $setuptz == "Y" ] || [ $setuptz == "y" ]; then
 	$PREFIX/sbin/setup-timezone
 fi
