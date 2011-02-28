@@ -16,17 +16,16 @@ APKREPOS=`cat "$APKREPOS_PATH"`
 
 prompt_setup_method() {
 	while true; do
-		echo -e "\n1) Automatically pick a random mirror"
-		echo -e "2) Automatically pick the fastest mirror (must be connected)"
-		echo -e "3) Manually pick mirror from list"
-		echo -e "4) Manually enter local/remote mirror(s)"
-		echo -en "\nPlease select how to setup APK repositories [1]: "
-		default_read setup_method 1
+		echo "How would you like to set up internet apk repositories?"
+		echo -e "r) Automatically pick a random mirror"
+		echo -e "f) Automatically pick the fastest mirror (must be connected)"
+		echo -e "l) Manually pick mirror from list"
+		echo -e "e) Manually enter local/remote mirror(s)"
+		echo -e "n) Do not configure internet apk repositories at all"
+		echo -en "\nPlease select how to setup APK repositories (r/f/l/e/n) [n]: "
+		default_read setup_method n
 		case "$setup_method" in
-			1) setup_method="random"; break;;
-			2) setup_method="fastest"; break;;
-			3) setup_method="mirror_list"; break;;
-			4) setup_method="custom_mirror"; break;;
+			r|f|l|e|n) break;;
 		esac
 	done
 }
@@ -319,15 +318,12 @@ prompt_update_apk() {
 # main
 prompt_setup_method
 
-if [ "$setup_method" == "random" ]; then
-	get_random_mirror
-elif [ "$setup_method" == "fastest" ]; then
-	get_fastest_mirror
-elif [ "$setup_method" == "mirror_list" ]; then
-	prompt_mirror_list
-elif [ "$setup_method" == "custom_mirror" ]; then
-	prompt_clear_repositories	# calls prompt_custom_mirror
-fi
+case "$setup_method" in
+	r) get_random_mirror;;
+	f) get_fastest_mirror;;
+	l) prompt_mirror_list;;
+	e) prompt_clear_repositories;;
+esac
 
 if [ "$setup_method" != "custom_mirror" ]; then
 	# It doesn't make sense to run get_alpine_release for custom_mirror
