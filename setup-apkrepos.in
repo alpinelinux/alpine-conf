@@ -6,13 +6,19 @@ PREFIX=
 . $PREFIX/lib/libalpine.sh
 
 MIRRORS_PATH=/usr/share/alpine-mirrors/MIRRORS.txt
-MIRRORS=`cat $MIRRORS_PATH`
+if [ -z "$MIRRORS" ] && [ -r "$MIRRORS_PATH" ]; then
+	MIRRORS=`cat $MIRRORS_PATH`
+fi
 
 RELEASES_PATH=/usr/share/alpine-mirrors/RELEASES.txt
-RELEASES=`cat $RELEASES_PATH`
+if [ -z "$RELEASES" ] && [ -r "$RELEASES_PATH" ]; then
+	RELEASES=`cat $RELEASES_PATH`
+fi
 
 APKREPOS_PATH=/etc/apk/repositories
-APKREPOS=`cat "$APKREPOS_PATH"`
+if [ -r "$APKREPOS_PATH" ]; then
+	APKREPOS=`cat "$APKREPOS_PATH"`
+fi
 
 prompt_setup_method() {
 	while true; do
@@ -84,6 +90,11 @@ get_fastest_mirror() {
 	mirror=$mirror_lowest_rtt_mirror
 }
 
+get_hostname_from_url() {
+	local n=${1#*://}
+	echo ${n%%/*}
+}
+
 prompt_mirror_list() {
 	local i
 	local mirror_hostname
@@ -91,12 +102,11 @@ prompt_mirror_list() {
 	local mirror_count=`echo $MIRRORS | sed 's/ /\n/g' | wc -l`
 
 	while true; do
-		echo -en "\n"
+		echo ""
 		i=1
 		for mirror in $MIRRORS; do
-			mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
-			echo "$i) $mirror_hostname"
-			i=`expr $i + 1`
+			echo "$i) $(get_hostname_from_url $mirror)"
+			i=$(($i + 1))
 		done
 
 		echo -en "\nPlease select a mirror from the above list: "
@@ -111,11 +121,8 @@ prompt_mirror_list() {
 	done
 
 	set $MIRRORS
-	_tmp="\$$mirror_index"
-	mirror=`eval echo $_tmp`
-	mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
-
-	echo "Mirror chosen: $mirror_hostname"
+	eval "mirror=\$$mirror_index"
+	echo "Mirror chosen: $(get_hostname_from_url $mirror)"
 }
 
 add_repo() {
