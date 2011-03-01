@@ -3,8 +3,9 @@ lbu
 libalpine.sh
 setup-acf
 setup-ads
-setup-alpine-web
 setup-alpine
+setup-alpine-web
+setup-apkrepos
 setup-bootable
 setup-cryptswap
 setup-desktop
@@ -14,4 +15,5 @@ setup-hostname
 setup-interfaces
 setup-keymap
 setup-mta
+setup-timezone
 update-conf
