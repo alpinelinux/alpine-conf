@@ -306,12 +306,7 @@ prompt_update_apk() {
 		case "$update_repo_indexes" in
 			[yY])
 				echo -n "Updating repository indexes... "
-				local apkupdate_errors=`apk update 2>&1 | grep -E "^(WARNING|ERROR)" | sed -r "s/(WARNING|ERROR)/\n\1/g"`
-				if [ ${#apkupdate_errors} -gt 0 ]; then
-					echo "$apkupdate_errors"
-				else
-					echo "done."
-				fi
+				apk update -q && echo "done."
 				break
 			;;
 			[nN]) break;;
