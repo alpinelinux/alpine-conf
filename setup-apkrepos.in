@@ -332,7 +332,7 @@ case "$setup_method" in
 	e) prompt_clear_repositories;;
 esac
 
-if [ "$setup_method" != "custom_mirror" ]; then
+if [ "$setup_method" != "e" ]; then
 	# It doesn't make sense to run get_alpine_release for custom_mirror
 	get_alpine_release
 
