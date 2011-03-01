@@ -63,38 +63,33 @@ get_random_mirror() {
 }
 
 get_fastest_mirror() {
-	local mirror_hostname
 	local tmp_mirror_nslookup
 	local tmp_mirror_time
 	local tmp_mirror_time_failed
 	local tmp_mirror_rtt
 	local mirror_lowest_rtt
-	local mirror_lowest_rtt_hostname
 	local mirror_lowest_rtt_mirror
 
 	echo -n "Finding fastest mirror... "
 	mirror_lowest_rtt=-1
 	for mirror in $MIRRORS; do
-		mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
 		tmp_mirror_time="`(time wget -qO - $mirror) 2>&1 || echo "E_MIRROR_FAILED"`"
 		tmp_mirror_time_failed=`echo $tmp_mirror_time | grep "E_MIRROR_FAILED"`
 		if [ ${#tmp_mirror_time_failed} -eq 0 ]; then
 			tmp_mirror_rtt=`echo "$tmp_mirror_time" | grep -E "^real" | sed -r "s/^real[ 	]+[0-9]+m[ 	]+([0-9]+)\.([0-9]+)s$/\1\2/"`
 			if [ $mirror_lowest_rtt -eq -1 ]; then
 				mirror_lowest_rtt=$tmp_mirror_rtt
-				mirror_lowest_rtt_hostname=$mirror_hostname
 				mirror_lowest_rtt_mirror=$mirror
 			else
 				if [ $tmp_mirror_rtt -lt $mirror_lowest_rtt ]; then
 					mirror_lowest_rtt=$tmp_mirror_rtt
-					mirror_lowest_rtt_hostname=$mirror_hostname
 					mirror_lowest_rtt_mirror=$mirror
 				fi
 			fi
 		fi
 	done
-	echo "using $mirror_lowest_rtt_hostname."
 	mirror=$mirror_lowest_rtt_mirror
+	echo "using $(get_hostname_from_url $mirror)"
 }
 
 prompt_mirror_list() {
