@@ -20,6 +20,11 @@ if [ -r "$APKREPOS_PATH" ]; then
 	APKREPOS=`cat "$APKREPOS_PATH"`
 fi
 
+get_hostname_from_url() {
+	local n=${1#*://}
+	echo ${n%%/*}
+}
+
 prompt_setup_method() {
 	while true; do
 		echo "How would you like to set up internet apk repositories?"
@@ -50,9 +55,7 @@ get_random_mirror() {
 		i=`expr $i + 1`
 	done
 
-	random_mirror_hostname=`echo $mirror | awk -F '://' '{print $2}' | awk -F '/' '{print $1}'`
-
-	echo "using $random_mirror_hostname."
+	echo "using $(get_hostname_from_url $mirror)"
 }
 
 get_fastest_mirror() {
@@ -88,11 +91,6 @@ get_fastest_mirror() {
 	done
 	echo "using $mirror_lowest_rtt_hostname."
 	mirror=$mirror_lowest_rtt_mirror
-}
-
-get_hostname_from_url() {
-	local n=${1#*://}
-	echo ${n%%/*}
 }
 
 prompt_mirror_list() {
