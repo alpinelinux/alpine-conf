@@ -48,7 +48,7 @@ prompt_setup_method() {
 get_random_mirror() {
 	local i=0
 	local mirror_count=$(count $MIRRORS)
-	local random_mirror_index=`expr $RANDOM % $mirror_count`
+	local random_mirror_index=$(( $RANDOM % $mirror_count ))
 	local random_mirror_hostname
 	
 	echo -n "Picking random mirror... "
@@ -56,7 +56,7 @@ get_random_mirror() {
 		if [ $i -eq $random_mirror_index ]; then
 			break
 		fi
-		i=`expr $i + 1`
+		i=$(( $i + 1 ))
 	done
 
 	echo "using $(get_hostname_from_url $mirror)"
@@ -201,7 +201,7 @@ prompt_alpine_release() {
 		i=1
 		for _release in $RELEASES; do
 			echo "$i) $_release"
-			i=`expr $i + 1`
+			i=$(( $i + 1 ))
 		done
 
 		echo -n "Please select a release from the above list: "
