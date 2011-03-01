@@ -128,7 +128,7 @@ find_mount_dev() {
 }
 
 supported_boot_fs() {
-	local supported="ext2 ext3 ext4"
+	local supported="ext2 ext3 ext4 btrfs"
 	local fs=
 	for fs in $supported; do
 		[ "$fs" = "$1" ] && return 0
