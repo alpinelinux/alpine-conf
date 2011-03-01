@@ -25,6 +25,10 @@ get_hostname_from_url() {
 	echo ${n%%/*}
 }
 
+count() {
+	echo $1 | sed 's/ /\n/g' | wc -l
+}
+
 prompt_setup_method() {
 	while true; do
 		echo "How would you like to set up internet apk repositories?"
@@ -43,7 +47,7 @@ prompt_setup_method() {
 
 get_random_mirror() {
 	local i=0
-	local mirror_count=`echo $MIRRORS | sed 's/ /\n/g' | wc -l`
+	local mirror_count=$(count $MIRRORS)
 	local random_mirror_index=`expr $RANDOM % $mirror_count`
 	local random_mirror_hostname
 	
@@ -97,7 +101,7 @@ prompt_mirror_list() {
 	local i
 	local mirror_hostname
 	local mirror_index
-	local mirror_count=`echo $MIRRORS | sed 's/ /\n/g' | wc -l`
+	local mirror_count=$(count $MIRRORS)
 
 	while true; do
 		echo ""
@@ -190,7 +194,7 @@ prompt_clear_repositories() {
 prompt_alpine_release() {
 	local i
 	local release_index
-	local release_count=`echo $RELEASES | sed 's/ /\n/g' | wc -l`
+	local release_count=$(count $RELEASES)
 
 	while true; do
 		echo -en "\n"
