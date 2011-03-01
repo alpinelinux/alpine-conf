@@ -26,8 +26,11 @@ SBIN_FILES	:= lbu\
 		setup-timezone\
 		update-conf
 
+BIN_FILES	:= uniso
+
 SCRIPTS		:= $(LIB_FILES) $(SBIN_FILES)
 SCRIPT_SOURCES	:= $(addsuffix .in,$(SCRIPTS))
+
 
 ETC_LBU_FILES	:= lbu.conf
 EXTRA_DIST	:= Makefile README
@@ -61,7 +64,10 @@ SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
 	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@
 
 .PHONY:	all apk clean dist install uninstall
-all:	$(SCRIPTS)
+all:	$(SCRIPTS) $(BIN_FILES)
+
+uniso:	uniso.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 apk:	$(APKF)
 
@@ -75,7 +81,9 @@ $(TARBZ2): $(DIST_FILES)
 	$(TAR) -cjf $@ $(TMP)
 	rm -rf $(TMP)
 	
-install:
+install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES)
+	install -m 755 -d $(DESTDIR)/$(PREFIX)/bin
+	install -m 755 $(BIN_FILES) $(DESTDIR)$(PREFIX)/bin
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/sbin
 	install -m 755 $(SBIN_FILES) $(DESTDIR)/$(PREFIX)/sbin
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/lib
@@ -92,5 +100,5 @@ uninstall:
 	done
 	
 clean:
-	rm -rf $(SCRIPTS) $(TMP) $(TARBZ2)
+	rm -rf $(SCRIPTS) $(BIN_FILES) $(TMP) $(TARBZ2)
 
