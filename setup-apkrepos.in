@@ -92,6 +92,15 @@ get_fastest_mirror() {
 	echo "using $(get_hostname_from_url $mirror)"
 }
 
+show_mirror_list() {
+	local mirror i=1
+	echo ""
+	for mirror in $MIRRORS; do
+		echo "$i) $(get_hostname_from_url $mirror)"
+		i=$(($i + 1))
+	done
+}
+
 prompt_mirror_list() {
 	local i
 	local mirror_hostname
@@ -99,13 +108,7 @@ prompt_mirror_list() {
 	local mirror_count=$(count $MIRRORS)
 
 	while true; do
-		echo ""
-		i=1
-		for mirror in $MIRRORS; do
-			echo "$i) $(get_hostname_from_url $mirror)"
-			i=$(($i + 1))
-		done
-
+		show_mirror_list
 		echo -en "\nPlease select a mirror from the above list: "
 		read mirror_index
 		case $mirror_index in
