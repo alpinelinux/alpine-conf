@@ -301,21 +301,6 @@ update_apk_repositories() {
 	echo "done."
 }
 
-prompt_update_apk() {
-	while true; do
-		echo -e "\nDo you want to update repository indexes?"
-		echo -n "(You must be connected when using remote repositories.) [y/N]: "
-		default_read update_repo_indexes "n"
-		case "$update_repo_indexes" in
-			[yY])
-				echo -n "Updating repository indexes... "
-				apk update -q && echo "done."
-				break
-			;;
-			[nN]) break;;
-		esac
-	done
-}
 
 # main
 prompt_setup_method
@@ -335,4 +320,6 @@ if [ "$setup_method" != "e" ]; then
 	update_apk_repositories
 fi
 
-prompt_update_apk
+echo -n "Updating repository indexes... "
+apk update -q && echo "done."
+
