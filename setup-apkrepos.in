@@ -5,20 +5,6 @@ PREFIX=
 
 . $PREFIX/lib/libalpine.sh
 
-MIRRORS_PATH=/usr/share/alpine-mirrors/MIRRORS.txt
-if [ -z "$MIRRORS" ] && [ -r "$MIRRORS_PATH" ]; then
-	MIRRORS=`cat $MIRRORS_PATH`
-fi
-
-RELEASES_PATH=/usr/share/alpine-mirrors/RELEASES.txt
-if [ -z "$RELEASES" ] && [ -r "$RELEASES_PATH" ]; then
-	RELEASES=`cat $RELEASES_PATH`
-fi
-
-APKREPOS_PATH=/etc/apk/repositories
-if [ -r "$APKREPOS_PATH" ]; then
-	APKREPOS=`cat "$APKREPOS_PATH"`
-fi
 
 get_hostname_from_url() {
 	local n=${1#*://}
@@ -135,6 +121,28 @@ edit_repositories() {
 }
 
 # main
+# install alpine-mirrors if its not already there
+to_uninstall=
+if ! apk info -q -e alpine-mirrors; then
+	apk add -q alpine-mirrors
+	to_uninstall=alpine-mirrors
+fi
+
+MIRRORS_PATH=/usr/share/alpine-mirrors/MIRRORS.txt
+if [ -z "$MIRRORS" ] && [ -r "$MIRRORS_PATH" ]; then
+	MIRRORS=`cat $MIRRORS_PATH`
+fi
+
+RELEASES_PATH=/usr/share/alpine-mirrors/RELEASES.txt
+if [ -z "$RELEASES" ] && [ -r "$RELEASES_PATH" ]; then
+	RELEASES=`cat $RELEASES_PATH`
+fi
+
+APKREPOS_PATH=/etc/apk/repositories
+if [ -r "$APKREPOS_PATH" ]; then
+	APKREPOS=`cat "$APKREPOS_PATH"`
+fi
+
 get_alpine_release
 default_answer=f
 changed=
@@ -159,4 +167,9 @@ done
 if [ -n "$changed" ]; then
 	echo -n "Updating repository indexes... "
 	apk update -q && echo "done."
+fi
+
+# clean up
+if [ -n "$to_uninstall" ]; then
+	apk del -q alpine-mirrors
 fi
