@@ -43,6 +43,9 @@ grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
 # set root password
 [ -z "$NOCOMMIT" ] && while ! passwd ; do echo "Please retry." ; done
 
+# pick timezone
+$PREFIX/sbin/setup-timezone
+
 rc-update -q add networking boot 
 rc-update -q add acpid
 rc-update -q add cron
@@ -67,16 +70,5 @@ _hn=${_hn%%.*}
 
 sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn)} ${_hn} localhost.localdomain localhost/" /etc/hosts
 
-printf "Setup internet apk repositories? [y/N]?"
-default_read setuprepos "n"
+$PREFIX/sbin/setup-apkrepos
 
-if [ $setuprepos == "Y" ] || [ $setuprepos == "y" ]; then
-	$PREFIX/sbin/setup-apkrepos
-fi
-
-printf "Change timezone (default is UTC)? [y/N]?"
-default_read setuptz "n"
-
-if [ $setuptz == "Y" ] || [ $setuptz == "y" ]; then
-	$PREFIX/sbin/setup-timezone
-fi

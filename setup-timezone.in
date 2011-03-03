@@ -3,7 +3,7 @@
 PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
-echo "Available areas:"
+echo "Available timezone areas:"
 echo "1) Australia"
 echo "2) Europe"
 echo "3) US & Canada"
@@ -11,7 +11,7 @@ echo "4) Asia"
 echo "5) Central & South America"
 echo "6) Custom"
 echo "7) UTC"
-echo "Choose an available area [7]:"
+echo -n "What timezone are you in? [7]: "
 
 default_read areanum 7
 
@@ -23,7 +23,7 @@ if [ $areanum -eq 1 ]; then
 	echo "4) Adelaide (CST-9:30CDT-10:30)"
 	echo "5) Darwin (CST-9:30)"
 	echo "6) Hobart (EST-10EDT-11)"
-	echo "Select a timezone [1]:"
+	echo -n "Select a timezone [1]: "
 	default_read timezone 1
 	case $timezone in
 	1) timezonecode="EST-10EST-11";;
@@ -45,7 +45,7 @@ elif [ $areanum -eq 2 ]; then
 	echo "6) London (GMT+0BST-1)"
 	echo "7) Moscow (MSK-3MSD)"
 	echo "8) St Petersburg (MST-3MDT)"
-	echo "Select a timezone [1]:"
+	echo -n "Select a timezone [1]: "
 	default_read timezone 1
 	case $timezone in
 	1) timezonecode="CET1-CEST-2";;
@@ -70,7 +70,7 @@ elif [ $areanum -eq 3 ]; then
 	echo "8) Atlantic (AST4ADT)"
 	echo "9) Atlantic New Brunswick (AST4ADT)"
 	echo "10) Newfoundland (NST+3:30NDT+2:30)"
-	echo "Select a timezone [1]:"
+	echo -n "Select a timezone [1]: "
 	default_read timezone 1
 	case $timezone in
 	1) timezonecode="HAW10";;
@@ -90,7 +90,7 @@ elif [ $areanum -eq 4 ]; then
 	echo "1) Jakarta (WIB-7)"
 	echo "2) Singapore (SGT-8)"
 	echo "3) Ulaanbaatar (ULAT-8ULAST)"
-	echo "Select a timezone [1]:"
+	echo -n "Select a timezone [1]: "
 	default_read timezone 1
 	case $timezone in
 	1) timezonecode="WIB-7";;
@@ -103,7 +103,7 @@ elif [ $areanum -eq 5 ]; then
 	echo "1) Brazil (BRST+3BRDT+2)"
 	echo "2) Argentina (UTC+3)"
 	echo "3) Central America (CST+6)"
-	echo "Select a timezone [1]:"
+	echo -n "Select a timezone [1]: "
 	default_read timezone 1
 	case $timezone in
 	1) timezonecode="BRST+3BRDT+2";;
@@ -112,7 +112,7 @@ elif [ $areanum -eq 5 ]; then
 	*) timezonecode="UTC";;
 	esac
 elif [ $areanum -eq 6 ]; then
-	echo "Type in a timezone (e.g. EST-10 or CET-1CEST-2):"
+	echo -e "Type in a timezone (e.g. EST-10 or CET-1CEST-2):"
 	default_read timezonecode UTC
 else
 	timezonecode="UTC"
