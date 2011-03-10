@@ -367,21 +367,68 @@ static int queue_reader(
 
 static int queue_dirent(struct uniso_context *ctx, void *isode, const char *name);
 
+static int link_or_clone(const char *src, const char *dst, size_t bytes)
+{
+	int src_fd, dst_fd;
+	int r;
+	static char buf[ISOFS_TMPBUF_SIZE];
+
+	if (link(src, dst) == 0)
+		return 0;
+
+	src_fd = open(src, O_RDONLY);
+	if (src_fd < 0)
+		return src_fd;
+
+	dst_fd = open(dst, O_WRONLY | O_TRUNC | O_CREAT, 0777);
+	if (dst_fd < 0) {
+		close(src_fd);
+		return dst_fd;
+	}
+
+	while (bytes) {
+		size_t now = bytes;
+		if (now > sizeof(buf))
+			now = sizeof(buf);
+		r = read(src_fd, buf, now);
+		if (r < 0)
+			return r;
+
+		r = write(dst_fd, buf, now);
+		if (r < 0)
+			return r;
+		bytes -= now;
+	}
+	close(dst_fd);
+	close(src_fd);
+	return 0;
+}
+
 static int uniso_read_file(struct uniso_context *ctx,
 			   struct uniso_reader *rd)
 {
 	struct uniso_dirent *dir = container_of(rd, struct uniso_dirent, reader);
 	int fd, rc;
+	static size_t prev_offset = 0;
+	static char prev_name[512];
+	static size_t prev_size = 0;
 
 	// FIXME: seems that hardlinked files get the same file extent
 	// shared. need to fix extraction of such files.
 	if (ctx->pos > rd->offset) {
-		if (ctx->loglevel > 0)
+		rc = 1;
+		if (rd->offset == prev_offset)
+			rc = link_or_clone(prev_name, dir->name, prev_size);
+		if (ctx->loglevel > 0 && rc != 0)
 			fprintf(stderr, "WARNING: Not extracting '%s' as "
 					"it's sharing file-extents with "
 					"another file\n", dir->name);
 		return 0;
 	}
+
+	prev_offset = rd->offset;
+	strncpy(prev_name, dir->name, sizeof(prev_name));
+	prev_size = dir->size;
 
 	fd = open(dir->name, O_WRONLY | O_TRUNC | O_CREAT, 0777);
 	if (fd < 0)
