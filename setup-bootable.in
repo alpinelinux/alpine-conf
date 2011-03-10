@@ -4,6 +4,7 @@ prog=${0##*/}
 version=@VERSION@
 
 cleanup() {
+	cd /
 	if [ -n "$uninstalls" ]; then
 		apk del -q syslinux
 	fi
@@ -32,6 +33,17 @@ on_usb_bus() {
 	test "${sysdev##*/usb[0-9]}" != "$sysdev"
 }
 
+# mount source as loopback and set srcdir
+mount_srcdir() {
+	local srcmnt=${MNT:-/mnt}
+	mount -o loop -t iso9660 "$src" $srcmnt \
+		|| die "Failed to mount loopback $src"
+	umounts="$srcmnt"
+	srcdir="$srcmnt"
+	if ! [ -f "$srcdir"/.alpine-release ]; then
+		die "No .alpine-release found on image $src"
+	fi
+}
 
 usage() {
 	cat <<__EOF__
@@ -69,21 +81,23 @@ shift $(($OPTIND - 1))
 src=${1}
 dest=${2:-/media/usb}
 
-srcmnt=${MNT:-/mnt}
 
 [ -z "$src" ] && usage
 
-# Find the srcdir, mount loopback if needed
+srcdir=
+# Find the srcdir or srcurl. mount loopback if needed
 if [ -f "$src"/.alpine-release ]; then
 	srcdir="$src"
 else
-	mount -o loop -t iso9660 "$src" $srcmnt \
-		|| die "Failed to mount loopback $src"
-	umounts="$srcmnt"
-	srcdir="$srcmnt"
-	[ -f "$srcdir"/.alpine-release ] || die "No .alpine-release found on image $src"
+	case "$src" in
+	http://*|ftp://*) srcurl="$src";;
+	*) mount_srcdir;;
+	esac
 fi
-to_version=$(cat "$srcdir"/.alpine-release)
+
+if [ -n "$srcdir" ]; then
+	to_version=$(cat "$srcdir"/.alpine-release)
+fi
 
 # find target device
 if [ -d "$dest" ]; then
@@ -120,7 +134,7 @@ fi
 # check if its same version
 if [ -n "$upgrade" ] && [ -e "$destdir"/.alpine-release ]; then
 	from_version=$(cat "$destdir"/.alpine-release)
-	if [ -z "$force" ] && [ "$from_version" = "$to_version" ]; then
+	if [ -z "$force" ] && [ -n "$to_version" ] && [ "$from_version" = "$to_version" ]; then
 		die "Source and target seems to have same version ($from_version). Aborting."
 	fi
 fi
@@ -134,26 +148,33 @@ fi
 
 # remove partial upgrades if any.
 rm -rf "$destdir"/.new "$destdir"/.old
+mkdir -p "$destdir"/.new || die "Failed to create $destdir/.new"
 
 # check that we have the space we need
 # we calculate on MB since shell arthimetic gets problems with big disks
 # and bytes.
-needed_space=$(cd "$srcdir" && du -m -s -c boot apks syslinux.cfg .alpine-release | awk '$2 == "total" {print $1}')
-[ -n "$verbose" ] && echo "Needed space:    $needed_space MiB"
-
 free_blocks=$(stat -f -c "%f" "$destdir")
 block_size=$(stat -f -c "%s" "$destdir")
 blocks_per_mb=$(( 1024 * 1024 / $block_size))
 available_space=$(( $free_blocks / $blocks_per_mb ))
 [ -n "$verbose" ] && echo "Available space: $available_space MiB"
-[ $available_space -lt $needed_space ] && die "Not enough space on $destdir. Aborting."
 
-# copy the files to .new
-mkdir -p "$destdir"/.new || die "Failed to create $destdir/.new"
-for i in boot apks syslinux.cfg .alpine-release; do
-	[ -n "$verbose" ] && echo "Copying $srcdir/$i to $destdir/.new/"
-	cp -a "$srcdir"/$i "$destdir"/.new/
-done
+if [ -n "$srcdir" ]; then
+	needed_space=$(cd "$srcdir" && du -m -s -c boot apks syslinux.cfg .alpine-release | awk '$2 == "total" {print $1}')
+	[ -n "$verbose" ] && echo "Needed space:    $needed_space MiB"
+	[ $available_space -lt $needed_space ] \
+		&& die "Not enough space on $destdir. Aborting."
+
+	# copy the files to .new
+	for i in boot apks syslinux.cfg .alpine-release; do
+		[ -n "$verbose" ] && echo "Copying $srcdir/$i to $destdir/.new/"
+		cp -a "$srcdir"/$i "$destdir"/.new/
+	done
+elif [ -n "$srcurl" ]; then
+	cd "$destdir"/.new
+	${WGET:-wget} -O - "$srcurl" | uniso \
+		|| die "Failed to download or extract $srcurl"
+fi
 
 # make sure files are really there before we replace existing
 [ -n "$verbose" ] && echo "Flushing cache..."
