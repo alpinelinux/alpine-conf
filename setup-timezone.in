@@ -3,120 +3,73 @@
 PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
-echo "Available timezone areas:"
-echo "1) Australia"
-echo "2) Europe"
-echo "3) US & Canada"
-echo "4) Asia"
-echo "5) Central & South America"
-echo "6) Custom"
-echo "7) UTC"
-echo -n "What timezone are you in? [7]: "
 
-default_read areanum 7
+zroot=/usr/share/zoneinfo
 
-if [ $areanum -eq 1 ]; then
-	echo "Available Timezones:"
-	echo "1) Melbourne, Canberra, Sydney (EST-10EST-11)"
-	echo "2) Perth (WST-8)"
-	echo "3) Brisbane (EST-10)"
-	echo "4) Adelaide (CST-9:30CDT-10:30)"
-	echo "5) Darwin (CST-9:30)"
-	echo "6) Hobart (EST-10EDT-11)"
-	echo -n "Select a timezone [1]: "
-	default_read timezone 1
-	case $timezone in
-	1) timezonecode="EST-10EST-11";;
-	2) timezonecode="WST-8";;
-	3) timezonecode="EST-10";;
-	4) timezonecode="CST-9:30CDT-10:30";;
-	5) timezonecode="CST-9:30";;
-	6) timezonecode="EST-10EDT-11";;
-	*) timezonecode="UTC";;
-	esac
-	
-elif [ $areanum -eq 2 ]; then
-	echo "Available Timezones:"
-	echo "1) Amsterdam, Barcelona, Berlin, Brussels, Budapest, Copenhagen, Geneva, Madrid, Oslo, Paris, Prague, Rome, or Stockholm (CET1-CEST-2)"
-	echo "2) Athens, Helsinki, Tallinn (EET-2EEST-3)"
-	echo "3) Dublin (GMT+0IST-1)"
-	echo "4) Kyiv (EET-2EEST)"
-	echo "5) Lisbon (WET-0WEST-1)"
-	echo "6) London (GMT+0BST-1)"
-	echo "7) Moscow (MSK-3MSD)"
-	echo "8) St Petersburg (MST-3MDT)"
-	echo -n "Select a timezone [1]: "
-	default_read timezone 1
-	case $timezone in
-	1) timezonecode="CET1-CEST-2";;
-	2) timezonecode="EET-2EEST-3";;
-	3) timezonecode="GMT+0IST-1";;
-	4) timezonecode="EET-2EEST";;
-	5) timezonecode="WET-0WEST-1";;
-	6) timezonecode="GMT+0BST-1";;
-	7) timezonecode="MSK-3MSD";;
-	8) timezonecode="MST-3MDT";;
-	*) timezonecode="UTC";;
-	esac
-elif [ $areanum -eq 3 ]; then
-	echo "Available Timezones:"
-	echo "1) Hawaii (HAW10)"
-	echo "2) Alaska (AKST9AKDT)"
-	echo "3) Pacific (PST8PDT)"
-	echo "4) Mountain (MST7MDT)"
-	echo "5) Mountain - Arizona (MST7)"
-	echo "6) Central (CST6CDT)"
-	echo "7) Eastern (EST5EDT)"
-	echo "8) Atlantic (AST4ADT)"
-	echo "9) Atlantic New Brunswick (AST4ADT)"
-	echo "10) Newfoundland (NST+3:30NDT+2:30)"
-	echo -n "Select a timezone [1]: "
-	default_read timezone 1
-	case $timezone in
-	1) timezonecode="HAW10";;
-	2) timezonecode="AKST9AKDT";;
-	3) timezonecode="PST8PDT";;
-	4) timezonecode="MST7MDT";;
-	5) timezonecode="MST7";;
-	6) timezonecode="CST6CDT";;
-	7) timezonecode="EST5EDT";;
-	8) timezonecode="AST4ADT";;
-	9) timezonecode="AST4ADT";;
-	10) timezonecode="NST+3:30NDT+2:30";;
-	*) timezonecode="UTC";;
-	esac
-elif [ $areanum -eq 4 ]; then
-	echo "Available Timezones:"
-	echo "1) Jakarta (WIB-7)"
-	echo "2) Singapore (SGT-8)"
-	echo "3) Ulaanbaatar (ULAT-8ULAST)"
-	echo -n "Select a timezone [1]: "
-	default_read timezone 1
-	case $timezone in
-	1) timezonecode="WIB-7";;
-	2) timezonecode="SGT-8)";;
-	3) timezonecode="ULAT-8ULAST)";;
-	*) timezonecode="UTC";;
-	esac
-elif [ $areanum -eq 5 ]; then
-	echo "Available Timezones:"
-	echo "1) Brazil (BRST+3BRDT+2)"
-	echo "2) Argentina (UTC+3)"
-	echo "3) Central America (CST+6)"
-	echo -n "Select a timezone [1]: "
-	default_read timezone 1
-	case $timezone in
-	1) timezonecode="BRST+3BRDT+2";;
-	2) timezonecode="UTC+3";;
-	3) timezonecode="CST+6";;
-	*) timezonecode="UTC";;
-	esac
-elif [ $areanum -eq 6 ]; then
-	echo -e "Type in a timezone (e.g. EST-10 or CET-1CEST-2):"
-	default_read timezonecode UTC
-else
-	timezonecode="UTC"
+show_tz_list() {
+	local i z= list=
+	local path="$zroot/$1"
+	[ -d "$path" ] || return 1
+
+	for i in $(find $path -maxdepth 1); do
+		case $i in
+		*.tab|*/) continue;;
+		esac
+		if [ -d "$i" ]; then
+			z="$z ${i##*/}/"
+		else
+			z="$z ${i##*/}"
+		fi
+	done
+	( cd $path && ls --color=never -Cd $z )
+}
+
+valid_tz() {
+	find $zroot -type f -a -not -name '*.tab' -a -not -name 'Factory' \
+		| xargs posixtz | sort | uniq | grep -q -w "$1"
+}
+
+if ! apk info -q -e tzdata; then
+	apk add -q tzdata && apkdel="tzdata"
 fi
-echo "Timezone: $timezonecode"
-echo "$timezonecode" > /etc/TZ
+
+zonepath=$(cat /etc/TZ 2>/dev/null)
+[ -z "$zonepath" ] && zonepath="UTC"
+
+while true; do
+	echo -n "What timezone are you in? ('?' for list) [$zonepath] "
+	default_read zonepath "$zonepath"
+	case "$zonepath" in
+	"") continue;;
+	"?") show_tz_list; continue;;
+	esac
+
+	while [ -d "$zroot/$zonepath" ]; do
+		local zone=
+		echo -n "What sub-timezone of '$zonepath' are you in? ('?' for list)"
+		default_read zone
+		case "$zone" in
+		"?") show_tz_list "$zonepath"; continue;;
+		esac
+		zonepath="$zonepath/$zone"
+	done
+
+	TZ=
+	if valid_tz "$zonepath"; then
+		TZ="$zonepath"
+	elif [ -f "$zroot/$zonepath" ]; then
+		TZ=$(posixtz "$zroot/$zonepath") \
+			|| echo "Failed to convert '$zroot/$zonepath' to POSIX TZ"
+	fi
+
+	if [ -n "$TZ" ]; then
+		echo $TZ > /etc/TZ || rm -f /etc/TZ
+		break
+	fi
+	echo "'$zonepath' is not a vaild timezone on this system"
+done
+
+if [ -n "$apkdel" ]; then
+	apk del -q $apkdel
+fi
 
