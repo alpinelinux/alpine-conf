@@ -1,4 +1,4 @@
-VERSION		:= 2.7.0
+VERSION		:= 2.7.2
 
 sysconfdir      ?= /etc/lbu
 
