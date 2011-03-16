@@ -1,4 +1,4 @@
-VERSION		:= 2.7.0
+VERSION		:= 2.7.1
 
 sysconfdir      ?= /etc/lbu
 
@@ -26,7 +26,7 @@ SBIN_FILES	:= lbu\
 		setup-timezone\
 		update-conf
 
-BIN_FILES	:= uniso
+BIN_FILES	:= uniso tzif2posix
 
 SCRIPTS		:= $(LIB_FILES) $(SBIN_FILES)
 SCRIPT_SOURCES	:= $(addsuffix .in,$(SCRIPTS))
@@ -67,6 +67,9 @@ SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
 all:	$(SCRIPTS) $(BIN_FILES)
 
 uniso:	uniso.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+tzif2posix: tzif2posix.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 apk:	$(APKF)
