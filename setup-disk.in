@@ -347,7 +347,8 @@ useall() {
 	local swap_size=$(find_swap_size) swap_part_type="82"
 	local root_part_type="83"
 	local raidpkg= partitions=
-	local minimum_root_size=$(($boot_size * 2));
+	local minimum_root_size=$(($boot_size * 2))
+	local rootfs=ext4 bootfs=ext4
 
 	if [ -n "$USE_RAID" ]; then
 		boot_part_type="fd"
@@ -430,15 +431,15 @@ EOF
 			esac
 		done
 	fi
-	mkfs.ext3 -q $boot_dev >/dev/null \
+	mkfs.$bootfs -q $boot_dev >/dev/null \
 		&& mkswap $swap_dev >/dev/null \
-		&& mkfs.ext3 -q >/dev/null $root_dev \
+		&& mkfs.$rootfs -q >/dev/null $root_dev \
 		|| return 1
 
 	mkdir -p /mnt
-	mount -t ext3 $root_dev /mnt || return 1
+	mount -t $rootfs $root_dev /mnt || return 1
 	mkdir -p /mnt/boot
-	mount -t ext3 $boot_dev /mnt/boot || return 1
+	mount -t $bootfs $boot_dev /mnt/boot || return 1
 	if [ -n "$USE_RAID" ]; then
 		mdadm --detail --scan > /etc/mdadm.conf
 		rc-update --quiet add mdadm-raid boot
