@@ -481,6 +481,55 @@ __EOF__
 	exit 1
 }
 
+rootdisk_help() {
+	cat <<__EOF__
+
+The root disk is the disk where / (root) gets mounted. This is also the
+boot disk. There will created a separate /boot partition on this disk.
+
+Select 'none' if you want have / (root) in memory only, i.e diskless or
+data-only disk.
+
+__EOF__
+}
+
+datadisk_help() {
+	cat <<__EOF__
+
+With a data-only disk you will boot from your current boot media (cdrom,
+USB, CF etc) and run from memory only but have a disk where your data
+gets stored. By default, there will be created a single lvm managed partition
+where /var gets mounted.
+
+Select 'none' if you want run completely disk-less.
+
+__EOF__
+}
+
+# ask for a root or data disk
+# returns answer in global variable $answer
+ask_disk() {
+	local prompt="$1"
+	local help_func="$2"
+	shift 2
+	answer=
+
+	while ! in_list "$answer" $@ "none" "abort"; do
+		echo "Available disks are: $@"
+		echon "$prompt [$1] "
+		default_read answer $1
+		case "$answer" in
+			'abort') exit 0;;
+			'none') return 0;;
+			'?') $help_func;;
+			*) if ! [ -b "/dev/$answer" ]; then
+				echo "/dev/$answer is not a block device" >&2
+				answer=
+			   fi;;
+		esac
+	done
+}
+
 KERNEL_FLAVOR=grsec
 case "$(uname -r)" in
 	*-vs[0-9]*) KERNEL_FLAVOR=vserver;;
@@ -521,37 +570,19 @@ if [ $# -gt 0 ]; then
 	done
 
 else
-	set -- $disks
-	rootdisk=
-	while ! in_list "$rootdisk" $disks "none" "abort"; do
-		echo "Available disks are: $disks"
-		echon "Which one is the root disk? (or 'none' for tmpfs root) [$1] "
-		default_read rootdisk $1
-	done
-	case "$rootdisk" in
-		abort) exit 0;;
-	esac
+	ask_disk "Which one is the root disk? (or '?' for help or 'none')" \
+		rootdisk_help $disks
+	rootdisk=$answer
+	rootdisk_dev=/dev/$answer
 fi
 
-#echon "Do you want use *all* of $rootdisk for Alpine? (y/n) [n] "
-#default_read useall "n"
-#case "$useall" in
-#	[Yy]*) useall="yes";;
-#esac
-#
-#if [ "x$useall" != "xyes" ]; then
-#	echo "Only 'use all' option is available at the moment. Sorry"
-#	exit 1
-#fi
-
-if [ "$rootdisk" = "none" ]; then
-	exit
+# native disk install
+if [ "$rootdisk" != "none" ]; then
+	useall $rootdisk_dev
+	exit $?
 fi
 
-rootdisk_dev=${rootdisk_dev:-"/dev/$rootdisk"}
-if ! [ -b "$rootdisk_dev" ]; then
-	echo "$rootdisk_dev is not a block device" >&2
-	exit 1
-fi
+# data-only disk (hybrid) install
+#ask_disk "Which one is the data-only disk? (or '?' for help or 'none')" \
+#	datadisk_help $disks
 
-useall $rootdisk_dev
