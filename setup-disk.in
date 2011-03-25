@@ -569,9 +569,9 @@ if [ $# -gt 0 ]; then
 			exit 1
 		fi
 	done
-
+	rootdisk_dev=$1
 else
-	ask_disk "Which one is the root disk? (or '?' for help or 'none')" \
+	ask_disk "Which one is the root/boot disk? (or '?' for help or 'none')" \
 		rootdisk_help $disks
 	rootdisk=$answer
 	rootdisk_dev=/dev/$answer
