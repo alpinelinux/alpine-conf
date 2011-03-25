@@ -340,7 +340,7 @@ find_disks() {
 	done
 }
 
-useall() {
+native_disk_install() {
 	local rootdisk_dev="$1"
 	local i size
 	local boot_size=100 boot_part_type="83" 
@@ -466,6 +466,10 @@ EOF
 	apk del -q syslinux
 }
 
+data_only_disk_install() {
+	echo "TODO: $1"
+}
+
 usage() {
 	cat <<__EOF__
 usage: setup-disk [-hr] [-k kernelflavor] [-o apkovl] [MOUNTPOINT]
@@ -482,27 +486,18 @@ __EOF__
 	exit 1
 }
 
-rootdisk_help() {
+diskselect_help() {
 	cat <<__EOF__
 
-The root disk is the disk where / (root) gets mounted. This is also the
-boot disk. There will created a separate /boot partition on this disk.
-
-Select 'none' if you want have / (root) in memory only, i.e diskless or
-data-only disk.
+TODO
 
 __EOF__
 }
 
-datadisk_help() {
+diskmode_help() {
 	cat <<__EOF__
 
-With a data-only disk you will boot from your current boot media (cdrom,
-USB, CF etc) and run from memory only but have a disk where your data
-gets stored. By default, there will be created a single lvm managed partition
-where /var gets mounted.
-
-Select 'none' if you want run completely disk-less.
+TODO
 
 __EOF__
 }
@@ -556,6 +551,7 @@ if [ -d "$1" ]; then
 fi
 
 disks=$(find_disks)
+disk=none
 
 # no disks so lets exit quietly.
 [ -z "$disks" ] && exit 0
@@ -569,21 +565,31 @@ if [ $# -gt 0 ]; then
 			exit 1
 		fi
 	done
-	rootdisk_dev=$1
+	disk=${1##/dev/}
 else
-	ask_disk "Which one is the root/boot disk? (or '?' for help or 'none')" \
-		rootdisk_help $disks
-	rootdisk=$answer
-	rootdisk_dev=/dev/$answer
+	ask_disk "Which disk would you like to use? (or '?' for help or 'none')" \
+		diskselect_help $disks
+	disk=$answer
 fi
+
+diskmode=
+if [ "$disk" != none ]; then
+	answer=
+	while true; do
+		echon "How would you like to use $disk? ('root', 'data' or '?' for help) [?] "
+		default_read answer '?'
+		case "$answer" in
+		'?') diskmode_help;;
+		root|data) break;;
+		esac
+	done
+	diskmode="$answer"
+fi
+
 
 # native disk install
-if [ "$rootdisk" != "none" ]; then
-	useall $rootdisk_dev
-	exit $?
-fi
-
-# data-only disk (hybrid) install
-#ask_disk "Which one is the data-only disk? (or '?' for help or 'none')" \
-#	datadisk_help $disks
+case "$diskmode" in
+root) native_disk_install /dev/$disk;;
+data) data_only_disk_install /dev/$disk;;
+esac
 
