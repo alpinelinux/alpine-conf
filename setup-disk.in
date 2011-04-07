@@ -698,11 +698,12 @@ esac
 
 SWAP_SIZE=$(find_swap_size)
 # Parse args
-while getopts "hk:o:rs:v" opt; do
+while getopts "hk:o:qrs:v" opt; do
 	case $opt in
 		k) KERNEL_FLAVOR="$OPTARG";;
-		r) USE_RAID=1;;
 		o) APKOVL="$OPTARG";;
+		q) QUIET=1;;
+		r) USE_RAID=1;;
 		s) SWAP_SIZE="$OPTARG";;
 		v) VERBOSE=1;;
 		*) usage;;
@@ -730,7 +731,10 @@ disks=$(find_disks)
 disk=none
 
 # no disks so lets exit quietly.
-[ -z "$disks" ] && exit 0
+if [ -z "$disks" ]; then
+	[ -z "$QUIET" ] && echo "No disks found." >&2
+	exit 0
+fi
 
 if [ $# -gt 0 ]; then
 	# check that they are 
