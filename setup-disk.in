@@ -286,6 +286,9 @@ fix_mbr_all_disks() {
 
 # figure out decent default swap size in mega bytes
 find_swap_size() {
+	if [ -n "$SWAP_SIZE" ]; then
+		return
+	fi
 	local memtotal_kb=$(awk '$1 == "MemTotal:" {print $2}' /proc/meminfo)
 	# use 2 * avaiable ram
 	echo $(( $memtotal_kb * 2 / 1024 ))
@@ -340,11 +343,18 @@ find_disks() {
 	done
 }
 
+stop_all_raid() {
+	local rd
+	for rd in /dev/md*; do
+		[ -b $rd ] && mdadm --stop $rd
+	done
+}
+
 native_disk_install() {
 	local rootdisk_dev="$1"
 	local i size
 	local boot_size=100 boot_part_type="83" 
-	local swap_size=$(find_swap_size) swap_part_type="82"
+	local swap_size="$SWAP_SIZE" swap_part_type="82"
 	local root_part_type="83"
 	local raidpkg= partitions=
 	local minimum_root_size=$(($boot_size * 2))
@@ -382,12 +392,7 @@ native_disk_install() {
 	esac
 	
 	echo "Initializing partitions..."
-	if [ -n "$USE_RAID" ]; then
-		local rd
-		for rd in md0 md1 md2; do
-			[ -b /dev/$rd ] && mdadm --stop /dev/$rd
-		done
-	fi
+	[ -n "$USE_RAID" ] && stop_all_raid
 
 	# new disks does not have an DOS signature in sector 0
 	# this makes sfdisk complain. We can workaround this by letting
@@ -466,8 +471,166 @@ EOF
 	apk del -q syslinux
 }
 
+# install needed programs
+init_progs() {
+	local raidpkg=
+	[ -n "$USE_RAID" ] && raidpkg="mdadm"
+	apk_add -q sfdisk e2fsprogs lvm2 $raidpkg
+}
+
+# setup disk dev in $1 for LVM usage.
+# usage: setup_partitions <diskdev> <bootsize>
+# if <boot_size> is set, then will a partition for boot be created.
+setup_partitions() {
+	local diskdev="$1"
+	local answer=
+	local boot_size="$2" boot_part_type="83"
+	local lvm_part_type="8e"
+	local minimum_lvm_size=$(($boot_size * 2))
+
+	if [ -n "$USE_RAID" ]; then
+		boot_part_type="fd"
+		lvm_part_type="fd"
+	fi
+
+	local lvm_size=$(( $(sfdisk -s $diskdev) / 1024 - $boot_size))
+	if [ "$lvm_size" -lt "$minimum_lvm_size" ]; then
+		echo "The $diskdev is too small. At least $(( $boot_size + $minimum_lvm_size)) is needed." >&2
+		return 1
+	fi
+
+	echo -n "WARNING: All contents of $diskdev will be erased. Continue? [y/N]: "
+	read answer
+	case "$answer" in
+		y*|Y*);;
+		*) return 1;;
+	esac
+	
+	echo "Initializing partitions..."
+	[ -n "$USE_RAID" ] && stop_all_raid
+
+	# new disks does not have an DOS signature in sector 0
+	# this makes sfdisk complain. We can workaround this by letting
+	# fdisk create that DOS signature, by just do a "w", a write.
+	# http://bugs.alpinelinux.org/issues/show/145
+	echo "w" | fdisk $diskdev >/dev/null
+
+	# create new partitions
+	(
+		if [ $boot_size -gt 0 ]; then
+			echo "0,$boot_size,$boot_part_type,*"
+		fi
+		echo ",,$lvm_part_type"
+	) | sfdisk -q -L -uM $diskdev >>/tmp/sfdisk.out || return 1
+
+	# create device nodes if not exist
+	mdev -s
+}
+
+# find the bootable partition on given disk
+find_boot_partition() {
+	sfdisk -d $1 | awk '/bootable/ {print $1}'
+}
+
+# find the partition(s) for LVM
+# this is not marked as bootable and is either type 8e of fd depending on
+# if raid is used or not
+find_lvm_partition() {
+	local type=8e
+	[ -n "$USE_RAID" ] && type=fd
+	sfdisk -d $1 | grep -v bootable | awk "/Id=$type/ {print \$1}"
+}
+
+# set up boot device
+setup_boot_dev() {
+	local bootfs=ext4
+	local diskdev="$1"
+	local part=$(find_boot_partition $diskdev)
+	local bootdev=$part
+	[ -z "$bootdev" ] && return 1
+	if [ -n "$USE_RAID" ]; then
+		mdadm --create /dev/md0 --level=1 --raid-devices=2 \
+			--metadata=0.90 --quiet --run $part missing || return 1
+		bootdev=/dev/md0
+	fi
+	mkfs.$bootfs -q $bootdev
+	BOOT_DEV="$boot_dev"
+}
+
+# setup device for lvm, create raid array if needed
+setup_lvm_volume_group() {
+	local diskdev="$1"
+	local vgname="$2"
+	local part=$(find_lvm_partition $diskdev)
+	local lvmdev=$part
+
+	if [ -n "$USE_RAID" ]; then
+		if [ -n "$BOOT_DEV" ]; then
+			lvmdev=/dev/md1
+		else
+			lvmdev=/dev/md0
+		fi
+		mdadm --create $lvmdev --level=1 --raid-devices=2 \
+			--quiet --run $part missing || return 1
+	fi
+
+	# be quiet on success
+	local errmsg=$(dd if=/dev/zero of=$lvmdev bs=1k count=1 2>&1) \
+		|| echo "$errmsg"
+	pvcreate --quiet $lvmdev && vgcreate --quiet $vgname $lvmdev
+}
+
+# setup and enable swap on given volumegroup if needed
+setup_swap() {
+	local vgname="$1"
+	local swap_dev=/dev/$vgname/lv_swap
+	if [ -z "$SWAP_SIZE" ] || [ "$SWAP_SIZE" -eq 0 ]; then
+		return
+	fi
+	lvcreate --quiet -n lv_swap -L ${SWAP_SIZE}MB $vgname
+	mkswap $swap_dev >/dev/null
+	sed -i -e '/swap/d' /etc/fstab
+	echo -e "$swap_dev\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
+	swapon -a
+	rc-update --quiet add swap boot
+}
+
+# if /var is mounted, move out data and umount it
+reset_var() {
+	[ -z "$(find_mount_dev /var)" ] && return 0
+	mkdir /.var
+	mv /var/* /.var/ 2>/dev/null
+	umount /var && 	rm -rf /var && mv /.var /var && rm -rf /var/lost+found
+}
+
 data_only_disk_install() {
-	echo "TODO: $1"
+	local diskdev="$1"
+	local varfs=ext4
+	local vgname=vg0
+	local var_dev=/dev/$vgname/lv_var
+
+	init_progs || return 1
+
+	setup_partitions $diskdev 0 || return 1
+	setup_lvm_volume_group $diskdev $vgname || return 1
+
+	setup_swap $vgname
+
+	lvcreate --quiet -n ${var_dev##*/} -l 100%FREE $vgname
+	mkfs.$varfs -q $var_dev >/dev/null || return 1
+	sed -i -e '/[[:space:]]\/var[[:space:]]/d' /etc/fstab
+	echo -e "${var_dev}\t/var\t\t${varfs}\tdefaults 1 2" >> /etc/fstab
+
+	mv /var /.var
+	mkdir /var
+	mount /var
+	mv /.var/* /var/
+	rmdir /.var
+
+	if [ -n "$USE_RAID" ]; then
+		mdadm --detail --scan > /etc/mdadm.conf
+		rc-update --quiet add mdadm-raid boot
+	fi
 }
 
 usage() {
@@ -532,12 +695,14 @@ case "$(uname -r)" in
 	*-pae) KERNEL_FLAVOR=pae;;
 esac
 
+SWAP_SIZE=$(find_swap_size)
 # Parse args
-while getopts "hk:o:rv" opt; do
+while getopts "hk:o:rs:v" opt; do
 	case $opt in
 		k) KERNEL_FLAVOR="$OPTARG";;
 		r) USE_RAID=1;;
 		o) APKOVL="$OPTARG";;
+		s) SWAP_SIZE="$OPTARG";;
 		v) VERBOSE=1;;
 		*) usage;;
 	esac
@@ -548,6 +713,16 @@ if [ -d "$1" ]; then
 	# install to given mounted root
 	install_mounted_root "${1%/}"
 	exit $?
+fi
+
+reset_var
+swapoff -a
+
+# stop all volume groups in use
+vgchange --ignorelockingfailure -a n >/dev/null 2>&1
+
+if [ -n "$USE_RAID" ]; then
+	stop_all_raid
 fi
 
 disks=$(find_disks)
@@ -586,6 +761,8 @@ if [ "$disk" != none ]; then
 	diskmode="$answer"
 fi
 
+
+dmesg -n1
 
 # native disk install
 case "$diskmode" in
