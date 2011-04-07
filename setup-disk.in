@@ -213,7 +213,7 @@ install_mounted_root() {
 EOF
 
 	# remove the installed db in case its there so we force re-install
-	rm -f "$mnt"/var/lib/apk/installed
+	rm -f "$mnt"/var/lib/apk/installed "$mnt"/lib/apk/db/installed
 	echon "Installing system on $rootdev: "
 	# apk reads config from target root so we need to copy the config
 	mkdir -p "$mnt"/etc/apk/keys/
@@ -221,7 +221,7 @@ EOF
 
 
 	local apkflags="--quiet --progress --update-cache --clean-protected"
-	local pkgs=$(cat "$mnt"/var/lib/apk/world)
+	local pkgs=$(cat "$mnt"/etc/apk/world "$mnt"/var/lib/apk/world 2>/dev/null)
 	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base"
 	local repos=$(sed -e 's/\#.*//' /etc/apk/repositories)
 	local repoflags=
