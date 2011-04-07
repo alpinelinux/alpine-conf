@@ -631,6 +631,7 @@ data_only_disk_install() {
 		mdadm --detail --scan > /etc/mdadm.conf
 		rc-update --quiet add mdadm-raid boot
 	fi
+	/etc/init.d/syslog --quiet restart
 }
 
 usage() {
