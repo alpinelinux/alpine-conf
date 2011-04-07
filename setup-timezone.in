@@ -30,7 +30,7 @@ valid_tz() {
 }
 
 if ! apk info -q -e tzdata; then
-	apk add -q tzdata && apkdel="tzdata"
+	apk add -q tzdata && apkdel="tzdata" || exit 1
 fi
 
 zonepath=$(cat /etc/TZ 2>/dev/null)
