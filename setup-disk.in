@@ -478,36 +478,34 @@ init_progs() {
 	apk_add -q sfdisk e2fsprogs lvm2 $raidpkg
 }
 
-# setup disk dev in $1 for LVM usage.
-# usage: setup_partitions <diskdev> <bootsize>
-# if <boot_size> is set, then will a partition for boot be created.
-setup_partitions() {
-	local diskdev="$1"
+show_disk_info() {
+	local disk=
+	for disk in $@; do
+		# TODO: extend ifo with size, model etc...
+		echo "  $disk"
+	done
+}
+
+confirm_erase() {
 	local answer=
-	local boot_size="$2" boot_part_type="83"
-	local lvm_part_type="8e"
-	local minimum_lvm_size=$(($boot_size * 2))
-
-	if [ -n "$USE_RAID" ]; then
-		boot_part_type="fd"
-		lvm_part_type="fd"
-	fi
-
-	local lvm_size=$(( $(sfdisk -s $diskdev) / 1024 - $boot_size))
-	if [ "$lvm_size" -lt "$minimum_lvm_size" ]; then
-		echo "The $diskdev is too small. At least $(( $boot_size + $minimum_lvm_size)) is needed." >&2
-		return 1
-	fi
-
-	echo -n "WARNING: All contents of $diskdev will be erased. Continue? [y/N]: "
+	echo "WARNING: the following disks will be erased:"
+	show_disk_info $@
+	echo -n "WARNING: Erase the above disks and continue? [y/N]: "
+	
 	read answer
 	case "$answer" in
-		y*|Y*);;
-		*) return 1;;
+		y*|Y*) return 0;;
 	esac
-	
-	echo "Initializing partitions..."
-	[ -n "$USE_RAID" ] && stop_all_raid
+	return 1	
+}
+
+# setup disk dev in $1 for LVM usage.
+# usage: setup_partitions <diskdev> size1,type1 [size2,type2 ...] 
+setup_partitions() {
+	local diskdev="$1"
+	shift
+
+	echo "Initializing partitions on $diskdev..."
 
 	# new disks does not have an DOS signature in sector 0
 	# this makes sfdisk complain. We can workaround this by letting
@@ -515,12 +513,14 @@ setup_partitions() {
 	# http://bugs.alpinelinux.org/issues/show/145
 	echo "w" | fdisk $diskdev >/dev/null
 
+	local start=0
+	local line=
 	# create new partitions
 	(
-		if [ $boot_size -gt 0 ]; then
-			echo "0,$boot_size,$boot_part_type,*"
-		fi
-		echo ",,$lvm_part_type"
+		for line in "$@"; do
+			echo "$start,$line"
+			start=
+		done
 	) | sfdisk -q -L -uM $diskdev >>/tmp/sfdisk.out || return 1
 
 	# create device nodes if not exist
@@ -533,66 +533,108 @@ find_boot_partition() {
 }
 
 # find the partition(s) for LVM
-# this is not marked as bootable and is either type 8e of fd depending on
-# if raid is used or not
+# this is not marked as bootable and is type 8e
 find_lvm_partition() {
 	local type=8e
-	[ -n "$USE_RAID" ] && type=fd
 	sfdisk -d $1 | grep -v bootable | awk "/Id=$type/ {print \$1}"
 }
 
-# set up boot device
+# set up boot device. We only use raid1 for boot devices if any raid
 setup_boot_dev() {
 	local bootfs=ext4
-	local diskdev="$1"
-	local part=$(find_boot_partition $diskdev)
-	local bootdev=$part
+	local disk= bootdev=
+	local part=$(for disk in $@; do find_boot_partition $disk; done)
+	set -- $part
+	bootdev=$1
 	[ -z "$bootdev" ] && return 1
 	if [ -n "$USE_RAID" ]; then
-		mdadm --create /dev/md0 --level=1 --raid-devices=2 \
-			--metadata=0.90 --quiet --run $part missing || return 1
+		local missing=
+		local num=$#
+		if [ $# -eq 1 ]; then
+			missing="missing"
+			num=2
+		fi
+		mdadm --create /dev/md0 --level=1 --raid-devices=$num \
+			--metadata=0.90 --quiet --run $@ $missing || return 1
 		bootdev=/dev/md0
 	fi
 	mkfs.$bootfs -q $bootdev
-	BOOT_DEV="$boot_dev"
+	BOOT_DEV="$bootdev"
+}
+
+# $1 = index
+# $2... = disk devices
+find_nth_non_boot_raid_parts() {
+	local idx=$1
+	local disk=
+	shift
+	for disk in $@; do
+		sfdisk -d $disk | grep -v bootable \
+			| awk "/Id=fd/ { i++; if (i==$idx) print \$1 }"
+	done
+}
+
+setup_non_boot_raid_dev() {
+	local md_dev=$1
+	local idx=${md_dev#/dev/md}
+	shift
+	local level=1
+	local numdevs=$#
+	local missing=
+	local raid_parts=$(find_nth_non_boot_raid_parts $idx $@)
+	set -- $raid_parts
+	# how many disks do we have?
+	case $# in
+		0) echo "No Raid partitions found" >&2; return 1;;
+		1) level=1; missing="missing"; num=2;;
+		2) level=1; missing=  ; num=2;;
+		*) level=5; missing=  ; num=$#;;
+	esac
+	mdadm --create /dev/md$idx --level=$level --raid-devices=$num \
+		--quiet --run $@ $missing || return 1
 }
 
 # setup device for lvm, create raid array if needed
 setup_lvm_volume_group() {
-	local diskdev="$1"
-	local vgname="$2"
-	local part=$(find_lvm_partition $diskdev)
-	local lvmdev=$part
+	local vgname="$1"
+	shift
+	local lvmdev=
 
 	if [ -n "$USE_RAID" ]; then
-		if [ -n "$BOOT_DEV" ]; then
-			lvmdev=/dev/md1
-		else
-			lvmdev=/dev/md0
-		fi
-		mdadm --create $lvmdev --level=1 --raid-devices=2 \
-			--quiet --run $part missing || return 1
+		setup_non_boot_raid_dev /dev/md1 $@ || return 1
+		lvmdev=/dev/md1
+	else	
+		lvmdev=$(find_lvm_partition $1)
 	fi
 
 	# be quiet on success
 	local errmsg=$(dd if=/dev/zero of=$lvmdev bs=1k count=1 2>&1) \
 		|| echo "$errmsg"
-	pvcreate --quiet $lvmdev && vgcreate --quiet $vgname $lvmdev
+	pvcreate --quiet $lvmdev \
+		&& vgcreate --quiet $vgname $lvmdev >/dev/null
+}
+
+# set up swap on given device(s)
+setup_swap_dev() {
+	local swap_dev=
+	sed -i -e '/swap/d' /etc/fstab
+	for swap_dev in "$@"; do
+		mkswap $swap_dev >/dev/null
+		echo -e "$swap_dev\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
+	done
+	swapon -a
+	rc-update --quiet add swap boot
 }
 
 # setup and enable swap on given volumegroup if needed
-setup_swap() {
+setup_lvm_swap() {
 	local vgname="$1"
-	local swap_dev=/dev/$vgname/lv_swap
+	local swapname=lv_swap
 	if [ -z "$SWAP_SIZE" ] || [ "$SWAP_SIZE" -eq 0 ]; then
 		return
 	fi
-	lvcreate --quiet -n lv_swap -L ${SWAP_SIZE}MB $vgname
-	mkswap $swap_dev >/dev/null
-	sed -i -e '/swap/d' /etc/fstab
-	echo -e "$swap_dev\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
-	swapon -a
-	rc-update --quiet add swap boot
+	lvcreate --quiet -n $swapname -L ${SWAP_SIZE}MB $vgname
+	setup_swap_dev /dev/$vgname/$swapname
 }
 
 # if /var is mounted, move out data and umount it
@@ -604,17 +646,30 @@ reset_var() {
 }
 
 data_only_disk_install() {
-	local diskdev="$1"
+	local diskdev=
 	local varfs=ext4
 	local vgname=vg0
 	local var_dev=/dev/$vgname/lv_var
+	local lvm_part_type="8e"
+	local raid_part_type="fd"
+	local part_type=$lvm_part_type
+	local size=
 
 	init_progs || return 1
+	confirm_erase $@ || return 1
 
-	setup_partitions $diskdev 0 || return 1
-	setup_lvm_volume_group $diskdev $vgname || return 1
+	if [ "$USE_RAID" ]; then
+		part_type=$raid_part_type
+		stop_all_raid
+	fi
 
-	setup_swap $vgname
+	for diskdev in "$@"; do
+		setup_partitions $diskdev "$size,$part_type" || return 1
+	done
+	
+	setup_lvm_volume_group $vgname $@ || return 1
+
+	setup_lvm_swap $vgname
 
 	lvcreate --quiet -n ${var_dev##*/} -l 100%FREE $vgname
 	mkfs.$varfs -q $var_dev >/dev/null || return 1
@@ -698,9 +753,10 @@ esac
 
 SWAP_SIZE=$(find_swap_size)
 # Parse args
-while getopts "hk:o:qrs:v" opt; do
+while getopts "hk:Lo:qrs:v" opt; do
 	case $opt in
 		k) KERNEL_FLAVOR="$OPTARG";;
+		L) USE_LVM=1;;
 		o) APKOVL="$OPTARG";;
 		q) QUIET=1;;
 		r) USE_RAID=1;;
@@ -728,7 +784,7 @@ if [ -n "$USE_RAID" ]; then
 fi
 
 disks=$(find_disks)
-disk=none
+diskdevs=
 
 # no disks so lets exit quietly.
 if [ -z "$disks" ]; then
@@ -744,19 +800,23 @@ if [ $# -gt 0 ]; then
 			echo "$i is not a suitable for partitioning"
 			exit 1
 		fi
+		diskdevs="$diskdevs /dev/$j"
 	done
-	disk=${1##/dev/}
 else
 	ask_disk "Which disk would you like to use? (or '?' for help or 'none')" \
 		diskselect_help $disks
-	disk=$answer
+	if [ "$answer" != none ]; then
+		diskdevs=/dev/$answer
+	fi
 fi
 
 diskmode=
-if [ "$disk" != none ]; then
+if [ -n "$diskdevs" ]; then
 	answer=
 	while true; do
-		echon "How would you like to use $disk? ('root', 'data' or '?' for help) [?] "
+		echo "The following disks are selected:"
+		show_disk_info $diskdevs
+		echon "How would you like to use them? ('root', 'data' or '?' for help) [?] "
 		default_read answer '?'
 		case "$answer" in
 		'?') diskmode_help;;
@@ -766,12 +826,16 @@ if [ "$disk" != none ]; then
 	diskmode="$answer"
 fi
 
+set -- $diskdevs
+if [ $# -gt 1 ]; then
+	USE_RAID=1
+fi
 
 dmesg -n1
 
 # native disk install
 case "$diskmode" in
-root) native_disk_install /dev/$disk;;
-data) data_only_disk_install /dev/$disk;;
+root) native_disk_install $diskdevs;;
+data) data_only_disk_install $diskdevs;;
 esac
 
