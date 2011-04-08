@@ -588,14 +588,17 @@ setup_boot_dev() {
 }
 
 # $1 = index
-# $2... = disk devices
-find_nth_non_boot_raid_parts() {
+# $2 = partition type
+# $3... = disk devices
+find_nth_non_boot_parts() {
 	local idx=$1
+	local id=$2
 	local disk=
+	shift
 	shift
 	for disk in $@; do
 		sfdisk -d $disk | grep -v bootable \
-			| awk "/Id=fd/ { i++; if (i==$idx) print \$1 }"
+			| awk "/Id=$id/ { i++; if (i==$idx) print \$1 }"
 	done
 }
 
@@ -606,7 +609,7 @@ setup_non_boot_raid_dev() {
 	local level=1
 	local numdevs=$#
 	local missing=
-	local raid_parts=$(find_nth_non_boot_raid_parts $idx $@)
+	local raid_parts=$(find_nth_non_boot_parts $idx "fd" $@)
 	set -- $raid_parts
 	# how many disks do we have?
 	case $# in
@@ -694,7 +697,7 @@ setup_mdadm_conf() {
 	fi
 }
 
-data_only_disk_install() {
+data_only_disk_install_lvm() {
 	local diskdev=
 	local vgname=vg0
 	local var_dev=/dev/$vgname/lv_var
@@ -722,6 +725,42 @@ data_only_disk_install() {
 	setup_var $var_dev
 }
 
+data_only_disk_install() {
+	local diskdev=
+	local var_dev=/dev/$vgname/lv_var
+	local var_part_type="8e"
+	local swap_part_type=82
+	local size=
+	local swap_dev= var_dev=
+
+	init_progs || return 1
+	confirm_erase $@ || return 1
+
+	if [ "$USE_RAID" ]; then
+		var_part_type="fd"
+		swap_part_type="fd"
+		stop_all_raid
+	fi
+
+	for diskdev in "$@"; do
+		setup_partitions $diskdev \
+			"$SWAP_SIZE,$swap_part_type" \
+			"$size,$var_part_type" || return 1
+	done
+
+	if [ "$USE_RAID" ]; then
+		[ $SWAP_SIZE -gt 0 ] && setup_non_boot_raid_dev /dev/md1 $@
+		setup_non_boot_raid_dev /dev/md2 $@ || return 1
+		swap_dev=/dev/md1
+		var_dev=/dev/md2
+	else
+		swap_dev=$(find_nth_non_boot_parts 1 82 $@)
+		var_dev=$(find_nth_non_boot_parts 1 83 $@)
+	fi
+	[ $SWAP_SIZE -gt 0 ] && setup_swap_dev $swap_dev
+	setup_var $var_dev
+}
+
 # setup 
 setup_root() {
 	local root_dev="$1" boot_dev="$2"
@@ -743,7 +782,7 @@ setup_root() {
 	echo "Installation is done. Please reboot."
 }
 
-native_disk_install() {
+native_disk_install_lvm() {
 	local diskdev= vgname=vg0
 	local lvm_part_type="8e"
 	local raid_part_type="fd"
@@ -772,6 +811,46 @@ native_disk_install() {
 	setup_lvm_volume_group $vgname $@ || return 1
 	setup_lvm_swap $vgname
 	lvcreate --quiet -n ${root_dev##*/} -l 100%FREE $vgname
+	setup_root $root_dev $BOOT_DEV
+}
+
+native_disk_install() {
+	local root_part_type="83" swap_part_type="82" boot_part_type="83"
+	local boot_size=${BOOT_SIZE:-100}
+	local swap_size=${SWAP_SIZE}
+	local root_size=
+	local root_dev= boot_dev= swap_dev=
+
+	init_progs syslinux || return 1
+	confirm_erase $@ || return 1
+
+	if [ -n "$USE_RAID" ]; then
+		boot_part_type="fd"
+		root_part_type="fd"
+		swap_part_type="fd"
+		stop_all_raid
+	fi
+	for diskdev in "$@"; do
+		setup_partitions $diskdev \
+			"$boot_size,$boot_part_type,*" \
+			"$swap_size,$swap_part_type" \
+			"$root_size,$root_part_type" \
+			|| return 1
+	done
+
+	# will find BOOT_DEV for us
+	setup_boot_dev $@
+	
+	if [ "$USE_RAID" ]; then
+		[ $SWAP_SIZE -gt 0 ] && setup_non_boot_raid_dev /dev/md1 $@
+		setup_non_boot_raid_dev /dev/md2 $@ || return 1
+		swap_dev=/dev/md1
+		root_dev=/dev/md2
+	else
+		swap_dev=$(find_nth_non_boot_parts 1 82 $@)
+		root_dev=$(find_nth_non_boot_parts 1 83 $@)
+	fi
+	[ $SWAP_SIZE -gt 0 ] && setup_swap_dev $swap_dev
 	setup_root $root_dev $BOOT_DEV
 }
 
@@ -866,13 +945,14 @@ case "$(uname -r)" in
 esac
 
 DISK_MODE=
+USE_LVM=
 SWAP_SIZE=$(find_swap_size)
 # Parse args
 while getopts "hk:Lm:o:qrs:v" opt; do
 	case $opt in
 		m) DISK_MODE="$OPTARG";;
 		k) KERNEL_FLAVOR="$OPTARG";;
-		L) USE_LVM=1;;
+		L) USE_LVM="_lvm";;
 		o) APKOVL="$OPTARG";;
 		q) QUIET=1;;
 		r) USE_RAID=1;;
@@ -950,8 +1030,8 @@ dmesg -n1
 
 # native disk install
 case "$DISK_MODE" in
-root) native_disk_install $diskdevs;;
-data) data_only_disk_install $diskdevs;;
+root) native_disk_install$USE_LVM $diskdevs;;
+data) data_only_disk_install$USE_LVM $diskdevs;;
 *) echo "Not a valid install mode: $DISK_MODE" >&2; exit 1;;
 esac
 
