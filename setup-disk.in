@@ -4,6 +4,8 @@ PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
 MBR=${MBR:-"/usr/share/syslinux/mbr.bin"}
+ROOTFS=${ROOTFS:-ext4}
+BOOTFS=${BOOTFS:-ext4}
 
 in_list() {
 	local i="$1"
@@ -137,9 +139,20 @@ supported_boot_fs() {
 	return 1
 }
 
+find_volume_group() {
+	local lv=${1##*/}
+	lvs --noheadings "$1" | awk "\$1 == \"$lv\" {print \$2}"
+}
+
+find_pvs_in_vg() {
+	local vg="$1"
+	pvs --noheadings | awk "\$2 == \"$vg\" {print \$1}"
+}
+
 install_mounted_root() {
 	local mnt="$1" mnt_boot="$1" boot_fs= root_fs=
 	local initfs_features="ata base ide scsi usb virtio"
+	local pvs= dev=
 
 	rootdev=$(find_mount_dev "$mnt")
 	if [ -z "$rootdev" ]; then
@@ -151,6 +164,8 @@ install_mounted_root() {
 
 	if is_lvm "$rootdev"; then
 		initfs_features="$initfs_features lvm"
+		local vg=$(find_volume_group "$rootdev")
+		pvs=$(find_pvs_in_vg $vg)
 	fi
 
 
@@ -165,11 +180,17 @@ install_mounted_root() {
 	supported_boot_fs "$boot_fs" || return 1
 
 	mbrdisk=$(disk_from_part $bootdev)
-	if [ -e "/sys/block/${rootdev#/dev/}/md" ]; then
-		local md=${rootdev#/dev/}
-		initfs_features="$initfs_features raid"
-		raidmod=$(cat /sys/block/$md/md/level)
-		raidmod=",$raidmod"
+
+	for dev in $rootdev $pvs; do
+		[ -e "/sys/block/${dev#/dev/}/md" ] || continue
+
+		local md=${dev#/dev/}
+		initfs_features="$(echo $initfs_features | sed 's/raid//') raid"
+		local level=$(cat /sys/block/$md/md/level)
+		case "$level" in
+			raid1) raidmod="$raidmod,$level";;
+			raid[456]) raidmod="$raidmod,raid456";;
+		esac
 		raidopt="-r"
 		# get a list of slaves
 		mbrdisk=
@@ -180,7 +201,7 @@ install_mounted_root() {
 				mbrdisk="$mbrdisk /dev/${i}"
 			fi
 		done
-	fi
+	done
 	if [ -n "$VERBOSE" ]; then
 		echo "Root device:     $rootdev"
 		echo "Root filesystem: $root_fs"
@@ -198,8 +219,12 @@ install_mounted_root() {
 	fi
 
 	# generate mkinitfs.conf
-	mkdir -p "$mnt"/etc/mkinitfs
+	mkdir -p "$mnt"/etc/mkinitfs/files.d
 	echo "features=\"$initfs_features\"" > "$mnt"/etc/mkinitfs/mkinitfs.conf
+	if [ -n "$raidmod" ]; then
+		echo "/sbin/mdadm" > "$mnt"/etc/mkinitfs/files.d/raid
+		echo "/etc/mdadm.conf" >> "$mnt"/etc/mkinitfs/files.d/raid
+	fi
 
 	# generate the fstab
 	if [ -f "$mnt"/etc/fstab ]; then
@@ -214,13 +239,13 @@ EOF
 
 	# remove the installed db in case its there so we force re-install
 	rm -f "$mnt"/var/lib/apk/installed "$mnt"/lib/apk/db/installed
-	echon "Installing system on $rootdev: "
+	echo "Installing system on $rootdev:"
 	# apk reads config from target root so we need to copy the config
 	mkdir -p "$mnt"/etc/apk/keys/
 	cp /etc/apk/keys/* "$mnt"/etc/apk/keys/
 
 
-	local apkflags="--quiet --progress --update-cache --clean-protected"
+	local apkflags="--initdb --quiet --progress --update-cache --clean-protected"
 	local pkgs=$(cat "$mnt"/etc/apk/world "$mnt"/var/lib/apk/world 2>/dev/null)
 	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base"
 	local repos=$(sed -e 's/\#.*//' /etc/apk/repositories)
@@ -350,7 +375,8 @@ stop_all_raid() {
 	done
 }
 
-native_disk_install() {
+# obsolete
+old_native_disk_install() {
 	local rootdisk_dev="$1"
 	local i size
 	local boot_size=100 boot_part_type="83" 
@@ -475,7 +501,7 @@ EOF
 init_progs() {
 	local raidpkg=
 	[ -n "$USE_RAID" ] && raidpkg="mdadm"
-	apk_add -q sfdisk e2fsprogs lvm2 $raidpkg
+	apk_add -q sfdisk e2fsprogs lvm2 $raidpkg $@
 }
 
 show_disk_info() {
@@ -541,7 +567,6 @@ find_lvm_partition() {
 
 # set up boot device. We only use raid1 for boot devices if any raid
 setup_boot_dev() {
-	local bootfs=ext4
 	local disk= bootdev=
 	local part=$(for disk in $@; do find_boot_partition $disk; done)
 	set -- $part
@@ -558,7 +583,7 @@ setup_boot_dev() {
 			--metadata=0.90 --quiet --run $@ $missing || return 1
 		bootdev=/dev/md0
 	fi
-	mkfs.$bootfs -q $bootdev
+	mkfs.$BOOTFS -q $bootdev
 	BOOT_DEV="$bootdev"
 }
 
@@ -662,6 +687,13 @@ setup_var() {
 	/etc/init.d/syslog --quiet restart
 }
 
+setup_mdadm_conf() {
+	if [ -n "$USE_RAID" ]; then
+		mdadm --detail --scan > /etc/mdadm.conf
+		rc-update --quiet add mdadm-raid boot
+	fi
+}
+
 data_only_disk_install() {
 	local diskdev=
 	local vgname=vg0
@@ -686,18 +718,72 @@ data_only_disk_install() {
 	setup_lvm_volume_group $vgname $@ || return 1
 	setup_lvm_swap $vgname
 	lvcreate --quiet -n ${var_dev##*/} -l 100%FREE $vgname
+	setup_mdadm_conf
 	setup_var $var_dev
+}
+
+# setup 
+setup_root() {
+	local root_dev="$1" boot_dev="$2"
+	mkfs.$ROOTFS -q "$root_dev"
+	mkdir -p /mnt
+	mount -t $ROOTFS $root_dev /mnt || return 1
+	if [ -n "$boot_dev" ]; then
+		mkdir -p /mnt/boot
+		mount -t $BOOTFS $boot_dev /mnt/boot || return 1
+	fi
+
+	setup_mdadm_conf
+	install_mounted_root /mnt || return 1
+	unmount_partitions /mnt
+	swapoff -a
+	fix_mbr_all_disks
+
+	echo ""
+	echo "Installation is done. Please reboot."
+}
+
+native_disk_install() {
+	local diskdev= vgname=vg0
+	local lvm_part_type="8e"
+	local raid_part_type="fd"
+	local boot_part_type="83"
+	local boot_size=${BOOT_SIZE:-100}
+	local lvm_size=
+	local root_dev=/dev/$vgname/lv_root
+
+	init_progs syslinux || return 1
+	confirm_erase $@ || return 1
 
 	if [ -n "$USE_RAID" ]; then
-		mdadm --detail --scan > /etc/mdadm.conf
-		rc-update --quiet add mdadm-raid boot
+		boot_part_type="fd"
+		lvm_part_type="fd"
+		stop_all_raid
 	fi
+	for diskdev in "$@"; do
+		setup_partitions $diskdev \
+			"$boot_size,$boot_part_type,*" \
+			"$lvm_size,$lvm_part_type" || return 1
+	done
+
+	# will find BOOT_DEV for us
+	setup_boot_dev $@
+
+	setup_lvm_volume_group $vgname $@ || return 1
+	setup_lvm_swap $vgname
+	lvcreate --quiet -n ${root_dev##*/} -l 100%FREE $vgname
+	setup_root $root_dev $BOOT_DEV
 }
 
 diskselect_help() {
 	cat <<__EOF__
 
-TODO
+The disk you select can be used for either traditional disk install
+data-only install.
+
+The disk will be erased.
+
+Select 'none' if you want run diskless.
 
 __EOF__
 }
@@ -705,7 +791,19 @@ __EOF__
 diskmode_help() {
 	cat <<__EOF__
 
-TODO
+You can select between 'root' or 'data'.
+
+* root
+  This mode is a traditional disk install. A /boot partition, / (root) and
+  swap will be created.
+  
+  Use this mode for development boxes, desktops, virtual servers etc.
+
+* data
+  This mode let you use your disk for data-only. The system itself will run
+  from tmpfs (RAM).
+
+  Use this mode is you want use disk only for mailspool, databases, logs  etc.
 
 __EOF__
 }
