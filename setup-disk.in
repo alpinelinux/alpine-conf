@@ -152,7 +152,7 @@ find_pvs_in_vg() {
 install_mounted_root() {
 	local mnt="$1" mnt_boot="$1" boot_fs= root_fs=
 	local initfs_features="ata base ide scsi usb virtio"
-	local pvs= dev=
+	local pvs= dev= rootdev= bootdev= raidopt=
 
 	rootdev=$(find_mount_dev "$mnt")
 	if [ -z "$rootdev" ]; then
@@ -179,7 +179,9 @@ install_mounted_root() {
 	boot_fs=$(find_mount_fs "$mnt_boot")
 	supported_boot_fs "$boot_fs" || return 1
 
-	mbrdisk=$(disk_from_part $bootdev)
+	if [ -e "/sys/block/${bootdev#/dev/}/md" ]; then
+		raidopt="--raid"
+	fi
 
 	for dev in $rootdev $pvs; do
 		[ -e "/sys/block/${dev#/dev/}/md" ] || continue
@@ -191,23 +193,12 @@ install_mounted_root() {
 			raid1) raidmod="$raidmod,$level";;
 			raid[456]) raidmod="$raidmod,raid456";;
 		esac
-		raidopt="-r"
-		# get a list of slaves
-		mbrdisk=
-		for i in /sys/block/$md/slaves/*; do
-			j=${i##*/}
-			i=${j%[0-9]*}
-			if [ -b "/dev/$i" ]; then
-				mbrdisk="$mbrdisk /dev/${i}"
-			fi
-		done
 	done
 	if [ -n "$VERBOSE" ]; then
 		echo "Root device:     $rootdev"
 		echo "Root filesystem: $root_fs"
 		echo "Boot device:     $bootdev"
 		echo "Boot filesystem: $boot_fs"
-		echo "MBR disk(s):    $mbrdisk"
 	fi
 
 	if [ -z "$APKOVL" ]; then
@@ -287,9 +278,7 @@ label $KERNEL_FLAVOR
 EOF
 	fi
 
-	# install extlinux
-	apk add -q syslinux
-	is_xen || extlinux -i $raidopt "$mnt"/boot/
+	is_xen || extlinux $raidopt --install "$mnt"/boot
 }
 
 unmount_partitions() {
@@ -297,16 +286,6 @@ unmount_partitions() {
 
 	# unmount the partitions
 	umount $(awk '{print $2}' /proc/mounts | grep ^"$mnt" | sort -r)
-}
-
-fix_mbr_all_disks() {
-	# fix mbr for all disk devices
-	for i in $mbrdisk; do
-		local errmsg
-		echo "Writing MBR to $i"
-		errmsg=$(dd if="$MBR" of=$i 2>&1) \
-			|| echo "$errmsg"
-	done
 }
 
 # figure out decent default swap size in mega bytes
@@ -417,6 +396,9 @@ setup_partitions() {
 	# http://bugs.alpinelinux.org/issues/show/145
 	echo "w" | fdisk $diskdev >/dev/null
 
+	# fix the MBR while here so extlinux can boot
+	cat "$MBR" > $diskdev
+
 	local start=0
 	local line=
 	# create new partitions
@@ -450,6 +432,7 @@ setup_boot_dev() {
 	set -- $part
 	bootdev=$1
 	[ -z "$bootdev" ] && return 1
+	echo "Creating file systems..."
 	if [ -n "$USE_RAID" ]; then
 		local missing=
 		local num=$#
@@ -555,6 +538,7 @@ reset_var() {
 setup_var() {
 	local var_dev="$1"
 	local varfs=ext4
+	echo "Creating file systems..."
 	mkfs.$varfs -q $var_dev >/dev/null || return 1
 	sed -i -e '/[[:space:]]\/var[[:space:]]/d' /etc/fstab
 	echo -e "${var_dev}\t/var\t\t${varfs}\tdefaults 1 2" >> /etc/fstab
@@ -654,7 +638,6 @@ setup_root() {
 	install_mounted_root /mnt || return 1
 	unmount_partitions /mnt
 	swapoff -a
-	fix_mbr_all_disks
 
 	echo ""
 	echo "Installation is done. Please reboot."
