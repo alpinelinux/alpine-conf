@@ -731,9 +731,9 @@ __EOF__
 diskmode_help() {
 	cat <<__EOF__
 
-You can select between 'root' or 'data'.
+You can select between 'sys' or 'data'.
 
-* root
+* sys
   This mode is a traditional disk install. A /boot partition, / (root) and
   swap will be created.
   
@@ -869,14 +869,21 @@ fi
 
 if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 	answer=
+	disk_or_disks="disk"
+	it_them="it"
+	if [ $# -gt 1 ]; then
+		disk_plural="disks"
+		it_them="them"
+	fi
+		
 	while true; do
-		echo "The following disks are selected:"
+		echo "The following $disk_or_disks are selected:"
 		show_disk_info $diskdevs
-		echon "How would you like to use them? ('root', 'data' or '?' for help) [?] "
+		echon "How would you like to use $it_them? ('sys', 'data' or '?' for help) [?] "
 		default_read answer '?'
 		case "$answer" in
 		'?') diskmode_help;;
-		root|data) break;;
+		sys|data) break;;
 		esac
 	done
 	DISK_MODE="$answer"
@@ -891,7 +898,7 @@ dmesg -n1
 
 # native disk install
 case "$DISK_MODE" in
-root) native_disk_install$USE_LVM $diskdevs;;
+sys) native_disk_install$USE_LVM $diskdevs;;
 data) data_only_disk_install$USE_LVM $diskdevs;;
 *) echo "Not a valid install mode: $DISK_MODE" >&2; exit 1;;
 esac
