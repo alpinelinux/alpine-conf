@@ -38,9 +38,11 @@ get_default_gateway() {
 
 config_iface() {
 	local iface=$1
+	local prefix=$2
 	local address
 	local netmask
 	local gateway
+	local conf=$prefix$iface.conf
 
 	# use ipcalc to validate the address. we do accept /mask
 	# we are no interested in the result, only error code, so
@@ -53,7 +55,7 @@ config_iface() {
 		[ "$address" = "abort" ] && return
 		if [ "$address" = "dhcp" ] ; then
 			HAS_DHCP=yes
-			echo "type=dhcp" > $iface.conf
+			echo "type=dhcp" > $conf
 			rm $iface.noconf
 			return
 		fi
@@ -85,14 +87,14 @@ config_iface() {
 		[ -z "$gateway" ] && break
 	done
 	
-	echo "type=static" > $iface.conf
-	echo "address=${address%%/*}" >> $iface.conf  #strip off /mask if there
-	echo "netmask=$netmask" >> $iface.conf
-	echo "gateway=$gateway" >> $iface.conf
+	echo "type=static" > $conf
+	echo "address=${address%%/*}" >> $conf  #strip off /mask if there
+	echo "netmask=$netmask" >> $conf
+	echo "gateway=$gateway" >> $conf
 
 	# print summary
 	echo "Configuration for $iface:"
-	sed 's/^/  /' $iface.conf
+	sed 's/^/  /' $conf
 	
 	rm $iface.noconf
 }
@@ -104,7 +106,7 @@ for i in $(detect_interfaces); do
 	touch $i.noconf
 done
 
-
+index=1
 while ls *.noconf > /dev/null 2>&1 ; do
 	echon "Available interfaces are:"
 	for i in *.noconf; do
@@ -118,21 +120,23 @@ while ls *.noconf > /dev/null 2>&1 ; do
 	
 	[ "$iface" = "done" ] && break
 	[ -f $iface.noconf ] || continue
-	config_iface $iface
+	config_iface $iface $(printf "%.3d~" $index)
+	index=$(( $index + 1 ))
 done
 
-echo "type=loopback" > lo.conf
+echo "type=loopback" > 000~lo.conf
 echo "" > interface
 for i in *.conf ; do
 	iface=`basename $i .conf`
+	iface=${iface#[0-9]*~}
 	. ./$i
-	echo "" >> interfaces
 	echo "auto $iface" >> interfaces
 	echo "iface $iface inet $type" >> interfaces
 	[ "$type" = "static" ] || continue
 	echo -e "\taddress $address" >> interfaces
 	echo -e "\tnetmask $netmask" >> interfaces
 	[ "$gateway" ] && echo -e "\tgateway $gateway" >> interfaces
+	echo "" >> interfaces
 done
 
 while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
