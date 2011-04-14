@@ -37,7 +37,7 @@ zonepath=$(cat /etc/TZ 2>/dev/null)
 [ -z "$zonepath" ] && zonepath="UTC"
 
 while true; do
-	echo -n "What timezone are you in? ('?' for list) [$zonepath] "
+	echo -n "Which timezone are you in? ('?' for list) [$zonepath] "
 	default_read zonepath "$zonepath"
 	case "$zonepath" in
 	"") continue;;

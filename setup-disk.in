@@ -371,15 +371,15 @@ show_disk_info() {
 
 confirm_erase() {
 	local answer=
-	echo "WARNING: the following disks will be erased:"
+	echo "WARNING: The following disk(s) will be erased:"
 	show_disk_info $@
-	echo -n "WARNING: Erase the above disks and continue? [y/N]: "
+	echo -n "WARNING: Erase the above disk(s) and continue? [y/N]: "
 	
 	read answer
 	case "$answer" in
 		y*|Y*) return 0;;
 	esac
-	return 1	
+	return 1
 }
 
 # setup disk dev in $1 for LVM usage.
@@ -640,7 +640,7 @@ setup_root() {
 	swapoff -a
 
 	echo ""
-	echo "Installation is done. Please reboot."
+	echo "Installation is complete. Please reboot."
 }
 
 native_disk_install_lvm() {
@@ -737,13 +737,14 @@ You can select between 'sys' or 'data'.
   This mode is a traditional disk install. A /boot partition, / (root) and
   swap will be created.
   
-  Use this mode for development boxes, desktops, virtual servers etc.
+  Use this mode for development boxes, desktops, virtual servers, etc.
 
 * data
-  This mode let you use your disk for data-only. The system itself will run
+  This mode uses your disk(s) for data-only. The system itself will run
   from tmpfs (RAM).
 
-  Use this mode is you want use disk only for mailspool, databases, logs  etc.
+  Use this mode if you only want to use the disk(s) for a mailspool,
+  databases, logs, etc.
 
 __EOF__
 }
@@ -869,15 +870,15 @@ fi
 
 if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 	answer=
-	disk_or_disks="disk"
+	disk_is_or_disks_are="disk is"
 	it_them="it"
 	if [ $# -gt 1 ]; then
-		disk_plural="disks"
+		disk_is_or_disks_are="disks are"
 		it_them="them"
 	fi
 		
 	while true; do
-		echo "The following $disk_or_disks are selected:"
+		echo "The following $disk_is_or_disks_are selected:"
 		show_disk_info $diskdevs
 		echon "How would you like to use $it_them? ('sys', 'data' or '?' for help) [?] "
 		default_read answer '?'
