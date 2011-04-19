@@ -126,16 +126,26 @@ done
 
 echo "type=loopback" > 000~lo.conf
 echo "" > interface
+hostname=$(cat /etc/hostname 2>/dev/null)
+
 for i in *.conf ; do
 	iface=`basename $i .conf`
 	iface=${iface#[0-9]*~}
 	. ./$i
 	echo "auto $iface" >> interfaces
 	echo "iface $iface inet $type" >> interfaces
-	[ "$type" = "static" ] || continue
-	echo -e "\taddress $address" >> interfaces
-	echo -e "\tnetmask $netmask" >> interfaces
-	[ "$gateway" ] && echo -e "\tgateway $gateway" >> interfaces
+	case $type in
+	dhcp)
+		[ -n "$hostname" ] \
+			&& echo -e "\thostname $hostname" >> interfaces
+		;;
+	static)
+		echo -e "\taddress $address" >> interfaces
+		echo -e "\tnetmask $netmask" >> interfaces
+		[ "$gateway" ] \
+			&& echo -e "\tgateway $gateway" >> interfaces
+		;;
+	esac
 	echo "" >> interfaces
 done
 
