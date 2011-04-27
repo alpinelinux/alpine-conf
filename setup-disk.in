@@ -792,6 +792,7 @@ options:
  -m  Use disk for MODE without asking, where MODE is either 'data' or 'root'
  -o  Restore system from given apkovl file
  -k  Use kernelflavor instead of $KERNEL_FLAVOR
+ -L  Use LVM to manage partitions
  -q  Exit quietly if no disks are found
  -r  Enable software raid1 with single disk
  -s  Use SWAPSIZE MB instead of $SWAP_SIZE MB for swap (Use 0 to disable swap)
@@ -865,6 +866,8 @@ else
 		diskselect_help $disks
 	if [ "$answer" != none ]; then
 		diskdevs=/dev/$answer
+	else
+		DISK_MODE="none"
 	fi
 fi
 
@@ -901,6 +904,7 @@ dmesg -n1
 case "$DISK_MODE" in
 sys) native_disk_install$USE_LVM $diskdevs;;
 data) data_only_disk_install$USE_LVM $diskdevs;;
+none) exit 0;;
 *) echo "Not a valid install mode: $DISK_MODE" >&2; exit 1;;
 esac
 
