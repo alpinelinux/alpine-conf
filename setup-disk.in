@@ -721,12 +721,12 @@ native_disk_install() {
 diskselect_help() {
 	cat <<__EOF__
 
-The disk you select can be used for either traditional disk install
+The disk you select can be used for a traditional disk install or for a
 data-only install.
 
 The disk will be erased.
 
-Select 'none' if you want run diskless.
+Enter 'none' if you want to run diskless.
 
 __EOF__
 }
@@ -736,18 +736,18 @@ diskmode_help() {
 
 You can select between 'sys' or 'data'.
 
-* sys
-  This mode is a traditional disk install. A /boot partition, / (root) and
-  swap will be created.
-  
-  Use this mode for development boxes, desktops, virtual servers, etc.
+sys:
+  This mode is a traditional disk install. The following partitions will be
+  created on the disk: /boot, / (filesystem root) and swap.
+    
+  This mode may be used for development boxes, desktops, virtual servers, etc.
 
-* data
-  This mode uses your disk(s) for data-only. The system itself will run
-  from tmpfs (RAM).
+data:
+  This mode uses your disk(s) for data storage, not for the operating system.
+  The system itself will run from tmpfs (RAM).
 
-  Use this mode if you only want to use the disk(s) for a mailspool,
-  databases, logs, etc.
+  Use this mode if you only want to use the disk(s) for a mailspool, databases,
+  logs, etc.
 
 __EOF__
 }
