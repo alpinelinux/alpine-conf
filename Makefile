@@ -1,4 +1,4 @@
-VERSION		:= 2.8.0_pre3
+VERSION		:= 2.8.0_pre4
 
 sysconfdir      ?= /etc/lbu
 
