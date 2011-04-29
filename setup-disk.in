@@ -362,10 +362,13 @@ init_progs() {
 }
 
 show_disk_info() {
-	local disk=
+	local disk= vendor= model= d=
 	for disk in $@; do
-		# TODO: extend ifo with size, model etc...
-		echo "  $disk"
+		d=${disk##*/}
+		vendor=$(cat /sys/block/$d/device/vendor 2>/dev/null)
+		model=$(cat /sys/block/$d/device/model 2>/dev/null)
+		size=$(awk '{gb = ($1 * 512)/1000000000; printf "%.1f GB\n", gb}' /sys/block/$d/size 2>/dev/null)
+		echo "  $disk ($size $vendor $model)"
 	done
 }
 
