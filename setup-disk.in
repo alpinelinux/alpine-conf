@@ -17,6 +17,17 @@ in_list() {
 	return 1
 }
 
+all_in_list() {
+	local needle="$1"
+	local i
+	[ -z "$needle" ] && return 1
+	shift
+	for i in $needle; do
+		in_list "$i" $@ || return 1
+	done
+	return 0
+}
+
 # wrapper to only show given device
 _blkid() {
 	blkid | grep "^$1:"
@@ -368,7 +379,7 @@ show_disk_info() {
 		vendor=$(cat /sys/block/$d/device/vendor 2>/dev/null)
 		model=$(cat /sys/block/$d/device/model 2>/dev/null)
 		size=$(awk '{gb = ($1 * 512)/1000000000; printf "%.1f GB\n", gb}' /sys/block/$d/size 2>/dev/null)
-		echo "  $d ($size $vendor $model)"
+		echo "  $d	($size $vendor $model)"
 	done
 }
 
@@ -759,21 +770,25 @@ __EOF__
 ask_disk() {
 	local prompt="$1"
 	local help_func="$2"
+	local i=
 	shift 2
 	answer=
 
-	while ! in_list "$answer" $@ "none" "abort"; do
-		echo "Available disks are: $@"
+	while ! all_in_list "$answer" $@ "none" "abort"; do
+		echo "Available disks are:"
+		show_disk_info "$@"
 		echon "$prompt [$1] "
 		default_read answer $1
 		case "$answer" in
 			'abort') exit 0;;
 			'none') return 0;;
 			'?') $help_func;;
-			*) if ! [ -b "/dev/$answer" ]; then
-				echo "/dev/$answer is not a block device" >&2
-				answer=
-			   fi;;
+			*) for i in $answer; do
+				if ! [ -b "/dev/$i" ]; then
+					echo "/dev/$i is not a block device" >&2
+					answer=
+				   fi
+			done;;
 		esac
 	done
 }
@@ -867,10 +882,12 @@ if [ $# -gt 0 ]; then
 		diskdevs="$diskdevs /dev/$j"
 	done
 else
-	ask_disk "Which disk would you like to use? (or '?' for help or 'none')" \
+	ask_disk "Which disk(s) would you like to use? (or '?' for help or 'none')" \
 		diskselect_help $disks
 	if [ "$answer" != none ]; then
-		diskdevs=/dev/$answer
+		for i in $answer; do
+			diskdevs="$diskdevs /dev/$i"
+		done
 	else
 		DISK_MODE="none"
 	fi
@@ -880,6 +897,7 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 	answer=
 	disk_is_or_disks_are="disk is"
 	it_them="it"
+	set -- $diskdevs
 	if [ $# -gt 1 ]; then
 		disk_is_or_disks_are="disks are"
 		it_them="them"
