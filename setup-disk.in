@@ -358,17 +358,17 @@ stop_all_raid() {
 init_progs() {
 	local raidpkg=
 	[ -n "$USE_RAID" ] && raidpkg="mdadm"
-	apk_add -q sfdisk e2fsprogs lvm2 $raidpkg $@
+	apk_add -q sfdisk e2fsprogs lvm2 $raidpkg syslinux $@
 }
 
 show_disk_info() {
-	local disk= vendor= model= d=
+	local disk= vendor= model= d= size=
 	for disk in $@; do
 		d=${disk##*/}
 		vendor=$(cat /sys/block/$d/device/vendor 2>/dev/null)
 		model=$(cat /sys/block/$d/device/model 2>/dev/null)
 		size=$(awk '{gb = ($1 * 512)/1000000000; printf "%.1f GB\n", gb}' /sys/block/$d/size 2>/dev/null)
-		echo "  $disk ($size $vendor $model)"
+		echo "  $d ($size $vendor $model)"
 	done
 }
 
@@ -587,6 +587,7 @@ data_only_disk_install_lvm() {
 	setup_lvm_swap $vgname
 	lvcreate --quiet -n ${var_dev##*/} -l 100%FREE $vgname
 	setup_mdadm_conf
+	rc-update add lvm boot
 	setup_var $var_dev
 }
 
@@ -675,6 +676,7 @@ native_disk_install_lvm() {
 	setup_lvm_volume_group $vgname $@ || return 1
 	setup_lvm_swap $vgname
 	lvcreate --quiet -n ${root_dev##*/} -l 100%FREE $vgname
+	rc-update add lvm boot
 	setup_root $root_dev $BOOT_DEV
 }
 
