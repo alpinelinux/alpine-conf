@@ -1,0 +1,42 @@
+#!/bin/sh
+
+setup-xorg-base gparted xinit aterm openbox ttf-freefont $@
+
+# create openbox menu
+mkdir -p ~/.config/openbox
+cat >~/.config/openbox/menu.xml<<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+<menu id="root-menu" label="Openbox 3">
+  <separator label="Applications" />
+  <item label="GParted">
+    <action name="Execute">
+      <command>gparted</command>
+    </action>
+  </item>
+  <item label="aterm">
+    <action name="Execute">
+      <command>aterm</command>
+    </action>
+  </item>
+  <separator />
+  <item label="Log Out">
+    <action name="Exit">
+      <prompt>yes</prompt>
+    </action>
+  </item>
+</menu>
+</openbox_menu>
+EOF
+
+# create xinitrc
+cat >~/.xinitrc <<EOF
+gparted &
+exec openbox-session
+EOF
+
+echo ""
+echo " To start GParted run: startx"
+echo ""
+

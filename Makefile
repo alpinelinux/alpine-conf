@@ -25,6 +25,7 @@ SBIN_FILES	:= lbu\
 		setup-bootable\
 		setup-timezone\
 		setup-xorg-base\
+		setup-gparted-desktop\
 		update-conf
 
 BIN_FILES	:= uniso
