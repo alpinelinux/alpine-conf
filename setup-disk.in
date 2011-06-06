@@ -781,12 +781,13 @@ ask_disk() {
 	local i=
 	shift 2
 	answer=
+	local default_disk=${DEFAULT_DISK:-$1}
 
 	while ! all_in_list "$answer" $@ "none" "abort"; do
 		echo "Available disks are:"
 		show_disk_info "$@"
-		echon "$prompt [$1] "
-		default_read answer $1
+		echon "$prompt [$default_disk] "
+		default_read answer $default_disk
 		case "$answer" in
 			'abort') exit 0;;
 			'none') return 0;;
