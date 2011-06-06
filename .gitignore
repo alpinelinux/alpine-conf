@@ -16,4 +16,5 @@ setup-interfaces
 setup-keymap
 setup-mta
 setup-timezone
+setup-xorg-base
 update-conf

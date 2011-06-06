@@ -24,6 +24,7 @@ SBIN_FILES	:= lbu\
 		setup-acf\
 		setup-bootable\
 		setup-timezone\
+		setup-xorg-base\
 		update-conf
 
 BIN_FILES	:= uniso

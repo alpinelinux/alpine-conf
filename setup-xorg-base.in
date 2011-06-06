@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# simple script to setup x basic org server
+# you will still need a window manager and login manager or xinit
+
+base_pkgs="xorg-server xf86-video-vesa xf86-input-evdev xf86-input-mouse
+	xf86-input-keyboard udev"
+
+# TODO: detect graphics card and pick proper xf86-video-* driver based on that
+
+# TODO: detect if we need xf86-input-synaptics
+
+# ps mouse
+modprobe psmouse
+grep -q -w psmouse /etc/modules || echo "psmouse" >> /etc/modules
+
+# install packages
+apk add $base_pkgs $@
+
+# setup and start udev
+rc-update -q del mdev sysinit
+rc-update -q add udev sysinit
+rc-update -q add udev-postmount default
+
+if ! rc-service -q udev status; then
+	rc-service udev start
+	rc-service udev-postmount start
+fi
+
