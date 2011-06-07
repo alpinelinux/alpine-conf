@@ -612,8 +612,8 @@ data_only_disk_install_lvm() {
 
 data_only_disk_install() {
 	local diskdev=
-	local var_dev=/dev/$vgname/lv_var
-	local var_part_type="8e"
+	local var_dev=
+	local var_part_type="83"
 	local swap_part_type=82
 	local size=
 	local swap_dev= var_dev=
