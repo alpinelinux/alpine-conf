@@ -18,6 +18,23 @@ fi
 mountpoint="usb"
 echo "Please enter mountpoint directory under /media for lbu ($mountpoint):"
 default_read mountpoint "$mountpoint"
+
+mountstatus="`mount | grep /media/${mountpoint}`"
+
+if [ -z $mountstatus ]; then
+	echo "$mountpoint is not mounted" && exit 1
+fi
+
+readwritestatus="`echo $mountstatus | awk -F '(' '{print $2}' | awk -F ',' '{print $1}'`"
+
+if [ "$readwritestatus" == "ro" ]; then
+	rewrite=1
+fi
+
+if [ "$rewrite" == 1 ]; then
+	mount -o remount,rw /media/${mountpoint} || die "Failed to remount media rw"
+}
+
 mkdir -p /media/${mountpoint}/cache || die "Failed to create /media/${mountpoint}/cache"
 ln -s /media/${mountpoint}/cache /etc/apk/cache || die "Failed to create apk cache softlink"
 cat > /etc/lbu/lbu.conf <<EOF
@@ -36,3 +53,6 @@ LBU_MEDIA=$mountpoint
 EOF
 lbu package /media/"$mountpoint" || die "Failed to lbu apkovl on /media/${mountpoint}"
 sync
+if [ "$rewrite" == 1 ]; then
+	mount -o remount,ro /media/${mountpoint} || die "Failed to remount media ro"
+}
