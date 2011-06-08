@@ -76,3 +76,4 @@ $PREFIX/sbin/setup-apkrepos
 DEFAULT_DISK=none \
 	$PREFIX/sbin/setup-disk -q
 
+$PREFIX/sbin/setup-apklbu

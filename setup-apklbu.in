@@ -1,0 +1,38 @@
+#!/bin/sh
+
+PREFIX=
+
+. "$PREFIX/lib/libalpine.sh"
+
+echo "Setup apk caching and lbu? (y/N)"
+default_read setupapklbu
+
+if [ "$setupapklbu" == "Y" ] || [ "$setupapklbu" == "y" ]; then
+	continue=1
+fi
+
+if [ -z $continue ]; then
+	exit 0
+fi
+
+mountpoint="usb"
+echo "Please enter mountpoint directory under /media for lbu ($mountpoint):"
+default_read mountpoint "$mountpoint"
+mkdir -p /media/${mountpoint}/cache || die "Failed to create /media/${mountpoint}/cache"
+ln -s /media/${mountpoint}/cache /etc/apk/cache || die "Failed to create apk cache softlink"
+cat > /etc/lbu/lbu.conf <<EOF
+# what cipher to use with -e option
+DEFAULT_CIPHER=aes-256-cbc
+
+# Uncomment the row below to encrypt config by default
+# ENCRYPTION=$DEFAULT_CIPHER
+
+# Uncomment below to avoid <media> option to 'lbu commit'
+# Can also be set to 'floppy'
+LBU_MEDIA=$mountpoint
+
+# Uncomment below to let lbu make up to 3 backups
+# BACKUP_LIMIT=3
+EOF
+lbu package /media/"$mountpoint" || die "Failed to lbu apkovl on /media/${mountpoint}"
+sync

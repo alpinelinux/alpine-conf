@@ -13,6 +13,7 @@ SBIN_FILES	:= lbu\
 		setup-ads\
 		setup-alpine\
 		setup-alpine-web\
+		setup-apklbu\
 		setup-apkrepos\
 		setup-cryptswap\
 		setup-disk\
