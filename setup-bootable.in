@@ -87,7 +87,7 @@ dest=${2:-/media/usb}
 srcdir=
 # Find the srcdir or srcurl. mount loopback if needed
 if [ -f "$src"/.alpine-release ]; then
-	srcdir="$src"
+	srcdir="`echo $src | sed -r 's,/$,,'`"
 else
 	case "$src" in
 	http://*|ftp://*) srcurl="$src";;
