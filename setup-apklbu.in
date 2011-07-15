@@ -4,25 +4,49 @@ PREFIX=
 
 . "$PREFIX/lib/libalpine.sh"
 
-echo "Setup apk caching and lbu? (y/N)"
-default_read setupapklbu
+usage() {
+        cat <<__EOF__
+usage: setup-apklbu [-hi] [-m relative mountpoint]
 
-if [ "$setupapklbu" == "Y" ] || [ "$setupapklbu" == "y" ]; then
-	continue=1
+Setup apk caching and lbu settings.
+
+options:
+ -h  Show this help
+ -i  Run in installer mode (usually only when called by setup-alpine)
+ -m  Specify mountpoint under /media for lbu backups
+__EOF__
+        exit 1
+}
+
+
+while getopts "im:h" opt; do
+        case $opt in
+                i) VERBOSE="1";;
+		h) usage;;
+		m) MOUNTPOINT="$OPTARG";;
+        esac
+done
+
+if [ "$VERBOSE" == "1" ]; then
+	echo "Setup apk caching and lbu? (y/N)"
+	default_read setupapklbu
+	if [ "$setupapklbu" == "N" ] || [ "$setupapklbu" == "n" ]; then 
+		exit 0
+	fi
 fi
 
-if [ -z $continue ]; then
-	exit 0
+if [ -z $MOUNTPOINT ]; then
+	MOUNTPOINT="usb"
+	echo "Please enter mountpoint directory under /media for lbu [$MOUNTPOINT]:"
+	default_read MOUNTPOINT "$MOUNTPOINT"
 fi
 
-mountpoint="usb"
-echo "Please enter mountpoint directory under /media for lbu ($mountpoint):"
-default_read mountpoint "$mountpoint"
+echo "$MOUNTPOINT" && exit 1
 
-mountstatus="`mount | grep /media/${mountpoint}`"
+mountstatus="`mount | grep /media/${MOUNTPOINT}`"
 
 if [ -z $mountstatus ]; then
-	echo "$mountpoint is not mounted" && exit 1
+	echo "$MOUNTPOINT is not mounted" && exit 1
 fi
 
 readwritestatus="`echo $mountstatus | awk -F '(' '{print $2}' | awk -F ',' '{print $1}'`"
@@ -32,11 +56,11 @@ if [ "$readwritestatus" == "ro" ]; then
 fi
 
 if [ "$rewrite" == 1 ]; then
-	mount -o remount,rw /media/${mountpoint} || die "Failed to remount media rw"
-}
+	mount -o remount,rw /media/${MOUNTPOINT} || die "Failed to remount media rw"
+fi
 
-mkdir -p /media/${mountpoint}/cache || die "Failed to create /media/${mountpoint}/cache"
-ln -s /media/${mountpoint}/cache /etc/apk/cache || die "Failed to create apk cache softlink"
+mkdir -p /media/${MOUNTPOINT}/cache || die "Failed to create /media/${MOUNTPOINT}/cache"
+ln -s /media/${MOUNTPOINT}/cache /etc/apk/cache || die "Failed to create apk cache softlink"
 cat > /etc/lbu/lbu.conf <<EOF
 # what cipher to use with -e option
 DEFAULT_CIPHER=aes-256-cbc
@@ -46,13 +70,13 @@ DEFAULT_CIPHER=aes-256-cbc
 
 # Uncomment below to avoid <media> option to 'lbu commit'
 # Can also be set to 'floppy'
-LBU_MEDIA=$mountpoint
+LBU_MEDIA=$MOUNTPOINT
 
 # Uncomment below to let lbu make up to 3 backups
 # BACKUP_LIMIT=3
 EOF
-lbu package /media/"$mountpoint" || die "Failed to lbu apkovl on /media/${mountpoint}"
+lbu package /media/"$MOUNTPOINT" || die "Failed to lbu apkovl on /media/${MOUNTPOINT}"
 sync
 if [ "$rewrite" == 1 ]; then
-	mount -o remount,ro /media/${mountpoint} || die "Failed to remount media ro"
-}
+	mount -o remount,ro /media/${MOUNTPOINT} || die "Failed to remount media ro"
+fi
