@@ -59,6 +59,7 @@ Options:
  -f  Force overwrite existing files. Will overwrite syslinux.cfg if upgrade.
  -h  Show this help.
  -u  Upgrade mode. Keep existing syslinux.cfg and don't run syslinux.
+     If apk cache is detected, attempts to upgrade the apk cache
  -s  Force run syslinux, even if upgrade mode.
  -v  Verbose mode. Display whats going on.
 
@@ -176,6 +177,8 @@ elif [ -n "$srcurl" ]; then
 		|| die "Failed to download or extract $srcurl"
 fi
 
+
+
 # make sure files are really there before we replace existing
 [ -n "$verbose" ] && echo "Flushing cache..."
 sync
@@ -207,6 +210,25 @@ done
 for i in $tomove; do
 	mv "$destdir"/.new/$i "$destdir"/ || die "Failed to move $destdir/.new/ to $destdir"
 done
+
+# Update the cache folder on destdir if present
+if [ -e "$destdir"/*.apkovl.tar.gz ] && [ -e "$destdir"/cache ]; then
+	apkovlfile="`ls ${destdir}/*.apkovl.tar.gz | head -n 1`"
+	
+	#Get first file apk/world
+	worldfile="`tar tzf $apkovlfile | grep apk/world | head -n 1`"
+	apkstofetch="`cat $worldfile`"
+	mkdir "$destdir"/tmp.cache
+	
+	# If repository update suceeds, fetch copy of all apks in world
+	apk update && apk fetch -R $apkstofetch -o "$destdir"/tmp.cache
+
+	# Copy apks to cache dir if verify passes, then re-index
+	apk verify "$destdir"/tmp.cache/*.apk && mv "$destdir"/tmp.cache/*.apk "$destdir"/cache/ && apk index -o "$destdir"/cache/APKINDEX.tar.gz "$destdir"/cache/*.apk
+	if [ "`ls ${destdir}/tmp.cache`" == "" ]; then
+		rm -rf "$destdir"/tmp.cache
+	fi
+fi
 
 # cleanup
 [ -z "$keep_old" ] && rm -rf "$destdir"/.old "$destdir"/.new
