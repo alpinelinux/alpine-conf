@@ -1,0 +1,56 @@
+#!/bin/sh
+
+PREFIX=
+
+. "$PREFIX/lib/libalpine.sh"
+
+usage() {
+        cat <<__EOF__
+usage: setup-sshd [-hnp]
+
+Setup sshd, turning off server side DNS lookups and password authentication by default
+
+options:
+ -h  Show this help
+ -n  Don't prompt, just use defaults
+ -p  Leave password authentication enabled
+__EOF__
+        exit 1
+}
+
+PASSWORDAUTH="N"
+
+while getopts "hnp" opt; do
+        case $opt in
+                n) PROMPT="0";;
+		h) usage;;
+		p) PASSWORDAUTH="Y";;
+        esac
+done
+
+if [ "$PROMPT" != "0" ]; then
+	echo "Setup sshd? (y/N)"
+	default_read setupsshd "N"
+	if [ "$setupsshd" == "N" ] || [ "$setupsshd" == "n" ]; then 
+		exit 0
+	fi
+fi
+
+exit 1
+
+acfinstalled="`apk version acf-core -q | awk '{print $1}'`"
+
+if [ "$acfinstalled" != "ERROR:" ]; then
+	apk add acf-openssh -q
+else
+	apk add openssh -q
+fi
+
+if [ "$PASSWORDAUTH" == "N"]; then
+	printf "PasswordAuthentication no\nUseDNS no\n" >> /etc/ssh/sshd_config
+else
+	printf "UseDNS no\n" >> /etc/ssh/sshd_config
+fi
+
+/etc/init.d/sshd start
+rc-update add sshd default

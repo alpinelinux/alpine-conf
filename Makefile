@@ -25,6 +25,7 @@ SBIN_FILES	:= lbu\
 		setup-mta\
 		setup-acf\
 		setup-bootable\
+		setup-sshd\
 		setup-timezone\
 		setup-xorg-base\
 		setup-gparted-desktop\
