@@ -41,8 +41,6 @@ if [ -z $MOUNTPOINT ]; then
 	default_read MOUNTPOINT "$MOUNTPOINT"
 fi
 
-echo "$MOUNTPOINT" && exit 1
-
 mountstatus="`mount | grep /media/${MOUNTPOINT}`"
 
 if [ -z $mountstatus ]; then
