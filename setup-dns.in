@@ -18,7 +18,9 @@ done
 echon "] "
 default_read dns "$dns"
 
-echo "search $domain" > $conf
+if [ "$domain" != "" ]; then
+	echo "search $domain" > $conf
+fi
 for i in $dns ; do
 	echo "nameserver $i" >> $conf
 done
