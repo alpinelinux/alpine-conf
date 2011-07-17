@@ -117,7 +117,7 @@ elif [ -b "$dest" ]; then
 fi
 
 # Check for RO mounting
-if [ "`grep \"$destdir\" /proc/mount | grep '(ro,'`" == "ro" ]; then
+if [ "`grep \"$destdir\" /proc/mount | grep 'ro,'`" == "ro" ]; then
 	remountneeded="Y"
 	mount -o remount,rw "$destdir"
 fi
