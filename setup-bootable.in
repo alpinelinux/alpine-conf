@@ -115,6 +115,10 @@ elif [ -b "$dest" ]; then
 	mount "$dest" "$destdir" || die "Failed to mount $dest on $destdir"
 	umounts="$umounts $destdir"
 fi
+
+# Check for RO mounting
+if [ "`grep \"$destdir\" /proc/mount | grep '(ro,'`"
+
 [ -n "$verbose" ] && echo "Using $dest as target (mounted on $destdir)"
 
 
@@ -213,21 +217,19 @@ done
 
 # Update the cache folder on destdir if present
 if [ -e "$destdir"/*.apkovl.tar.gz ] && [ -e "$destdir"/cache ]; then
-	apkovlfile="`ls ${destdir}/*.apkovl.tar.gz | head -n 1`"
-	
-	#Get first file apk/world
-	worldfile="`tar tzf $apkovlfile | grep apk/world | head -n 1`"
-	apkstofetch="`cat $worldfile`"
 	mkdir "$destdir"/tmp.cache
 	
-	# If repository update suceeds, fetch copy of all apks in world
-	apk update && apk fetch -R $apkstofetch -o "$destdir"/tmp.cache
+	mv /etc/apk/cache /etc/apk/cache.temp
+	ln -s "destdir"/tmp.cache/ /etc/apk/cache
+	
+	mkdir "destdir"/cache.old
+	mv "$destdir"/cache/* "$destdir"/cache.old/
+	
+	apk update
+	apk cache sync
 
-	# Copy apks to cache dir if verify passes, then re-index
-	apk verify "$destdir"/tmp.cache/*.apk && mv "$destdir"/tmp.cache/*.apk "$destdir"/cache/ && apk index -o "$destdir"/cache/APKINDEX.tar.gz "$destdir"/cache/*.apk
-	if [ "`ls ${destdir}/tmp.cache`" == "" ]; then
-		rm -rf "$destdir"/tmp.cache
-	fi
+	mv "$destdir"/tmp.cache/* "$destdir"/cache/ && rm -rf "$destdir"/cache.old
+	rm -rf "$destdir"/tmp.cache
 fi
 
 # cleanup
