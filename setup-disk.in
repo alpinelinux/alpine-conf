@@ -941,3 +941,4 @@ none) exit 0;;
 *) echo "Not a valid install mode: $DISK_MODE" >&2; exit 1;;
 esac
 
+echo "$DISK_MODE" > /tmp/alpine-install-diskmode.out

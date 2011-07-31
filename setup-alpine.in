@@ -80,4 +80,6 @@ $PREFIX/sbin/setup-ntp
 DEFAULT_DISK=none \
 	$PREFIX/sbin/setup-disk -q
 
-$PREFIX/sbin/setup-apklbu -i
+if ![ "`cat /tmp/alpine-install-diskmode.out`" = "sys" ]; then
+	$PREFIX/sbin/setup-apklbu -i
+fi
