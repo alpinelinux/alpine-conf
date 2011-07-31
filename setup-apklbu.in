@@ -27,10 +27,10 @@ while getopts "im:h" opt; do
         esac
 done
 
-if [ "$VERBOSE" == "1" ]; then
+if [ "$VERBOSE" = "1" ]; then
 	echo "Setup apk caching and lbu? (y/N)"
 	default_read setupapklbu
-	if [ "$setupapklbu" == "N" ] || [ "$setupapklbu" == "n" ]; then 
+	if [ "$setupapklbu" = "N" ] || [ "$setupapklbu" = "n" ]; then 
 		exit 0
 	fi
 fi
@@ -49,11 +49,11 @@ fi
 
 readwritestatus="`echo $mountstatus | awk -F '(' '{print $2}' | awk -F ',' '{print $1}'`"
 
-if [ "$readwritestatus" == "ro" ]; then
+if [ "$readwritestatus" = "ro" ]; then
 	rewrite=1
 fi
 
-if [ "$rewrite" == 1 ]; then
+if [ "$rewrite" = 1 ]; then
 	mount -o remount,rw /media/${MOUNTPOINT} || die "Failed to remount media rw"
 fi
 
@@ -75,6 +75,6 @@ LBU_MEDIA=$MOUNTPOINT
 EOF
 lbu package /media/"$MOUNTPOINT" || die "Failed to lbu apkovl on /media/${MOUNTPOINT}"
 sync
-if [ "$rewrite" == 1 ]; then
+if [ "$rewrite" = 1 ]; then
 	mount -o remount,ro /media/${MOUNTPOINT} || die "Failed to remount media ro"
 fi

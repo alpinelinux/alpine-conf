@@ -117,7 +117,7 @@ elif [ -b "$dest" ]; then
 fi
 
 # Check for RO mounting
-if [ "`grep \"$destdir\" /proc/mount | grep 'ro,'`" == "ro" ]; then
+if [ "`grep \"$destdir\" /proc/mount | grep 'ro,'`" = "ro" ]; then
 	remountneeded="Y"
 	mount -o remount,rw "$destdir"
 fi
@@ -261,7 +261,7 @@ else
 	echo "Warning: Could not find the parent device for $dest"
 fi
 
-if [ "$remountneeded" == "Y" ]; then
+if [ "$remountneeded" = "Y" ]; then
 	mount -o remount,ro "$destdir"
 fi
 

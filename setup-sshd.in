@@ -31,7 +31,7 @@ done
 if [ "$PROMPT" != "0" ]; then
 	echo "Setup sshd? (y/N)"
 	default_read setupsshd "N"
-	if [ "$setupsshd" == "N" ] || [ "$setupsshd" == "n" ]; then 
+	if [ "$setupsshd" = "N" ] || [ "$setupsshd" = "n" ]; then 
 		exit 0
 	fi
 fi
@@ -46,7 +46,7 @@ else
 	apk add openssh -q
 fi
 
-if [ "$PASSWORDAUTH" == "N"]; then
+if [ "$PASSWORDAUTH" = "N"]; then
 	printf "PasswordAuthentication no\nUseDNS no\n" >> /etc/ssh/sshd_config
 else
 	printf "UseDNS no\n" >> /etc/ssh/sshd_config

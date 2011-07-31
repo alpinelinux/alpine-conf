@@ -27,7 +27,7 @@ done
 if [ "$PROMPT" != "0" ]; then
 	echo "Setup chrony for NTP? (y/N)"
 	default_read setupchrony "N"
-	if [ "$setupchrony" == "N" ] || [ "$setupchrony" == "n" ]; then 
+	if [ "$setupchrony" = "N" ] || [ "$setupchrony" = "n" ]; then 
 		exit 0
 	fi
 fi
