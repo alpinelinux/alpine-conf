@@ -8,48 +8,36 @@ usage() {
         cat <<__EOF__
 usage: setup-sshd [-hnp]
 
-Setup sshd, turning off server side DNS lookups and password authentication by default
+Setup sshd
 
 options:
  -h  Show this help
- -n  Don't prompt, just use defaults
- -p  Leave password authentication enabled
 __EOF__
         exit 1
 }
 
-PASSWORDAUTH="N"
-
-while getopts "hnp" opt; do
+while getopts "hn" opt; do
         case $opt in
-                n) PROMPT="0";;
 		h) usage;;
-		p) PASSWORDAUTH="Y";;
         esac
 done
 
-if [ "$PROMPT" != "0" ]; then
-	echo "Setup sshd? (y/N)"
-	default_read setupsshd "N"
-	if [ "$setupsshd" = "N" ] || [ "$setupsshd" = "n" ]; then 
-		exit 0
-	fi
+echo "Sshd to setup? (openssh, dropbear, none) [openssh]"
+default_read setupsshd "openssh"
+if [ "$setupsshd" = "none" ]; then 
+	exit 0
 fi
-
-exit 1
 
 acfinstalled="`apk version acf-core -q | awk '{print $1}'`"
 
-if [ "$acfinstalled" != "ERROR:" ]; then
-	apk add acf-openssh -q
-else
-	apk add openssh -q
-fi
-
-if [ "$PASSWORDAUTH" = "N"]; then
-	printf "PasswordAuthentication no\nUseDNS no\n" >> /etc/ssh/sshd_config
-else
-	printf "UseDNS no\n" >> /etc/ssh/sshd_config
+if [ "setupsshd" = "openssh"]; then
+	if [ "$acfinstalled" != "ERROR:" ]; then
+		apk add acf-openssh -q
+	else
+		apk add openssh -q
+	fi
+elif [ "setupsshd" = "dropbear"]; then
+	apk add dropbear
 fi
 
 /etc/init.d/sshd start

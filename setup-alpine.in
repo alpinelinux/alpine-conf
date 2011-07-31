@@ -73,11 +73,11 @@ sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn)} ${_hn} localh
 
 $PREFIX/sbin/setup-apkrepos
 
+$PREFIX/sbin/setup-sshd
+
+$PREFIX/sbin/setup-ntp
+
 DEFAULT_DISK=none \
 	$PREFIX/sbin/setup-disk -q
 
 $PREFIX/sbin/setup-apklbu -i
-
-$PREFIX/sbin/setup-ntp
-
-$PREFIX/sbin/setup-sshd
