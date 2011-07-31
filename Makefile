@@ -15,7 +15,7 @@ SBIN_FILES	:= lbu\
 		setup-alpine-web\
 		setup-apklbu\
 		setup-apkrepos\
-		setup-chrony\
+		setup-ntp\
 		setup-cryptswap\
 		setup-disk\
 		setup-dns\

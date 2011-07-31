@@ -78,6 +78,6 @@ DEFAULT_DISK=none \
 
 $PREFIX/sbin/setup-apklbu -i
 
-$PREFIX/sbin/setup-chrony
+$PREFIX/sbin/setup-ntp
 
 $PREFIX/sbin/setup-sshd
