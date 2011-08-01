@@ -121,6 +121,6 @@ $PREFIX/sbin/setup-ntp ${NTPOPTS}
 DEFAULT_DISK=none \
 	$PREFIX/sbin/setup-disk -q ${DISKOPTS}
 
-if ![ "`cat /tmp/alpine-install-diskmode.out`" = "sys" ]; then
+if [ "`cat /tmp/alpine-install-diskmode.out`" != "sys" ]; then
 	$PREFIX/sbin/setup-apklbu -i ${APKLBUOPTS}
 fi
