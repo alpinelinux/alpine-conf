@@ -59,6 +59,7 @@ fi
 
 mkdir -p /media/${MOUNTPOINT}/cache || die "Failed to create /media/${MOUNTPOINT}/cache"
 ln -s /media/${MOUNTPOINT}/cache /etc/apk/cache || die "Failed to create apk cache softlink"
+apk cache sync
 cat > /etc/lbu/lbu.conf <<EOF
 # what cipher to use with -e option
 DEFAULT_CIPHER=aes-256-cbc
