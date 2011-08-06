@@ -6,46 +6,51 @@ PREFIX=
 
 usage() {
         cat <<__EOF__
-usage: setup-ntp [-hn]
+usage: setup-ntp [-h] [-c choice of NTP daemon]
 
 Setup NTP time synchronization
 
 options:
  -h  Show this help
- -n  Don't prompt, just use defaults
+ -c  Choice of NTP daemon: chrony openntpd none
 __EOF__
         exit 1
 }
 
-while getopts "hn" opt; do
+install_ntpchoice() {
+	if [ "$1" = "none" ]; then
+		exit 0
+	elif [ "$1" = "chrony" ]; then
+		if [ "$acfinstalled" != "ERROR:" ]; then
+			apk add acf-chrony -q
+		else
+			apk add chrony -q
+		fi
+		
+		echo "10 chronypass" > /etc/chrony/chrony.keys
+	
+		/etc/init.d/chronyd start
+		rc-update add chronyd default
+	elif [ "$1" = "openntpd" ]; then		
+		apk add openntpd -q
+		/etc/init.d/ntpd start
+		rc-update add ntpd default
+	fi
+}
+
+while getopts "hc:" opt; do
         case $opt in
-                n) PROMPT="0";;
+                c) ntpchoice="$OPTARG";;
 		h) usage;;
         esac
 done
 
-if [ "$PROMPT" != "0" ]; then
-	echo "Which NTP service would you like to use? (openntpd, chrony, none) [openntpd]"
-	default_read ntpchoice "openntpd"
-	if [ "$ntpchoice" = "none" ]; then 
-		exit 0
-	fi
-fi
-
 acfinstalled="`apk version acf-core -q | awk '{print $1}'`"
-if [ "$ntpchoice" = "chrony" ]; then
-	if [ "$acfinstalled" != "ERROR:" ]; then
-		apk add acf-chrony -q
-	else
-		apk add chrony -q
-	fi
-	
-	echo "10 chronypass" > /etc/chrony/chrony.keys
 
-	/etc/init.d/chronyd start
-	rc-update add chronyd default
-elif [ "$ntpchoice" = "openntpd" ]; then
-	apk add openntpd -q
-	/etc/init.d/ntpd start
-	rc-update add ntpd default
+if [ -n "$ntpchoice" ]; then
+	install_ntpchoice "$ntpchoice"
+else
+        echo "Which NTP service would you like to use? (openntpd, chrony, none) [openntpd]"
+        default_read ntpchoice "openntpd"
+	install_ntpchoice "$ntpchoice"
 fi
