@@ -13,7 +13,7 @@ Setup apk caching and lbu settings.
 options:
  -h  Show this help
  -i  Run in installer mode (usually only when called by setup-alpine)
- -m  Specify mountpoint under /media for lbu backups
+ -m  Specify mountpoint under /media for lbu backups (default is usb)
 __EOF__
         exit 1
 }
@@ -33,12 +33,15 @@ if [ "$VERBOSE" = "1" ]; then
 	if [ "$setupapklbu" = "N" ] || [ "$setupapklbu" = "n" ]; then 
 		exit 0
 	fi
+	if [ -z $MOUNTPOINT ]; then
+		MOUNTPOINT="usb"
+		echo "Please enter mountpoint directory under /media for lbu [$MOUNTPOINT]:"
+		default_read MOUNTPOINT "$MOUNTPOINT"
+	fi
 fi
 
 if [ -z $MOUNTPOINT ]; then
 	MOUNTPOINT="usb"
-	echo "Please enter mountpoint directory under /media for lbu [$MOUNTPOINT]:"
-	default_read MOUNTPOINT "$MOUNTPOINT"
 fi
 
 mountstatus="`mount | grep /media/${MOUNTPOINT}`"
