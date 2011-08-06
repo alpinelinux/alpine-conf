@@ -6,39 +6,48 @@ PREFIX=
 
 usage() {
         cat <<__EOF__
-usage: setup-sshd [-hnp]
+usage: setup-sshd [-h] [-c choice of SSH daemon]
 
-Setup sshd
+Setup sshd daemon
 
 options:
  -h  Show this help
+ -c  Choice of SSH daemon: openssh dropbear none
 __EOF__
         exit 1
 }
 
-while getopts "hn" opt; do
+while getopts "hc:" opt; do
         case $opt in
 		h) usage;;
+		c) sshdchoice="$OPTARG";;
         esac
 done
 
-echo "Sshd to setup? (openssh, dropbear, none) [openssh]"
-default_read setupsshd "openssh"
-if [ "$setupsshd" = "none" ]; then 
+if [ "$sshdchoice" = "" ]; then
+	echo "sshd to setup? (openssh, dropbear, none) [openssh]"
+	default_read sshdchoice "openssh"
+fi
+
+if [ "$sshdchoice" = "none" ]; then 
 	exit 0
 fi
 
 acfinstalled="`apk version acf-core -q | awk '{print $1}'`"
 
-if [ "setupsshd" = "openssh"]; then
+if [ "$sshdchoice" = "openssh" ]; then
 	if [ "$acfinstalled" != "ERROR:" ]; then
 		apk add acf-openssh -q
 	else
 		apk add openssh -q
 	fi
-elif [ "setupsshd" = "dropbear"]; then
+elif [ "$sshdchoice" = "dropbear" ]; then
 	apk add dropbear
 fi
 
-/etc/init.d/sshd start
-rc-update add sshd default
+if [ -e /etc/init.d/sshd ]; then
+	/etc/init.d/sshd start
+	rc-update add sshd default
+else
+	echo "$sshdchoice failed to install"
+fi
