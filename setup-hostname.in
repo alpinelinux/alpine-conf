@@ -5,6 +5,20 @@ PREFIX=
 
 . $PREFIX/lib/libalpine.sh
 
+usage() {
+        cat <<__EOF__
+usage: setup-hostname [-h] [-n hostname]
+
+Sets the system hostname.
+
+options:
+ -h  Show this help
+ -n  Specify the hostname to set
+__EOF__
+        exit 1
+}
+
+
 # http://en.wikipedia.org/wiki/Hostname#Restrictions_on_valid_host_names
 valid_hostname() {
 	# check length
@@ -24,10 +38,22 @@ valid_hostname() {
 	return 0
 }
 
+while getopts "hn:" opt; do
+        case $opt in
+		h) usage;;
+		n) HOSTNAME="$OPTARG";;
+        esac
+done
+
+
 while true; do
-	HOST=`hostname`
-	echon "Enter system hostname (short form, e.g. 'foo') [$HOST]: "
-	default_read HOST `hostname`
+	if [ -n "$HOSTNAME" ]; then
+		HOST="$HOSTNAME"
+	else
+		HOST=`hostname`
+		echon "Enter system hostname (short form, e.g. 'foo') [$HOST]: "
+		default_read HOST `hostname`
+	fi
 	if valid_hostname "$HOST"; then
 		break
 	fi
