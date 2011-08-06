@@ -6,6 +6,20 @@ PREFIX=
 
 zroot=/usr/share/zoneinfo
 
+usage() {
+        cat <<__EOF__
+usage: setup-timezone [-h] [-p posixtz format] [-z subfolder of $zroot]
+
+Sets the timezone for the system.
+
+options:
+ -h  Show this help
+ -p  Specify the timezone in PosixTZ format
+ -z  Specify the timezone as a subfolder of $zroot
+__EOF__
+        exit 1
+}
+
 show_tz_list() {
 	local i z= list=
 	local path="$zroot/$1"
@@ -29,6 +43,14 @@ valid_tz() {
 		| xargs posixtz | sort | uniq | grep -q -w "$1"
 }
 
+while getopts "hp:z:" opt; do
+        case $opt in
+                h) usage;;
+                p) POSIXTZ="$OPTARG";;
+		t) ZONEINFOFOLDER="$OPTARG";;
+        esac
+done
+
 if ! apk info -q -e tzdata; then
 	apk add -q tzdata && apkdel="tzdata" || exit 1
 fi
@@ -37,6 +59,19 @@ zonepath=$(cat /etc/TZ 2>/dev/null)
 [ -z "$zonepath" ] && zonepath="UTC"
 
 while true; do
+	if [ -n "$POSIXTZ" ]; then
+		echo $POSIXTZ > /etc/TZ || rm -f /etc/TZ
+		break
+	fi
+
+	if [ -n "$ZONEINFOFOLDER" ]; then
+		TZ=$(posixtz "$ZONEINFOFOLDER") || echo "Failed to convert '$ZONEINFOFOLDER' to POSIX TZ"
+		if [ -n "$TZ" ]; then
+			echo $TZ > /etc/TZ || rm -f /etc/TZ
+		fi
+		break
+	fi
+
 	echo -n "Which timezone are you in? ('?' for list) [$zonepath] "
 	default_read zonepath "$zonepath"
 	case "$zonepath" in
