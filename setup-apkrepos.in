@@ -120,6 +120,28 @@ edit_repositories() {
 	test "$(md5sum $APKREPOS_PATH)" != "$md5"
 }
 
+usage() {
+	cat <<__EOF__
+usage: setup-apkrepos [-hr]
+
+Setup apk repositories
+
+options:
+ -h  Show this help
+ -r  Add a random mirror and do not prompt
+__EOF__
+	exit 1
+
+}
+
+while getopts "hr" opt; do
+        case $opt in
+                h) usage;;
+                r) JUSTADDRANDOM=1;;
+        esac
+done
+
+
 # main
 # install alpine-mirrors if its not already there
 to_uninstall=
@@ -143,24 +165,31 @@ if [ -r "$APKREPOS_PATH" ]; then
 	APKREPOS=`cat "$APKREPOS_PATH"`
 fi
 
+
+
 get_alpine_release
 default_answer=f
 changed=
 while true; do
-	show_mirror_list
-	prompt_setup_method $default_answer
-
-	default_read answer $default_answer
-	case "$answer" in
-		"done") break;;
-		[0-9]*) add_from_list $answer && changed=1;;
-		/*|http://*|ftp://*|https://*) add_from_url "$answer" && changed=1;;
-		r) add_random_mirror && changed=1;;
-		f) add_fastest_mirror && changed=1;;
-		e) edit_repositories && changed=1 && break;;
-	esac
-	if [ -n "$changed" ]; then
-		default_answer="done"
+	if [ -n "$JUSTADDRANDOM" ]; then
+		show_mirror_list > /dev/null
+		add_random_mirror && changed=1 && break
+	else
+		show_mirror_list
+		prompt_setup_method $default_answer
+	
+		default_read answer $default_answer
+		case "$answer" in
+			"done") break;;
+			[0-9]*) add_from_list $answer && changed=1;;
+			/*|http://*|ftp://*|https://*) add_from_url "$answer" && changed=1;;
+			r) add_random_mirror && changed=1;;
+			f) add_fastest_mirror && changed=1;;
+			e) edit_repositories && changed=1 && break;;
+		esac
+		if [ -n "$changed" ]; then
+			default_answer="done"
+		fi
 	fi
 done
 
