@@ -3,20 +3,52 @@
 PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
-conf="$ROOT/etc/resolv.conf"
+usage() {
+        cat <<__EOF__
+usage: setup-dns [-h] [-d domain name] [-n name server(s)]
+
+Setup /etc/resolv.conf DNS settings
+
+options:
+ -h  Show this help
+ -d  specify search domain name
+ -n  DNS server(s) to use.  For multiple servers, surround in quotes and space-seperate the list
+__EOF__
+        exit 1
+}
+
+while getopts "d:n:h" opt; do
+        case $opt in
+                d) DOMAINNAME="$OPTARG";;
+                h) usage;;
+                n) NAMESERVERS="$OPTARG";;
+        esac
+done
+
+conf="/home/jbilyk/alpine-conf/resolv.conf"
+
 if [ -f "$conf" ] ; then
 	domain=`awk '/^domain/ {print $2}' $conf`
 	dns=`awk '/^nameserver/ {print $2}' $conf`
 fi
 
-echon "DNS domain name? (e.g 'bar.com') [$domain] "
-default_read domain $domain
-echon "DNS nameserver(s)? ["
-for i in $dns ; do
-	echon "$i "
-done
-echon "] "
-default_read dns "$dns"
+if [ -n "$DOMAINNAME" ];then
+	domain="$DOMAINNAME"
+else
+	echon "DNS domain name? (e.g 'bar.com') [$domain] "
+	default_read domain $domain
+fi
+
+if [ -n "$NAMESERVERS" ];then
+	dns="$NAMESERVERS"
+else
+	echon "DNS nameserver(s)? ["
+	for i in $dns ; do
+		echon "$i "
+	done
+	echon "] "
+	default_read dns "$dns"
+fi
 
 if [ "$domain" != "" ]; then
 	echo "search $domain" > $conf
