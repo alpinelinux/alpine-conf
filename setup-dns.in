@@ -25,7 +25,7 @@ while getopts "d:n:h" opt; do
         esac
 done
 
-conf="/home/jbilyk/alpine-conf/resolv.conf"
+conf="$ROOT/etc/resolv.conf"
 
 if [ -f "$conf" ] ; then
 	domain=`awk '/^domain/ {print $2}' $conf`
