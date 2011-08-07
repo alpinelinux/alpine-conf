@@ -99,69 +99,94 @@ config_iface() {
 	rm $iface.noconf
 }
 
-init_tmpdir TMP
+usage() {
+        cat <<__EOF__
+usage: setup-interfaces [-h] [-i read custom /etc/network/interfaces from stdin]
 
-cd $TMP
-for i in $(detect_interfaces); do
-	touch $i.noconf
+Setup network interfaces
+
+options:
+ -h  Show this help
+ -i  Read new contents of /etc/network/interfaces from stdin
+__EOF__
+        exit 1
+}
+
+while getopts "hi" opt; do
+        case $opt in
+                h) usage;;
+		i) STDINPUT=1;;
+        esac
 done
 
-index=1
-while ls *.noconf > /dev/null 2>&1 ; do
-	echon "Available interfaces are:"
-	for i in *.noconf; do
-		echon " `basename $i .noconf`"
-	done
-	echo "."
-
-	firstif=`get_first_unconfigured`
-	echon "Which one do you want to initialize? (or 'done') [$firstif] "
-	default_read iface "$firstif"
+if [ "$STDINPUT" != "1" ]; then
+	init_tmpdir TMP
 	
-	[ "$iface" = "done" ] && break
-	[ -f $iface.noconf ] || continue
-	config_iface $iface $(printf "%.3d~" $index)
-	index=$(( $index + 1 ))
-done
+	cd $TMP
+	for i in $(detect_interfaces); do
+		touch $i.noconf
+	done
+	
+	index=1
+	while ls *.noconf > /dev/null 2>&1 ; do
+		echon "Available interfaces are:"
+		for i in *.noconf; do
+			echon " `basename $i .noconf`"
+		done
+		echo "."
+	
+		firstif=`get_first_unconfigured`
+		echon "Which one do you want to initialize? (or 'done') [$firstif] "
+		default_read iface "$firstif"
+	
+		[ "$iface" = "done" ] && break
+		[ -f $iface.noconf ] || continue
+		config_iface $iface $(printf "%.3d~" $index)
+		index=$(( $index + 1 ))
+	done
+	
+	echo "type=loopback" > 000~lo.conf
+	echo "" > interface
+	hostname=$(cat /etc/hostname 2>/dev/null)
+	
+	for i in *.conf ; do
+		iface=`basename $i .conf`
+		iface=${iface#[0-9]*~}
+		. ./$i
+		echo "auto $iface" >> interfaces
+		echo "iface $iface inet $type" >> interfaces
+		case $type in
+		dhcp)
+			[ -n "$hostname" ] \
+				&& echo -e "\thostname $hostname" >> interfaces
+			;;
+		static)
+			echo -e "\taddress $address" >> interfaces
+			echo -e "\tnetmask $netmask" >> interfaces
+			[ "$gateway" ] \
+				&& echo -e "\tgateway $gateway" >> interfaces
+			;;
+		esac
+		echo "" >> interfaces
+	done
+	
+	while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
+		echon "Do you want to do any manual network configuration? [no] "
+		default_read answer no
+	done
 
-echo "type=loopback" > 000~lo.conf
-echo "" > interface
-hostname=$(cat /etc/hostname 2>/dev/null)
-
-for i in *.conf ; do
-	iface=`basename $i .conf`
-	iface=${iface#[0-9]*~}
-	. ./$i
-	echo "auto $iface" >> interfaces
-	echo "iface $iface inet $type" >> interfaces
-	case $type in
-	dhcp)
-		[ -n "$hostname" ] \
-			&& echo -e "\thostname $hostname" >> interfaces
-		;;
-	static)
-		echo -e "\taddress $address" >> interfaces
-		echo -e "\tnetmask $netmask" >> interfaces
-		[ "$gateway" ] \
-			&& echo -e "\tgateway $gateway" >> interfaces
-		;;
-	esac
-	echo "" >> interfaces
-done
-
-while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
-	echon "Do you want to do any manual network configuration? [no] "
-	default_read answer no
-done
-
-if [ "$answer" = "yes" ]; then
-	case "$EDITOR" in
-		nano)	pkg_inst nano;;
-		vim)	pkg_inst vim;;
-	esac
-	${EDITOR:-vi} interfaces
+	if [ "$answer" = "yes" ]; then
+		case "$EDITOR" in
+			nano)	pkg_inst nano;;
+			vim)	pkg_inst vim;;
+		esac
+		${EDITOR:-vi} interfaces
+	fi
+		
+	mkdir -p $ROOT/etc/network
+	cp interfaces $ROOT/etc/network/
+else
+	cat /dev/stdin > interfaces
+	mkdir -p $ROOT/etc/network
+	cp interfaces $ROOT/etc/network
 fi
-
-mkdir -p $ROOT/etc/network
-cp interfaces $ROOT/etc/network/
-
