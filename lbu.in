@@ -265,7 +265,7 @@ cmd_package() {
 	local rc=0
 	local owd="$PWD"
 	local suff="apkovl.tar.gz"
-	local tmpdir tmppkg
+	local tmpdir tmppkg tmpexclude tmpinclude
 
 	check_openssl
 	init_tmpdir tmpdir
@@ -284,6 +284,8 @@ cmd_package() {
 	fi
 
 	tmppkg="$tmpdir/$(basename $pkg)"
+	tmpexclude="$tmpdir"/exclude
+	tmpinclude="$tmpdir"/include
 
 	cd "${ROOT:-/}"
 	# remove old package.list
@@ -293,8 +295,16 @@ cmd_package() {
 		rm -f etc/lbu/packages.list
 	fi
 	# create tar archive
-	[ -f "$EXCLUDE_LIST" ] && sed -i '/^$/d' "$EXCLUDE_LIST" && excl="-X $EXCLUDE_LIST"
-	[ -f "$INCLUDE_LIST" ] && sed -i '/^$/d' "$INCLUDE_LIST" && incl="-T $INCLUDE_LIST"
+	if [ -f "$EXCLUDE_LIST" ]; then
+		# strip empty lines and lines with only whitespace
+		sed -e '/^[[:space:]]*$/d' "$EXCLUDE_LIST" > $tmpexclude
+		excl="-X $tmpexclude"
+	fi
+	if [ -f "$INCLUDE_LIST" ]; then
+		# strip empty lines and lines with only whitespace
+		sed -e '/^[[:space:]]*$/d' "$INCLUDE_LIST" > $tmpinclude
+		incl="-T $tmpinclude"
+	fi
 	if [ -n "$VERBOSE" ]; then
 		echo "Archiving the following files:" >&2
 		# we dont want to mess the tar output with the
