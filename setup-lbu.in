@@ -23,10 +23,20 @@ __EOF__
 get_mnt_line() {
 	local mntpoint="$1"
 	local mnttab="$2"
+	local media=${mntpoint#/media/}
+	local uuid=
+	# replace the device with UUID since the device is in /proc/mounts
+	# and we want the UUID in fstab
+	if [ "${media#UUID}" != "$media" ]; then
+		uuid="$media"
+	fi
+
 	# we need filter out codepage=... in mount option as it makes
 	# mount fail if its there.
-	awk "\$2 == \"$mntpoint\" {
-		gsub(/,codepage=.*,/, ",", \$4);
+	awk -v uuid="$uuid" "\$2 == \"$mntpoint\" {
+		if (uuid)
+			\$1 = uuid;
+		gsub(/,codepage=.*,/, \",\", \$4);
 		print \$0;
 	}" "$mnttab"
 }
