@@ -22,6 +22,7 @@ SBIN_FILES	:= lbu\
 		setup-hostname\
 		setup-interfaces\
 		setup-keymap\
+		setup-lbu\
 		setup-mta\
 		setup-acf\
 		setup-bootable\

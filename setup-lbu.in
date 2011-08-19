@@ -1,0 +1,123 @@
+#!/bin/sh
+
+PREFIX=
+
+. "$PREFIX/lib/libalpine.sh"
+
+usage() {
+        cat <<__EOF__
+usage: setup-lbu [-hq] [MEDIA]
+
+Setup lbu media settings.
+
+MEDIA is optional mountpoint under /media
+
+options:
+ -h  Show this help
+ -q  Quietly pick best suggestion. Only prompts user if unsure.
+
+__EOF__
+        exit 1
+}
+
+get_mnt_line() {
+	mntpoint="$1"
+	mnttab="$2"
+	awk "\$2 == \"$mntpoint\" {print \$0}" "$mnttab"
+}
+	
+is_mounted() {
+	test -n "$(get_mnt_line $1 /proc/mounts)"
+}
+
+is_in_fstab() {
+	test -n "$(get_mnt_line $1 /etc/fstab)"
+}
+
+set_media() {
+	local media="${1%/}"	# strip trailing /
+	local mnt=/media/$media
+
+	if [ -d "$media" ] && [ "${media#/media/}" != "$media" ]; then
+		mnt="$media"
+		media=${mnt#/media/}
+	fi
+	if ! [ -d "$mnt" ]; then
+		echo "$mnt: not a directory" >&2
+		exit 1
+	fi
+
+	# set  LBU_MEDIA in /etc/lbu/lbu.conf
+	sed -i -e "/^\#\?[[:space:]]*LBU_MEDIA=.*/s/.*/LBU_MEDIA=$media/" \
+		/etc/lbu/lbu.conf
+	if ! egrep -q '^LBU_MEDIA=' /etc/lbu/lbu.conf; then
+		echo "LBU_MEDIA=$media" >> /etc/lbu/lbu.conf
+	fi
+
+	# append to fstab if its missing
+	if ! is_in_fstab $mnt && is_mounted $mnt; then
+		get_mnt_line "$mnt" /proc/mounts >> /etc/fstab
+	fi
+
+	# hack in case we have alpine_dev moutned on /media/usbdisk but
+	# lbu is stored on /media/usb
+	# Otherwise we get issues when we do lbu commit.
+	if [ "$media" = "usb" ] && is_mounted /media/usbdisk; then
+		mount --move /media/usbdisk /media/usb
+	elif [ "$media" = "usbdisk" ] && is_mounted /media/usb; then
+		mount --move /media/usb /media/usbdisk
+	fi
+}
+
+while getopts "hq" opt; do
+        case $opt in
+		h) usage;;
+		q) quiet=1;;
+        esac
+done
+shift $(($OPTIND - 1))
+
+# check if MEDIA option was given
+if [ -n "$1" ]; then
+	set_media "$1"
+	exit
+fi
+
+alternatives=
+suggestion="none"
+for dir in /media/*; do
+	[ -d "$dir" ] || continue
+	[ "$dir" = "/media/cdrom" ] && continue
+	alternatives="$alternatives ${dir#/media/}"
+	if is_mounted $dir; then
+		suggestion=${dir#/media/}
+		[ -n "$quiet" ] && media=$suggestion
+	fi
+done
+
+# if nothing is mounted (or boot from cdrom)
+usbmnt=$(awk '$1 == "/dev/usbdisk" {print $2}' /proc/mounts)
+if [ -z "$suggestion" ] && [ -n "$usbmnt" ]; then
+	suggestion=${usbmnt#/media/}
+	if [ -n "$quiet" ] && [ -e /dev/usbdisk ]; then
+		media=$suggestion
+	fi
+fi
+
+while [ -z "$media" ]; do
+	echo "Where would you like to store configs? ($alternatives or none) [$suggestion] "
+	default_read media $suggestion
+	if [ "$media" = "none" ] || [ -d "/media/$media" ]; then
+		break
+	fi
+	echo "/media/$media is not a directory. Please try again."
+	media=
+done
+
+if [ "$media" = "none" ]; then
+	exit 0
+fi
+
+set_media "$media"
+
+
