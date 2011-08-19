@@ -21,11 +21,16 @@ __EOF__
 }
 
 get_mnt_line() {
-	mntpoint="$1"
-	mnttab="$2"
-	awk "\$2 == \"$mntpoint\" {print \$0}" "$mnttab"
+	local mntpoint="$1"
+	local mnttab="$2"
+	# we need filter out codepage=... in mount option as it makes
+	# mount fail if its there.
+	awk "\$2 == \"$mntpoint\" {
+		gsub(/,codepage=.*,/, ",", \$4);
+		print \$0;
+	}" "$mnttab"
 }
-	
+
 is_mounted() {
 	test -n "$(get_mnt_line $1 /proc/mounts)"
 }
