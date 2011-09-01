@@ -66,7 +66,7 @@ while true; do
 		echo $TZ > /etc/TZ || rm -f /etc/TZ
 		break
 	fi
-	echo "'$zonepath' is not a vaild timezone on this system"
+	echo "'$zonepath' is not a valid timezone on this system"
 done
 
 if [ -n "$apkdel" ]; then
