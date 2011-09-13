@@ -111,6 +111,8 @@ if [ -n "$INTERFACESOPTS" ]; then
 else
 	$PREFIX/sbin/setup-interfaces
 fi
+# start the networking in background
+/etc/init.d/networking --quiet start &
 
 # setup up dns if no dhcp was configured
 grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
