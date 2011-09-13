@@ -65,7 +65,8 @@ shift $(( $OPTIND - 1 ))
 # try auto detetect what we suggest
 suggestion=
 if [ -L /etc/apk/cache ]; then
-	suggestion=$(readlink $suggestion)
+	suggestion=$(readlink /etc/apk/cache)
+fi
 
 if [ -z "$suggestion" ] && [ -f /etc/lbu/lbu.conf ]; then
 	. /etc/lbu/lbu.conf
