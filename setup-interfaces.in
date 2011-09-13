@@ -112,14 +112,7 @@ __EOF__
         exit 1
 }
 
-while getopts "hi" opt; do
-        case $opt in
-                h) usage;;
-		i) STDINPUT=1;;
-        esac
-done
-
-if [ "$STDINPUT" != "1" ]; then
+prompt_for_interfaces() {
 	init_tmpdir TMP
 	
 	cd $TMP
@@ -185,8 +178,18 @@ if [ "$STDINPUT" != "1" ]; then
 		
 	mkdir -p $ROOT/etc/network
 	cp interfaces $ROOT/etc/network/
-else
-	cat /dev/stdin > interfaces
+}
+
+while getopts "hi" opt; do
+        case $opt in
+                h) usage;;
+		i) STDINPUT=1;;
+        esac
+done
+
+if [ "$STDINPUT" = "1" ]; then
 	mkdir -p $ROOT/etc/network
-	cp interfaces $ROOT/etc/network
+	cat > $ROOT/etc/network/interfaces
+else
+	prompt_for_interfaces
 fi
