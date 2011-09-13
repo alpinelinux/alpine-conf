@@ -158,7 +158,11 @@ $PREFIX/sbin/setup-ntp ${NTPOPTS}
 DEFAULT_DISK=none \
 	$PREFIX/sbin/setup-disk -q ${DISKOPTS}
 
-if [ "`cat /tmp/alpine-install-diskmode.out`" != "sys" ]; then
+diskmode=$(cat /tmp/alpine-install-diskmode.out 2>/dev/null)
+
+# setup lbu and apk cache unless installed sys on disk
+if [ "$diskmode" != "sys" ]; then
 	$PREFIX/sbin/setup-lbu ${LBUOPTS}
 	$PREFIX/sbin/setup-apkcache ${APKCACHEOPTS}
 fi
+
