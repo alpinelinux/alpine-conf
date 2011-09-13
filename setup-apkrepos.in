@@ -188,7 +188,7 @@ while true; do
 			e) edit_repositories && changed=1 && break;;
 		esac
 		if [ -n "$changed" ]; then
-			default_answer="done"
+			break
 		fi
 	fi
 done
