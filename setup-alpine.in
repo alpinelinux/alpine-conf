@@ -88,7 +88,9 @@ NTPOPTS="-c openntpd"
 DISKOPTS="-m data /dev/sda"
 
 # Setup in /media/sdb1
-APKLBUOPTS="-m sdb1"
+LBUOPTS="/media/sdb1"
+APKCACHEOPTS="/media/sdb1/cache"
+
 __EOF__
 	echo "Answer file $CREATEANSWERFILE has been created.  Please add or remove options as desired in that file"
 	exit 0
@@ -155,5 +157,6 @@ DEFAULT_DISK=none \
 	$PREFIX/sbin/setup-disk -q ${DISKOPTS}
 
 if [ "`cat /tmp/alpine-install-diskmode.out`" != "sys" ]; then
-	$PREFIX/sbin/setup-apklbu -i ${APKLBUOPTS}
+	$PREFIX/sbin/setup-lbu ${LBUOPTS}
+	$PREFIX/sbin/setup-apkcache ${APKCACHEOPTS}
 fi

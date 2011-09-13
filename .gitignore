@@ -5,6 +5,7 @@ setup-acf
 setup-ads
 setup-alpine
 setup-alpine-web
+setup-apkcache
 setup-apkrepos
 setup-bootable
 setup-cryptswap
