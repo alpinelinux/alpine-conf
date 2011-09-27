@@ -160,10 +160,12 @@ list_delete() {
 unpack_apkovl() {
 	local f="$(hostname).apkovl.tar.gz"
 	local dest="$1"
-	local mnt="/media/$LBU_MEDIA"
+	local mnt="${LBU_BACKUPDIR:-/media/$LBU_MEDIA}"
 	local count=0
 	mkdir -p "$dest"
-	mount_once "$mnt"
+	if [ -n "$LBU_MEDIA" ]; then
+		mount_once "$mnt"
+	fi
 	if [ -n "$ENCRYPTION" ]; then
 		f="$f.$ENCRYPTION"
 	fi	
@@ -389,7 +391,8 @@ Options:
   -v	Verbose mode.
 
 The following values for <media> is supported: floppy usb
-If <media> is not specified, the environment variable LBU_MEDIA will be used.
+If <media> is not specified, the environment variable LBU_BACKUPDIR or
+LBU_MEDIA will be used. If LBU_BACKUPDIR is set, nothing will be mounted.
 
 Password protection will use $DEFAULT_CIPHER encryption. Other ciphers can be
 used by setting the DEFAULT_CIPHER or ENCRYPTION environment variables.
@@ -412,14 +415,17 @@ cmd_commit() {
 	# turn on verbose mode if dryrun
 	[ -n "$DRYRUN" ] && VERBOSE="-v"
 
-	# find what media to use
-	media="${1:-$LBU_MEDIA}"
-	[ -z "$media" ] && usage_commit
+	mnt="$LBU_BACKUPDIR"
+	if [ -z "$mnt" ]; then
+		# find what media to use
+		media="${1:-$LBU_MEDIA}"
+		[ -z "$media" ] && usage_commit
 
-	# mount media unles its already mounted
-	mnt=/media/$media
-	[ -d "$mnt" ] || usage
-	mount_once_rw "$mnt" || die "failed to mount $mnt"
+		# mount media unles its already mounted
+		mnt=/media/$media
+		[ -d "$mnt" ] || usage
+		mount_once_rw "$mnt" || die "failed to mount $mnt"
+	fi
 
 	# find the outfile
 	outfile="$mnt/$(hostname).apkovl.tar.gz"
@@ -541,10 +547,12 @@ EOF
 
 cmd_listbackup() {
 	local media=${1:-"$LBU_MEDIA"}
-	local mnt="/media/$media"
-	[ -z "$media" ] && usage_listbackup
+	local mnt="${LBU_BACKUPDIR:-/media/$media}"
+	[ -z "$media" ] && [ -z "$LBU_BACKUPDIR" ] && usage_listbackup
 
-	mount_once "$mnt" || die "failed to mount $mnt"
+	if [ -n "$media" ]; then
+		mount_once "$mnt" || die "failed to mount $mnt"
+	fi
 	ls -1 "$mnt"/*.[0-9][0-9]*[0-9][0-9].tar.gz* 2>/dev/null | sed 's:.*/::'
 }
 
@@ -600,7 +608,7 @@ cmd_status() {
 		return 0
 	fi
 	LBU_MEDIA=${1:-"$LBU_MEDIA"}
-	[ -z "$LBU_MEDIA" ] && usage_status
+	[ -z "$LBU_MEDIA" ] && [ -z "$LBU_BACKUPDIR" ] && usage_status
 	local tmp
 	init_tmpdir tmp
 	mkdir -p "$tmp/a" "$tmp/b"
@@ -654,7 +662,7 @@ usage: $PROGRAM diff [<media>]
 
 cmd_diff() {
 	LBU_MEDIA=${1:-"$LBU_MEDIA"}
-	[ -z "$LBU_MEDIA" ] && usage_diff
+	[ -z "$LBU_MEDIA" ] && [ -z "$LBU_BACKUPDIR" ] && usage_diff
 	local tmp
 	init_tmpdir tmp
 	mkdir -p "$tmpdir/a" "$tmp/b"
