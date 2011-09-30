@@ -58,6 +58,8 @@ or a device. If DEST is ommitted /media/usb will be used.
 Options:
  -f  Force overwrite existing files. Will overwrite syslinux.cfg if upgrade.
  -h  Show this help.
+ -k  Keep current alpine_dev in syslinux.cfg. Without this it will be replaced
+     with the UUID.
  -u  Upgrade mode. Keep existing syslinux.cfg and don't run syslinux.
      If apk cache is detected, attempts to upgrade the apk cache
  -s  Force run syslinux, even if upgrade mode.
@@ -67,10 +69,11 @@ __EOF__
 	exit 1
 }
 
-while getopts "fhusv" opt; do
+while getopts "fhkusv" opt; do
 	case "$opt" in
 	f) force=1;;
 	h) usage;;
+	k) keep_alpine_dev=1;;
 	u) upgrade=1;;
 	s) syslinux=1;;
 	v) verbose=1;;
@@ -115,6 +118,9 @@ elif [ -b "$dest" ]; then
 	mount "$dest" "$destdir" || die "Failed to mount $dest on $destdir"
 	umounts="$umounts $destdir"
 fi
+
+# fish out label, uuid and type
+eval $(blkid $dest | cut -d: -f2-)
 
 # Check for RO mounting
 if [ "`grep \"$destdir\" /proc/mount | grep 'ro,'`" = "ro" ]; then
@@ -217,6 +223,12 @@ done
 for i in $tomove; do
 	mv "$destdir"/.new/$i "$destdir"/ || die "Failed to move $destdir/.new/ to $destdir"
 done
+
+
+if [ -z "$keep_alpine_dev" ] && [ -n "$UUID" ]; then
+	sed -i -e "s/alpine_dev=[^ \t]\+/alpine_dev=UUID=$UUID/" \
+		"$destdir"/syslinux.cfg
+fi
 
 # Update the cache folder on destdir if present
 if [ -e "$destdir"/*.apkovl.tar.gz ] && [ -e "$destdir"/cache ]; then
