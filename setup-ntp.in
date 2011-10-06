@@ -17,27 +17,6 @@ __EOF__
         exit 1
 }
 
-install_ntpchoice() {
-	if [ "$1" = "none" ]; then
-		exit 0
-	elif [ "$1" = "chrony" ]; then
-		if [ "$acfinstalled" != "ERROR:" ]; then
-			apk add acf-chrony -q
-		else
-			apk add chrony -q
-		fi
-		
-		echo "10 chronypass" > /etc/chrony/chrony.keys
-	
-		/etc/init.d/chronyd start
-		rc-update add chronyd default
-	elif [ "$1" = "openntpd" ]; then		
-		apk add openntpd -q
-		/etc/init.d/ntpd start
-		rc-update add ntpd default
-	fi
-}
-
 while getopts "hc:" opt; do
         case $opt in
                 c) ntpchoice="$OPTARG";;
@@ -45,12 +24,29 @@ while getopts "hc:" opt; do
         esac
 done
 
-acfinstalled="`apk version acf-core -q | awk '{print $1}'`"
-
-if [ -n "$ntpchoice" ]; then
-	install_ntpchoice "$ntpchoice"
-else
-        echo "Which NTP service would you like to use? (openntpd, chrony, none) [openntpd]"
-        default_read ntpchoice "openntpd"
-	install_ntpchoice "$ntpchoice"
+if [ -z "$ntpchoice" ]; then
+        echo -n "Which NTP service would you like to use? (openntpd, chrony, none) [chrony] "
+        default_read ntpchoice "chrony"
 fi
+
+pkgs="$ntpchoice"
+
+case "$ntpchoice" in
+none|abort)
+	exit 0
+	;;
+chrony)
+	if apk info --installed --quiet acf-core; then
+		pkgs="$pkgs acf-chrony"
+	fi
+	svc=chronyd
+	;;
+openntpd)
+	svc=ntpd
+	;;
+esac
+
+apk add -q $pkgs
+rc-update add $svc default
+rc-service $svc start
+
