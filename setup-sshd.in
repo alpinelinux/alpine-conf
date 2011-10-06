@@ -25,7 +25,7 @@ while getopts "hc:" opt; do
 done
 
 if [ "$sshdchoice" = "" ]; then
-	echo "sshd to setup? (openssh, dropbear, none) [openssh]"
+	echo -n "Remote administration with sshd? (openssh, dropbear, none) [openssh] "
 	default_read sshdchoice "openssh"
 fi
 
@@ -33,21 +33,21 @@ if [ "$sshdchoice" = "none" ]; then
 	exit 0
 fi
 
-acfinstalled="`apk version acf-core -q | awk '{print $1}'`"
-
-if [ "$sshdchoice" = "openssh" ]; then
-	if [ "$acfinstalled" != "ERROR:" ]; then
-		apk add acf-openssh -q
-	else
-		apk add openssh -q
-	fi
-elif [ "$sshdchoice" = "dropbear" ]; then
-	apk add dropbear
+pkgs="$sshdchoice"
+if [ "$sshdchoice" = "openssh" ] && apk info --quiet --installed acf-core; then
+	pkgs="$pkgs acf-openssh"
 fi
 
-if [ -e /etc/init.d/sshd ]; then
-	/etc/init.d/sshd start
-	rc-update add sshd default
-else
-	echo "$sshdchoice failed to install"
+apk add --quiet $pkgs
+
+svc=
+case "$sshdchoice" in
+	openssh) svc=sshd;;
+	dropbear) svc=dropbear;;
+esac
+
+if [ -n "$svc" ]; then
+	rc-update add $svc default
+	rc-service $svc start
 fi
+
