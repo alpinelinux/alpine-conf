@@ -61,7 +61,6 @@ Options:
  -k  Keep current alpine_dev in syslinux.cfg. Without this it will be replaced
      with the UUID.
  -u  Upgrade mode. Keep existing syslinux.cfg and don't run syslinux.
-     If apk cache is detected, attempts to upgrade the apk cache
  -s  Force run syslinux, even if upgrade mode.
  -v  Verbose mode. Display whats going on.
 
@@ -121,12 +120,6 @@ fi
 
 # fish out label, uuid and type
 eval $(blkid $dest | cut -d: -f2-)
-
-# Check for RO mounting
-if [ "`grep \"$destdir\" /proc/mount | grep 'ro,'`" = "ro" ]; then
-	remountneeded="Y"
-	mount -o remount,rw "$destdir"
-fi
 
 [ -n "$verbose" ] && echo "Using $dest as target (mounted on $destdir)"
 
@@ -190,8 +183,6 @@ elif [ -n "$srcurl" ]; then
 		|| die "Failed to download or extract $srcurl"
 fi
 
-
-
 # make sure files are really there before we replace existing
 [ -n "$verbose" ] && echo "Flushing cache..."
 sync
@@ -224,33 +215,14 @@ for i in $tomove; do
 	mv "$destdir"/.new/$i "$destdir"/ || die "Failed to move $destdir/.new/ to $destdir"
 done
 
-
 if [ -z "$keep_alpine_dev" ] && [ -n "$UUID" ]; then
 	sed -i -e "s/alpine_dev=[^ \t]\+/alpine_dev=UUID=$UUID/" \
 		"$destdir"/syslinux.cfg
 fi
 
-# Update the cache folder on destdir if present
-if [ -e "$destdir"/*.apkovl.tar.gz ] && [ -e "$destdir"/cache ]; then
-	mkdir "$destdir"/tmp.cache
-	
-	mv /etc/apk/cache /etc/apk/cache.temp
-	ln -s "destdir"/tmp.cache/ /etc/apk/cache
-	
-	mkdir "destdir"/cache.old
-	mv "$destdir"/cache/* "$destdir"/cache.old/
-	
-	apk update
-	apk cache sync
-
-	mv "$destdir"/tmp.cache/* "$destdir"/cache/ && rm -rf "$destdir"/cache.old
-	rm -rf "$destdir"/tmp.cache
-fi
-
 # cleanup
 [ -z "$keep_old" ] && rm -rf "$destdir"/.old "$destdir"/.new
 sync
-
 
 # If we only copy then we are done.
 if [ -n "$upgrade" ] && [ -z "$syslinux" ]; then
@@ -271,10 +243,6 @@ if [ -b $parent_dev ]; then
 	dd if=/usr/share/syslinux/mbr.bin of=$parent_dev
 else
 	echo "Warning: Could not find the parent device for $dest"
-fi
-
-if [ "$remountneeded" = "Y" ]; then
-	mount -o remount,ro "$destdir"
 fi
 
 cleanup
