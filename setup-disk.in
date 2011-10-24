@@ -163,7 +163,8 @@ find_pvs_in_vg() {
 install_mounted_root() {
 	local mnt="$1" mnt_boot="$1" boot_fs= root_fs=
 	local initfs_features="ata base ide scsi usb virtio"
-	local pvs= dev= rootdev= bootdev= raidopt=
+	local pvs= dev= rootdev= bootdev= raidopt= root= modules=
+	local kernel_opts="quiet"
 
 	rootdev=$(find_mount_dev "$mnt")
 	if [ -z "$rootdev" ]; then
@@ -228,6 +229,21 @@ install_mounted_root() {
 		echo "/etc/mdadm.conf" >> "$mnt"/etc/mkinitfs/files.d/raid
 	fi
 
+	# generate update-extlinux.conf
+	root=$(uuid_or_device $rootdev)
+	if is_vmware; then
+		kernel_opts="pax_nouderef $kernel_opts"
+	fi
+	if is_xen; then
+		kernel_opts="xen $kernel_opts"
+	fi
+	modules="sd-mod,usb-storage,${root_fs}${raidmod}"
+	sed -e "s:^root=.*:root=$root:" \
+		-e "s:^default_kernel_opts=.*:default_kernel_opts=\"$kernel_opts\":" \
+		-e "s:^modules=.*:modules=$modules:" \
+		/etc/update-extlinux.conf > "$mnt"/etc/update-extlinux.conf
+
+
 	# generate the fstab
 	if [ -f "$mnt"/etc/fstab ]; then
 		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
@@ -259,36 +275,6 @@ EOF
 	apk add --root "$mnt" $apkflags --overlay-from-stdin \
 		$repoflags $pkgs <$ovlfiles>/dev/null || return 1
 	echo ""
-
-	# make things bootable
-	if is_vmware; then
-		pax_nouderef="pax_nouderef "
-	else
-		pax_nouderef=
-	fi
-
-	if is_xen; then
-		# create a menu.lst
-		mkdir -p "$mnt"/boot/grub
-		cat >"$mnt"/boot/grub/menu.lst <<EOF
-default 0
-title $KERNEL_FLAVOR
-root (hd0,0)
-kernel /boot/$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=${root_fs}${raidmod} quiet xen BOOT_IMAGE=/boot/$KERNEL_FLAVOR
-initrd=/boot/initramfs-$KERNEL_FLAVOR
-EOF
-	else
-		# create an extlinux.conf
-		cat >"$mnt"/boot/extlinux.conf <<EOF
-timeout 20
-prompt 1
-default $KERNEL_FLAVOR
-label $KERNEL_FLAVOR
-	kernel /boot/vmlinuz-$KERNEL_FLAVOR
-	append initrd=/boot/initramfs-$KERNEL_FLAVOR root=$(uuid_or_device $rootdev) modules=sd-mod,usb-storage,${root_fs}${raidmod} ${pax_nouderef}quiet
-EOF
-	fi
-
 	is_xen || extlinux $raidopt --install "$mnt"/boot
 }
 
