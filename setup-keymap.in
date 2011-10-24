@@ -78,7 +78,7 @@ goodbye() {
 	exit $1
 }
 
-apk_info -eq bkeymaps
+apk info -eq bkeymaps
 was_installed=$?
 
 pkg_inst bkeymaps

@@ -163,7 +163,7 @@ while getopts "D:fP:hvU:K:S:" opt ; do
 done
 shift `expr $OPTIND - 1`
 
-apk_add samba-ldap
+apk add samba-ldap
 check_exist
 ask_info
 conf_krb

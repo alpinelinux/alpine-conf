@@ -100,7 +100,7 @@ if [ "$ARCHIVE" ] ; then
 	echo "Creating an Alpine overlay"
 	init_tmpdir ROOT
 else
-	PKGADD=apk_add
+	PKGADD="apk add"
 fi
 
 $PREFIX/sbin/setup-keymap ${KEYMAPOPTS}

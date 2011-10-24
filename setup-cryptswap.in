@@ -31,7 +31,7 @@ else
 fi
 
 
-apk_add cryptsetup-luks
+apk add cryptsetup-luks
 
 # set the device in /etc/conf.f/cryptswap
 if grep ^DEVICE= /etc/conf.d/cryptswap >/dev/null ; then

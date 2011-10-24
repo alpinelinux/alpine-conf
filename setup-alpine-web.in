@@ -45,7 +45,7 @@ do_setup() {
 	hostname $HNAME
 
 	# install needed packages
-	apk_add dhcp iptables "$@"
+	apk add dhcp iptables "$@"
 
 	# config dhcp server
 	make_dhcp_global > /etc/dhcp/dhcpd.conf

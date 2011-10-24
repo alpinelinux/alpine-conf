@@ -15,7 +15,7 @@ pkgs="acf-core acf-alpine-baselayout acf-apk-tools openssl"
 
 while getopts "ae:hl:n" opt ; do
 	case $opt in
-		a) pkgs=`apk_fetch -l | grep ^acf-`;;
+		a) pkgs=`apk fetch -l | grep ^acf-`;;
 		e) EMAIL="$OPTARG";;
 		h) usage;;
 		l) address="$OPTARG";;
@@ -44,7 +44,7 @@ if [ "$create_passwd" != "no" ]; then
 fi
 
 # install packages 
-apk_add mini_httpd $pkgs || exit 1
+apk add mini_httpd $pkgs || exit 1
 
 # setup mini_httpd and start it
 if [ -d /var/www/localhost/htdocs ]; then
