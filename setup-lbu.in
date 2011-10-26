@@ -103,12 +103,15 @@ suggestion="none"
 for dir in /media/*; do
 	[ -d "$dir" ] || continue
 	[ "$dir" = "/media/cdrom" ] && continue
-	alternatives="$alternatives ${dir#/media/}"
+	alternatives="$alternatives, '${dir#/media/}'"
 	if is_mounted $dir; then
 		suggestion=${dir#/media/}
 		[ -n "$quiet" ] && media=$suggestion
 	fi
 done
+
+# strip leading , + space
+alternatives=${alternatives#, }
 
 # if nothing is mounted (or boot from cdrom)
 usbmnt=$(awk '$1 == "/dev/usbdisk" {print $2}' /proc/mounts)
@@ -120,7 +123,7 @@ if [ -z "$suggestion" ] && [ -n "$usbmnt" ]; then
 fi
 
 while [ -z "$media" ]; do
-	echo "Where would you like to store configs? ($alternatives or none) [$suggestion] "
+	echo -n "Enter where to store configs ($alternatives or 'none') [$suggestion]: "
 	default_read media $suggestion
 	if [ "$media" = "none" ] || [ -d "/media/$media" ]; then
 		break
