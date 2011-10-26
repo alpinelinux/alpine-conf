@@ -104,7 +104,7 @@ fi
 cachedir=$1
 
 while [ -z "$cachedir" ]; do
-	echo -n "Where would you like to store apk cache? (or none) [$suggestion] "
+	echo -n "Where would you like to store apk cache? (or 'none') [$suggestion] "
 	default_read cachedir $suggestion
 done
 
