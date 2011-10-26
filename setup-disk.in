@@ -287,12 +287,27 @@ unmount_partitions() {
 
 # figure out decent default swap size in mega bytes
 find_swap_size() {
-	if [ -n "$SWAP_SIZE" ]; then
-		return
-	fi
 	local memtotal_kb=$(awk '$1 == "MemTotal:" {print $2}' /proc/meminfo)
-	# use 2 * avaiable ram
-	echo $(( $memtotal_kb * 2 / 1024 ))
+	# use 2 * avaiable ram or no more than 1/3 of smallest disk space
+	local size=$(( $memtotal_kb * 2 / 1024 ))
+	local disk= disksize=
+	for disk in $@; do
+		local sysfspath=/sys/block/${disk#/dev/}/size
+		# disksize = x * 512 / (1024 * 1024) = x / 2048
+		# maxsize = $disksize / 4 = x / (2048 * 4) = x / 8192
+		maxsize=$(awk '{ printf "%i", $0 / 8192 }' $sysfspath )
+		if [ $size -gt $maxsize ]; then
+			size=$maxsize
+		fi
+	done
+	if [ $size -gt 4096 ]; then
+		# dont ever use more than 4G
+		size=4096
+	elif [ $size -lt 64 ]; then
+		# dont bother create swap smaller than 64MB
+		size=0
+	fi
+	echo $size
 }
 
 has_mounted_part() {
@@ -824,7 +839,6 @@ esac
 
 DISK_MODE=
 USE_LVM=
-SWAP_SIZE=$(find_swap_size)
 # Parse args
 while getopts "hk:Lm:o:qrs:v" opt; do
 	case $opt in
@@ -910,6 +924,10 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 		esac
 	done
 	DISK_MODE="$answer"
+fi
+
+if [ -z "$SWAP_SIZE" ]; then
+	SWAP_SIZE=$(find_swap_size $diskdevs)
 fi
 
 set -- $diskdevs
