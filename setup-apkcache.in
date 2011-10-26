@@ -22,15 +22,34 @@ is_mounted() {
 	awk '{print $2}' /proc/mounts | grep -q "^$1$"
 }
 
+find_fstab_mount_point() {
+	local dir="$1"
+	local res=
+	while [ -n "$dir" ]; do
+		res=$(awk "\$2 == \"$dir\" {print \$2}" /etc/fstab)
+		if [ -n "$res" ]; then
+			echo $res
+			return
+		fi
+		dir=${dir%/*}
+	done
+}
+
 # figure out mount point
 find_mount_point() {
+	local dir=$(find_fstab_mount_point $1)
+	if [ -d "$dir" ] && [ "$dir" != "/" ]; then
+		echo $dir
+		return
+	fi
+
 	local dir="$1"
 	while ! [ -d "$dir" ]; do
 		dir=${dir%/*}
 	done
 	local fs_id=$(stat -f -c %i "$dir")
 	local parent="${dir%/*}"
-	while [ -n "$parent" ] && [ "$(stat -f -c %i $parent)" = "$fs_id" ]; do
+	while [ -n "$dir" ] && [ "$(stat -f -c %i $parent/)" = "$fs_id" ]; do
 		dir=$parent
 		parent=${parent%/*}
 	done
