@@ -74,6 +74,18 @@ is_mounted_ro() {
 	return 1
 }
 
+apk_cache_help() {
+	cat <<__EOF__
+
+Packages installed from network can be cached locally to be available during
+boot, before the network is started. Specifying a directory here will make apk
+cache the packages locally in this directory.
+
+Enter 'none' if you do not want to cache packages from network.
+
+__EOF__
+}
+
 while getopts "h" opt; do
         case $opt in
 		h) usage;;
@@ -104,8 +116,12 @@ fi
 cachedir=$1
 
 while [ -z "$cachedir" ]; do
-	echo -n "Where would you like to store apk cache? (or 'none') [$suggestion] "
+	echo -n "Enter apk cache directory (or '?' or 'none') [$suggestion]: "
 	default_read cachedir $suggestion
+	if [ "$cachedir" = "?" ]; then
+		apk_cache_help
+		cachedir=
+	fi
 done
 
 if [ "$cachedir" = "none" ]; then
