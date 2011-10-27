@@ -216,7 +216,7 @@ for i in $tomove; do
 done
 
 if [ -z "$keep_alpine_dev" ] && [ -n "$UUID" ]; then
-	sed -i -e "s/alpine_dev=[^ \t]\+/alpine_dev=UUID=$UUID/" \
+	sed -i -e "s/alpine_dev=[^ \t:]\+/alpine_dev=UUID=$UUID/" \
 		"$destdir"/syslinux.cfg
 fi
 
