@@ -25,7 +25,7 @@ while getopts "hc:" opt; do
 done
 
 if [ "$sshdchoice" = "" ]; then
-	echo -n "Remote administration with sshd? (openssh, dropbear, none) [openssh] "
+	echo -n "Which SSH server? ('openssh', 'dropbear' or 'none') [openssh] "
 	default_read sshdchoice "openssh"
 fi
 
