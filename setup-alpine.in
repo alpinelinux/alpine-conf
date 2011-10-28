@@ -16,6 +16,10 @@ get_fqdn() {
 	echo "${_dn:=my.domain}"
 }
 
+is_qemu() {
+	grep -q "QEMU" /proc/cpuinfo
+}
+
 usage() {
 	cat <<__EOF__
 usage: setup-alpine [-ha] [-f FILE] [-c FILE]
@@ -161,7 +165,9 @@ fi
 
 $PREFIX/sbin/setup-sshd ${SSHDOPTS}
 
-$PREFIX/sbin/setup-ntp ${NTPOPTS}
+if ! is_qemu; then
+	$PREFIX/sbin/setup-ntp ${NTPOPTS}
+fi
 
 DEFAULT_DISK=none \
 	$PREFIX/sbin/setup-disk -q ${DISKOPTS}
