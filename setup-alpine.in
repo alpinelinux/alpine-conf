@@ -31,12 +31,13 @@ __EOF__
         exit 1
 }
 
-while getopts "af:c:h" opt ; do
+while getopts "af:c:hq" opt ; do
 	case $opt in
 		a) ARCHIVE=yes;;
 		f) USEANSWERFILE="$OPTARG";;  
 		c) CREATEANSWERFILE="$OPTARG";;
 		h) usage;;
+		q) quick=1;;
 		*) usage;;
 	esac
 done
@@ -121,8 +122,10 @@ grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
 # set root password
 [ -z "$NOCOMMIT" ] && while ! passwd ; do echo "Please retry." ; done
 
-# pick timezone
-$PREFIX/sbin/setup-timezone ${TIMEZONEOPTS}
+if [ -z "$quick" ]; then
+	# pick timezone
+	$PREFIX/sbin/setup-timezone ${TIMEZONEOPTS}
+fi
 
 rc-update -q add networking boot 
 rc-update -q add urandom boot 
@@ -150,6 +153,11 @@ _hn=${_hn%%.*}
 sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn)} ${_hn} localhost.localdomain localhost/" /etc/hosts
 
 $PREFIX/sbin/setup-apkrepos ${APKREPOSOPTS}
+
+# lets stop here if in "quick mode"
+if [ "$quick" = 1 ]; then
+	exit 0
+fi
 
 $PREFIX/sbin/setup-sshd ${SSHDOPTS}
 
