@@ -206,6 +206,14 @@ install_mounted_root() {
 			raid[456]) raidmod="$raidmod,raid456";;
 		esac
 	done
+
+	# check if we need hardware raid drivers
+	case $rootdev in
+		/dev/cciss/*)
+			initfs_features="$(echo $initfs_features | sed 's/raid//') raid"
+			;;
+	esac
+
 	if [ -n "$VERBOSE" ]; then
 		echo "Root device:     $rootdev"
 		echo "Root filesystem: $root_fs"
