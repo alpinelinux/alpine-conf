@@ -74,6 +74,13 @@ is_mounted_ro() {
 	return 1
 }
 
+# get the fstype of the given mount point
+mount_fstype() {
+	# we only want the last mount in case there are several
+	awk -v mnt="$1" '$2 == "/" {fstype = mnt} END {print fstype}' \
+		/proc/mounts
+}
+
 apk_cache_help() {
 	cat <<__EOF__
 
@@ -108,6 +115,10 @@ fi
 
 if [ -z "$suggestion" ] && [ -L /dev/usbdisk ]; then
 	suggestion=/media/usb/cache
+fi
+
+if [ -z "$suggestion" ] && [ "$(mount_fstype /)" != "tmpfs" ]; then
+	suggestion=/var/cache/apk
 fi
 
 if [ -z "$suggestion" ]; then
