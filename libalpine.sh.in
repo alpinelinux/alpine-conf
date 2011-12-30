@@ -106,4 +106,13 @@ askpassword() {
 	IFS=$_oifs
 }
 
+# Detect if we are running Xen
+is_xen() {
+	test -d /proc/xen
+}
 
+# Detect if we are running Xen Dom0
+is_xen_dom0() {
+	is_xen && \
+	grep -q "control_d" /proc/xen/capabilities
+}

@@ -5,6 +5,7 @@ PREFIX=
 
 . $PREFIX/lib/libalpine.sh
 
+bridges=""
 
 detect_interfaces() {
 	ip addr | grep -v ' lo:' | awk -F : '/^[0-9]*:/ { print $2}'
@@ -42,7 +43,30 @@ config_iface() {
 	local address
 	local netmask
 	local gateway
+	local bridge
 	local conf=$prefix$iface.conf
+	local answer
+
+	if is_xen_dom0; then
+		while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
+			echon "Do you want to bridge the interface $iface? [no] "
+			default_read answer no
+		done
+	else
+		answer="no"
+	fi
+
+	if [ "$answer" = "yes" ]; then
+		bridge="br"`echo $iface | sed 's/[^0-9]//g'`
+		while [ 1 ]; do
+			echon "Name of the bridge you would like to create: [$bridge] "
+			default_read bridge $bridge
+			`echo "$bridges" | grep -q "$bridge"` || break
+			echo "Name already in use, please choose another one"
+		done
+		echo "bridge=${bridge}" > $conf
+		bridges="$bridges $bridge"
+	fi
 
 	# use ipcalc to validate the address. we do accept /mask
 	# we are no interested in the result, only error code, so
@@ -55,7 +79,7 @@ config_iface() {
 		[ "$address" = "abort" ] && return
 		if [ "$address" = "dhcp" ] ; then
 			HAS_DHCP=yes
-			echo "type=dhcp" > $conf
+			echo "type=dhcp" >> $conf
 			rm $iface.noconf
 			return
 		fi
@@ -87,7 +111,7 @@ config_iface() {
 		[ -z "$gateway" ] && break
 	done
 	
-	echo "type=static" > $conf
+	echo "type=static" >> $conf
 	echo "address=${address%%/*}" >> $conf  #strip off /mask if there
 	echo "netmask=$netmask" >> $conf
 	echo "gateway=$gateway" >> $conf
@@ -146,8 +170,20 @@ prompt_for_interfaces() {
 		iface=`basename $i .conf`
 		iface=${iface#[0-9]*~}
 		. ./$i
-		echo "auto $iface" >> interfaces
-		echo "iface $iface inet $type" >> interfaces
+		if [ -n "$bridge" ]; then
+			echo "auto $iface $bridge" >> interfaces
+			echo "" >> interfaces
+			echo "iface $iface inet manual" >> interfaces
+			echo -e "\tup ip link set \$IFACE up" >> interfaces
+			echo -e "\tdown ip link set \$IFACE down" >> interfaces
+			echo "" >> interfaces
+			echo "iface $bridge inet $type" >> interfaces
+			echo -e "\tpre-up brctl addbr $bridge" >> interfaces
+			echo -e "\tpre-up brctl addif $bridge $iface" >> interfaces
+		else
+			echo "auto $iface" >> interfaces
+			echo "iface $iface inet $type" >> interfaces
+		fi
 		case $type in
 		dhcp)
 			[ -n "$hostname" ] \
@@ -160,7 +196,12 @@ prompt_for_interfaces() {
 				&& echo -e "\tgateway $gateway" >> interfaces
 			;;
 		esac
+		if [ -n "$bridge" ]; then
+			echo -e "\tpost-down brctl delif $bridge $iface" >> interfaces
+			echo -e "\tpost-down brctl delbr $bridge" >> interfaces
+		fi
 		echo "" >> interfaces
+		bridge=""
 	done
 	
 	while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
