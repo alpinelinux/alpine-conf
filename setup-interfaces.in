@@ -45,16 +45,16 @@ config_iface() {
 	local gateway
 	local bridge
 	local conf=$prefix$iface.conf
-	local answer
+	local answer=
 
-	if is_xen_dom0; then
-		while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
-			echon "Do you want to bridge the interface $iface? [no] "
-			default_read answer no
-		done
-	else
-		answer="no"
-	fi
+	while [ -n "$ask_bridge" ]; do
+		echon "Do you want to bridge the interface $iface? [no] "
+		default_read answer no
+		case "$answer" in
+			yes|y) answer=yes; break;;
+			no|n) break;;
+		esac
+	done
 
 	if [ "$answer" = "yes" ]; then
 		bridge="br"`echo $iface | sed 's/[^0-9]//g'`
@@ -125,11 +125,12 @@ config_iface() {
 
 usage() {
         cat <<__EOF__
-usage: setup-interfaces [-h] [-i read custom /etc/network/interfaces from stdin]
+usage: setup-interfaces [-bhi]
 
 Setup network interfaces
 
 options:
+ -b  Ask for bridging of interfaces
  -h  Show this help
  -i  Read new contents of /etc/network/interfaces from stdin
 __EOF__
@@ -221,8 +222,12 @@ prompt_for_interfaces() {
 	cp interfaces $ROOT/etc/network/
 }
 
-while getopts "hi" opt; do
+ask_bridge=
+is_xen_dom0 && ask_bridge=1
+
+while getopts "bhi" opt; do
         case $opt in
+		b) ask_bridge=1;;
                 h) usage;;
 		i) STDINPUT=1;;
         esac
