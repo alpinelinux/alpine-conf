@@ -1,0 +1,66 @@
+#!/bin/sh
+
+PREFIX=
+. "$PREFIX/lib/libalpine.sh"
+
+PROFILE="$ROOT/etc/profile.d/proxy.sh"
+
+if [ -f "$PROFILE" ] ; then
+  proxyserver=`grep "^# proxyserver" $PROFILE | cut -f 2 -d '='`
+  proxyuser=`grep "^# proxyuser" $PROFILE | cut -f 2 -d '='`
+  proxypass=`grep "^# proxypass" $PROFILE | cut -f 2 -d '='`
+fi
+
+echon "name of proxyserver ? (e.g proxy.domain.loc:8080) [$proxyserver] "
+default_read proxyserver $proxyserver
+echo $proxyserver | grep ":" >/dev/null
+if [ "$?" = "1" ] ; then
+  echon "port of proxyserver ? [8080] "
+  default_read proxyport "8080"
+  proxyserver=$proxyserver:$proxyport
+fi
+
+if  [ "$proxyuser" = "" ] ; then
+  needauth="no"
+else
+  needauth="yes"
+fi
+echon "do you need authentication ? [$needauth] "
+default_read needauth $needauth
+
+if  [ "$needauth" = "yes" ]; then
+  echon "username ? (e.g felix) leave empty if not required [$proxyuser] "
+  default_read proxyuser $proxyuser
+
+  if [ -n "$proxyuser" ] ; then
+    echon "password for proxyserver ? [$proxypass] "
+    default_read proxypass $proxypass
+  else
+    proxypass=""
+  fi
+else
+  proxyuser=""
+  proxypass=""
+fi
+
+(
+     echo "# proxyserver=$proxyserver"
+     echo "# proxyuser=$proxyuser"
+     echo "# proxypass=$proxypass"
+) > $PROFILE
+
+if [ "$proxyuser" = "" ] ; then
+  (
+     echo "export http_proxy=http://$proxyserver/"
+     echo "export https_proxy=http://$proxyserver/"
+     echo "export ftp_proxy=http://$proxyserver/"
+  ) >> $PROFILE
+else
+  (
+     echo "export http_proxy=http://$proxyuser:$proxypass@$proxyserver/"
+     echo "export https_proxy=http://$proxyuser:$proxypass@$proxyserver/"
+     echo "export ftp_proxy=http://$proxyuser:$proxypass@$proxyserver/"
+  ) >> $PROFILE
+fi
+
+echo -e "\nto make changes active please do login again or source $PROFILE with \". $PROFILE\""
