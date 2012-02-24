@@ -13,14 +13,13 @@ fi
 
 echon "name of proxyserver ? (e.g proxy.domain.loc:8080) [$proxyserver] "
 default_read proxyserver $proxyserver
-echo $proxyserver | grep ":" >/dev/null
-if [ "$?" = "1" ] ; then
+if echo $proxyserver | grep -q ":"; then
   echon "port of proxyserver ? [8080] "
   default_read proxyport "8080"
   proxyserver=$proxyserver:$proxyport
 fi
 
-if  [ "$proxyuser" = "" ] ; then
+if [ "$proxyuser" = "" ] ; then
   needauth="no"
 else
   needauth="yes"
