@@ -164,7 +164,7 @@ find_pvs_in_vg() {
 install_mounted_root() {
 	local mnt="$1" mnt_boot= boot_fs= root_fs=
 	local initfs_features="ata base ide scsi usb virtio"
-	local pvs= dev= rootdev= bootdev= raidopt= root= modules=
+	local pvs= dev= rootdev= bootdev= extlinux_raidopt= root= modules=
 	local kernel_opts="quiet"
 
 	rootdev=$(find_mount_dev "$mnt")
@@ -192,10 +192,14 @@ install_mounted_root() {
 	boot_fs=$(find_mount_fs "$mnt_boot")
 	supported_boot_fs "$boot_fs" || return 1
 
+	# Check if we boot from raid so we can pass proper option to
+	# extlinux later.
 	if [ -e "/sys/block/${bootdev#/dev/}/md" ]; then
-		raidopt="--raid"
+		extlinux_raidopt="--raid"
 	fi
 
+	# check if our root is on raid so we can feed mkinitfs and
+	# update-exlinux.conf with the proper kernel module params
 	for dev in $rootdev $pvs; do
 		[ -e "/sys/block/${dev#/dev/}/md" ] || continue
 
@@ -284,7 +288,9 @@ EOF
 	apk add --root "$mnt" $apkflags --overlay-from-stdin \
 		$repoflags $pkgs <$ovlfiles>/dev/null || return 1
 	echo ""
-	is_xen || extlinux $raidopt --install "$mnt"/boot
+	if ! is_xen; then
+		extlinux $extlinux_raidopt --install "$mnt"/boot
+	fi
 }
 
 unmount_partitions() {
