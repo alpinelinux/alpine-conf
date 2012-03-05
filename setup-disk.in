@@ -825,7 +825,7 @@ ask_disk() {
 
 usage() {
 	cat <<__EOF__
-usage: setup-disk [-hqr] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAPSIZE]
+usage: setup-disk [-hLqrv] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAPSIZE]
 		  [MOUNTPOINT | DISKDEV...]
 
 Install alpine on harddisk.
@@ -839,14 +839,15 @@ mode than 2 disks, then use raid level 5 instead of raid level 1.
 
 options:
  -h  Show this help
- -m  Use disk for MODE without asking, where MODE is either 'data' or 'root'
+ -m  Use disk for MODE without asking, where MODE is either 'data' or 'sys'
  -o  Restore system from given apkovl file
  -k  Use kernelflavor instead of $KERNEL_FLAVOR
  -L  Use LVM to manage partitions
  -q  Exit quietly if no disks are found
  -r  Enable software raid1 with single disk
- -s  Use SWAPSIZE MB instead of $SWAP_SIZE MB for swap (Use 0 to disable swap)
+ -s  Use SWAPSIZE MB instead of autodetecting swap size (Use 0 to disable swap)
  -v  Be more verbose about what is happening
+
 __EOF__
 	exit 1
 }
