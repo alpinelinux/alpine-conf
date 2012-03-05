@@ -415,7 +415,7 @@ confirm_erase() {
 	return 1
 }
 
-# setup disk dev in $1 for LVM usage.
+# setup partitions on given disk dev in $1.
 # usage: setup_partitions <diskdev> size1,type1 [size2,type2 ...] 
 setup_partitions() {
 	local diskdev="$1"
