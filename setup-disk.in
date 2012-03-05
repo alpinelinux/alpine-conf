@@ -605,7 +605,6 @@ data_only_disk_install_lvm() {
 	local vgname=vg0
 	local var_dev=/dev/$vgname/lv_var
 	local lvm_part_type="8e"
-	local raid_part_type="fd"
 	local part_type=$lvm_part_type
 	local size=
 
@@ -613,7 +612,8 @@ data_only_disk_install_lvm() {
 	confirm_erase $@ || return 1
 
 	if [ "$USE_RAID" ]; then
-		part_type=$raid_part_type
+		# the paritition type for raid is "fd"
+		part_type="fd"
 		stop_all_raid
 	fi
 
@@ -688,7 +688,6 @@ setup_root() {
 native_disk_install_lvm() {
 	local diskdev= vgname=vg0
 	local lvm_part_type="8e"
-	local raid_part_type="fd"
 	local boot_part_type="83"
 	local boot_size=${BOOT_SIZE:-100}
 	local lvm_size=
