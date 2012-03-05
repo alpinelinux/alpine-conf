@@ -696,7 +696,7 @@ native_disk_install_lvm() {
 	local lvm_size=
 	local root_dev=/dev/$vgname/lv_root
 
-	init_progs syslinux || return 1
+	init_progs || return 1
 	confirm_erase $@ || return 1
 
 	if [ -n "$USE_RAID" ]; then
@@ -727,7 +727,7 @@ native_disk_install() {
 	local root_size=
 	local root_dev= boot_dev= swap_dev=
 
-	init_progs syslinux || return 1
+	init_progs || return 1
 	confirm_erase $@ || return 1
 
 	if [ -n "$USE_RAID" ]; then
