@@ -6,6 +6,7 @@ PREFIX=
 MBR=${MBR:-"/usr/share/syslinux/mbr.bin"}
 ROOTFS=${ROOTFS:-ext4}
 BOOTFS=${BOOTFS:-ext4}
+VARFS=${VARFS:-ext4}
 
 in_list() {
 	local i="$1"
@@ -563,7 +564,7 @@ reset_var() {
 # set up /var on given device
 setup_var() {
 	local var_dev="$1"
-	local varfs=ext4
+	local varfs=${VARFS}
 	echo "Creating file systems..."
 	mkfs.$varfs -q $var_dev >/dev/null || return 1
 	sed -i -e '/[[:space:]]\/var[[:space:]]/d' /etc/fstab
