@@ -502,7 +502,6 @@ setup_non_boot_raid_dev() {
 	local idx=${md_dev#/dev/md}
 	shift
 	local level=1
-	local numdevs=$#
 	local missing=
 	local raid_parts=$(find_nth_non_boot_parts $idx "fd" $@)
 	set -- $raid_parts
