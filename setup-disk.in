@@ -162,7 +162,7 @@ find_pvs_in_vg() {
 }
 
 install_mounted_root() {
-	local mnt="$1" mnt_boot="$1" boot_fs= root_fs=
+	local mnt="$1" mnt_boot= boot_fs= root_fs=
 	local initfs_features="ata base ide scsi usb virtio"
 	local pvs= dev= rootdev= bootdev= raidopt= root= modules=
 	local kernel_opts="quiet"
@@ -185,9 +185,9 @@ install_mounted_root() {
 	bootdev=$(find_mount_dev "$mnt"/boot)
 	if [ -z "$bootdev" ]; then
 		bootdev=$rootdev
+		mnt_boot="$mnt"
 	else
 		mnt_boot="$mnt"/boot
-		bootdev=$(find_mount_dev "$mnt_boot")
 	fi
 	boot_fs=$(find_mount_fs "$mnt_boot")
 	supported_boot_fs "$boot_fs" || return 1
