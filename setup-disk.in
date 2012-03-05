@@ -297,7 +297,7 @@ unmount_partitions() {
 	local mnt="$1"
 
 	# unmount the partitions
-	umount $(awk '{print $2}' /proc/mounts | grep ^"$mnt" | sort -r)
+	umount $(awk '{print $2}' /proc/mounts | egrep "^$mnt(/|\$)" | sort -r)
 }
 
 # figure out decent default swap size in mega bytes
