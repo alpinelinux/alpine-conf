@@ -204,7 +204,7 @@ install_mounted_root() {
 		[ -e "/sys/block/${dev#/dev/}/md" ] || continue
 
 		local md=${dev#/dev/}
-		initfs_features="$(echo $initfs_features | sed 's/raid//') raid"
+		initfs_features="${initfs_features% raid} raid"
 		local level=$(cat /sys/block/$md/md/level)
 		case "$level" in
 			raid1) raidmod="$raidmod,$level";;
@@ -215,7 +215,7 @@ install_mounted_root() {
 	# check if we need hardware raid drivers
 	case $rootdev in
 		/dev/cciss/*)
-			initfs_features="$(echo $initfs_features | sed 's/raid//') raid"
+			initfs_features="${initfs_features% raid} raid"
 			;;
 	esac
 
