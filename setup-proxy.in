@@ -3,63 +3,66 @@
 PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
+
+usage() {
+	cat <<__EOF__
+usage: setup-proxy [-hq] [PROXYURL]
+
+Setup http proxy
+
+options:
+ -h  Show this help
+ -q  Quiet mode
+
+If PROXYURL is not specified user will be prompted.
+__EOF__
+        exit 1
+}
+
+
+
+while getopts "hq" opt; do
+	case "$opt" in
+	q) quiet=1;;
+	h) usage;;
+	esac
+done
+
+shift $(( $OPTIND - 1))
+
+proxyurl="$1"
+
 PROFILE="$ROOT/etc/profile.d/proxy.sh"
 
 if [ -f "$PROFILE" ] ; then
-  proxyserver=`grep "^# proxyserver" $PROFILE | cut -f 2 -d '='`
-  proxyuser=`grep "^# proxyuser" $PROFILE | cut -f 2 -d '='`
-  proxypass=`grep "^# proxypass" $PROFILE | cut -f 2 -d '='`
+	. $PROFILE
 fi
 
-echon "name of proxyserver ? (e.g proxy.domain.loc:8080) [$proxyserver] "
-default_read proxyserver $proxyserver
-if echo $proxyserver | grep -q ":"; then
-  echon "port of proxyserver ? [8080] "
-  default_read proxyport "8080"
-  proxyserver=$proxyserver:$proxyport
-fi
+suggest=${http_proxy:-none}
+while true; do
+	case "$proxyurl" in
+		http://*) break;;
+		none) proxyurl= ; break;;
+	esac
+	echon "HTTP/FTP proxy URL? (e.g. 'http://proxy:8080', or 'none') [$suggest] "
+	default_read proxyurl $suggest
+done
 
-if [ "$proxyuser" = "" ] ; then
-  needauth="no"
+if [ -z "$proxyurl" ]; then
+	rm -f "$PROFILE"
 else
-  needauth="yes"
-fi
-echon "do you need authentication ? [$needauth] "
-default_read needauth $needauth
+	cat >"$PROFILE" <<__EOF__
+# this file was generated with and might get overwritten by setup-proxy
 
-if  [ "$needauth" = "yes" ]; then
-  echon "username ? (e.g felix) leave empty if not required [$proxyuser] "
-  default_read proxyuser $proxyuser
-
-  if [ -n "$proxyuser" ] ; then
-    echon "password for proxyserver ? [$proxypass] "
-    default_read proxypass $proxypass
-  else
-    proxypass=""
-  fi
-else
-  proxyuser=""
-  proxypass=""
+export http_proxy=$proxyurl
+export https_proxy=$proxyurl
+export ftp_proxy=$proxyurl
+__EOF__
 fi
 
-(
-     echo "# proxyserver=$proxyserver"
-     echo "# proxyuser=$proxyuser"
-     echo "# proxypass=$proxypass"
-) > $PROFILE
+[ -e "$PROFILE" ] || exit 1
 
-if [ "$proxyuser" = "" ] ; then
-  (
-     echo "export http_proxy=http://$proxyserver/"
-     echo "export https_proxy=http://$proxyserver/"
-     echo "export ftp_proxy=http://$proxyserver/"
-  ) >> $PROFILE
-else
-  (
-     echo "export http_proxy=http://$proxyuser:$proxypass@$proxyserver/"
-     echo "export https_proxy=http://$proxyuser:$proxypass@$proxyserver/"
-     echo "export ftp_proxy=http://$proxyuser:$proxypass@$proxyserver/"
-  ) >> $PROFILE
+if [ -z "$quiet" ]; then
+	echo -e "\nTo make changes active please do login again or source $PROFILE\nwith \". $PROFILE\""
 fi
 
-echo -e "\nto make changes active please do login again or source $PROFILE with \". $PROFILE\""
