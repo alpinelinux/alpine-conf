@@ -458,7 +458,7 @@ find_lvm_partition() {
 	sfdisk -d $1 | grep -v bootable | awk "/Id=$type/ {print \$1}"
 }
 
-# set up boot device. We only use raid1 for boot devices if any raid
+# set up optional raid and create filesystem on boot device.
 setup_boot_dev() {
 	local disk= bootdev=
 	local part=$(for disk in $@; do find_boot_partition $disk; done)
@@ -473,6 +473,7 @@ setup_boot_dev() {
 			missing="missing"
 			num=2
 		fi
+		# we only use raid level 1 for boot devices
 		mdadm --create /dev/md0 --level=1 --raid-devices=$num \
 			--metadata=0.90 --quiet --run $@ $missing || return 1
 		bootdev=/dev/md0
