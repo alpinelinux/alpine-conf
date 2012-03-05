@@ -8,6 +8,9 @@ ROOTFS=${ROOTFS:-ext4}
 BOOTFS=${BOOTFS:-ext4}
 VARFS=${VARFS:-ext4}
 
+# default location for mounted root
+SYSROOT=${SYSROOT:-/mnt}
+
 in_list() {
 	local i="$1"
 	shift
@@ -669,16 +672,16 @@ data_only_disk_install() {
 setup_root() {
 	local root_dev="$1" boot_dev="$2"
 	mkfs.$ROOTFS -q "$root_dev"
-	mkdir -p /mnt
-	mount -t $ROOTFS $root_dev /mnt || return 1
+	mkdir -p "$SYSROOT"
+	mount -t $ROOTFS $root_dev "$SYSROOT" || return 1
 	if [ -n "$boot_dev" ]; then
-		mkdir -p /mnt/boot
-		mount -t $BOOTFS $boot_dev /mnt/boot || return 1
+		mkdir -p "$SYSROOT"/boot
+		mount -t $BOOTFS $boot_dev "$SYSROOT"/boot || return 1
 	fi
 
 	setup_mdadm_conf
-	install_mounted_root /mnt || return 1
-	unmount_partitions /mnt
+	install_mounted_root "$SYSROOT" || return 1
+	unmount_partitions "$SYSROOT"
 	swapoff -a
 
 	echo ""
