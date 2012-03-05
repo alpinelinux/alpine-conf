@@ -22,15 +22,16 @@ is_qemu() {
 
 usage() {
 	cat <<__EOF__
-usage: setup-alpine [-ha] [-f FILE] [-c FILE]
+usage: setup-alpine [-ahq] [-c FILE | -f FILE]
 
 Setup Alpine Linux
 
 options:
- -h  Show this help
  -a  Create Alpine Linux overlay file
- -f  Answer file to use installation
  -c  Create answer file (do not install anything)
+ -f  Answer file to use installation
+ -h  Show this help
+ -q  Quick mode. Ask fewer questions.
 __EOF__
         exit 1
 }
