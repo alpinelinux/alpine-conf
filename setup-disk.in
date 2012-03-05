@@ -440,7 +440,7 @@ setup_partitions() {
 			echo "$start,$line"
 			start=
 		done
-	) | sfdisk -q -L -uM $diskdev >>/tmp/sfdisk.out || return 1
+	) | sfdisk -q -L -uM $diskdev >/dev/null || return 1
 
 	# create device nodes if not exist
 	mdev -s
