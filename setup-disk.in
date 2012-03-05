@@ -207,8 +207,8 @@ install_mounted_root() {
 		initfs_features="${initfs_features% raid} raid"
 		local level=$(cat /sys/block/$md/md/level)
 		case "$level" in
-			raid1) raidmod="$raidmod,$level";;
-			raid[456]) raidmod="$raidmod,raid456";;
+			raid1) raidmod="${raidmod%,raid1},raid1";;
+			raid[456]) raidmod="${raidmod%,raid456},raid456";;
 		esac
 	done
 
