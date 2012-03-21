@@ -3,16 +3,48 @@
 PROGRAM=setup-interfaces
 PREFIX=
 
-. $PREFIX/lib/libalpine.sh
+for i in ./libalpine.sh $PREFIX/lib/libalpine.sh; do
+	[ -e $i ] && . $i && break
+done
 
 bridges=""
 
-detect_interfaces() {
-	ip addr | grep -v ' lo:' | awk -F : '/^[0-9]*:/ { print $2}'
+unconfigured_detect() {
+	local i=
+	for i in ${INTERFACES:-$(available_ifaces)}; do
+		if [ "$i" != "lo" ]; then
+			touch $i.noconf
+		fi
+	done
 }
 
-get_first_unconfigured() {
+unconfigured_get_first() {
 	ls *.noconf 2>/dev/null | head -n 1 | sed 's/.noconf//'
+}
+
+unconfigured_del() {
+	rm $1.noconf
+}
+
+unconfigured_all_done() {
+	local i=
+	for i in *.noconf; do
+		[ -e $i ] && return 1
+	done
+	return 0
+}
+
+unconfigured_list() {
+	local list= i=
+	for i in *.noconf; do
+		[ -e "$i" ] || continue
+		list="${list} ${i%.noconf}"
+	done
+	echo $list
+}
+
+unconfigured_isin() {
+	[ -f $1.noconf ]
 }
 
 get_default_addr() {
@@ -80,7 +112,7 @@ config_iface() {
 		if [ "$address" = "dhcp" ] ; then
 			HAS_DHCP=yes
 			echo "type=dhcp" >> $conf
-			rm $iface.noconf
+			unconfigured_del $iface
 			return
 		fi
 	done
@@ -120,7 +152,7 @@ config_iface() {
 	echo "Configuration for $iface:"
 	sed 's/^/  /' $conf
 	
-	rm $iface.noconf
+	unconfigured_del $iface
 }
 
 usage() {
@@ -141,31 +173,25 @@ prompt_for_interfaces() {
 	init_tmpdir TMP
 	
 	cd $TMP
-	for i in $(detect_interfaces); do
-		touch $i.noconf
-	done
+	unconfigured_detect
 	
 	index=1
-	while ls *.noconf > /dev/null 2>&1 ; do
-		echon "Available interfaces are:"
-		for i in *.noconf; do
-			echon " `basename $i .noconf`"
-		done
-		echo "."
+	while ! unconfigured_all_done; do
+		echo "Available interfaces are: $(unconfigured_list)."
 	
-		firstif=`get_first_unconfigured`
+		firstif=`unconfigured_get_first`
 		echon "Which one do you want to initialize? (or 'done') [$firstif] "
 		default_read iface "$firstif"
 	
 		[ "$iface" = "done" ] && break
-		[ -f $iface.noconf ] || continue
+		unconfigured_isin $iface || continue
 		config_iface $iface $(printf "%.3d~" $index)
 		index=$(( $index + 1 ))
 	done
 	
 	echo "type=loopback" > 000~lo.conf
 	echo "" > interface
-	hostname=$(cat /etc/hostname 2>/dev/null)
+	hostname=$(cat $ROOT/etc/hostname 2>/dev/null)
 	
 	for i in *.conf ; do
 		iface=`basename $i .conf`
@@ -225,16 +251,17 @@ prompt_for_interfaces() {
 ask_bridge=
 is_xen_dom0 && ask_bridge=1
 
-while getopts "bhi" opt; do
+while getopts "bhip:" opt; do
         case $opt in
 		b) ask_bridge=1;;
                 h) usage;;
 		i) STDINPUT=1;;
+		p) ROOT=$OPTARG;;
         esac
 done
 
+mkdir -p $ROOT/etc/network
 if [ "$STDINPUT" = "1" ]; then
-	mkdir -p $ROOT/etc/network
 	cat > $ROOT/etc/network/interfaces
 else
 	prompt_for_interfaces
