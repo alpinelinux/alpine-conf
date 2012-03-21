@@ -9,11 +9,15 @@ done
 
 bridges=""
 
+unconfigured_add() {
+	touch $1.noconf
+}
+
 unconfigured_detect() {
 	local i=
 	for i in ${INTERFACES:-$(available_ifaces)}; do
 		if [ "$i" != "lo" ]; then
-			touch $i.noconf
+			unconfigured_add $i
 		fi
 	done
 }
@@ -47,11 +51,15 @@ unconfigured_isin() {
 	[ -f $1.noconf ]
 }
 
+iface_exists() {
+	test -e /sys/class/net/$1
+}
+
 get_default_addr() {
 	# check if dhcpcd is running
 	if pidof dhcpcd > /dev/null && [ -f "$ROOT/var/lib/dhcpc/dhcpcd-$1.info" ]; then
 		echo dhcp
-	else
+	elif iface_exists; then
 		ip addr show $1 | awk '/inet / {print $2}' | head -n 1 | sed 's:/.*::'
 	fi
 }
@@ -68,13 +76,24 @@ get_default_gateway() {
 	ip route show dev $1 | awk '/^default/ {print $3}'
 }
 
+ipaddr_help() {
+	cat <<__EOF__
+
+For static ip:
+Enter the ip address in the format x.x.x.x
+
+For dhcp:
+Enter 'dhcp'
+
+To add this interface to a bridge enter the bridge name (eg 'br0' or 'bridge0')
+
+__EOF__
+}
 
 config_iface() {
 	local iface=$1
 	local prefix=$2
-	local address
-	local netmask
-	local gateway
+	local address= netmask= gateway= bridge_ports=
 	local bridge
 	local conf=$prefix$iface.conf
 	local answer=
@@ -100,21 +119,36 @@ config_iface() {
 		bridges="$bridges $bridge"
 	fi
 
+	if [ -r "$iface.bridge_ports" ]; then
+		bridge_ports=$(sed 's/\n/ /' $iface.bridge_ports)
+		echo "bridge_ports=\"$bridge_ports\"" >> $conf
+	fi
 	# use ipcalc to validate the address. we do accept /mask
 	# we are no interested in the result, only error code, so
 	# we send result to /dev/null
 	while ! ipcalc -s -m $address >/dev/null 2>&1; do
 		address=`get_default_addr $iface`
 		[ -z "$address" ] && address="dhcp"
-		ask "Ip address for $iface? (or 'dhcp')" $address
+		ask "Ip address for $iface? (or 'dhcp' or '?')" $address
 		address=$resp
-		[ "$address" = "abort" ] && return
-		if [ "$address" = "dhcp" ] ; then
+		case "$resp" in
+		'?')	ipaddr_help;;
+		"abort") return;;
+		"dhcp")
 			HAS_DHCP=yes
 			echo "type=dhcp" >> $conf
 			unconfigured_del $iface
-			return
-		fi
+			return ;;
+		br[0-9]*|bridge[0-9]*)
+			case "$iface" in
+				# we dont allow bridge bridges
+				br[0-9]*|bridge[0-9]*) continue;;
+			esac
+			echo "$iface" >> $resp.bridge_ports
+			unconfigured_add $resp
+			unconfigured_del $iface
+			return ;;
+		esac
 	done
 
 	# extract netmask if entered together with address
@@ -144,9 +178,13 @@ config_iface() {
 	done
 	
 	echo "type=static" >> $conf
+	if [ -n "$bridge_ports" ]; then
+		echo "bridge_ports=$bridge_ports" >> $conf
+	fi
 	echo "address=${address%%/*}" >> $conf  #strip off /mask if there
 	echo "netmask=$netmask" >> $conf
 	echo "gateway=$gateway" >> $conf
+
 
 	# print summary
 	echo "Configuration for $iface:"
@@ -196,6 +234,10 @@ prompt_for_interfaces() {
 	for i in *.conf ; do
 		iface=`basename $i .conf`
 		iface=${iface#[0-9]*~}
+		bridge_ports=
+		address=
+		type=
+		gateway=
 		. ./$i
 		if [ -n "$bridge" ]; then
 			echo "auto $iface $bridge" >> interfaces
@@ -210,6 +252,9 @@ prompt_for_interfaces() {
 		else
 			echo "auto $iface" >> interfaces
 			echo "iface $iface inet $type" >> interfaces
+		fi
+		if [ -n "$bridge_ports" ]; then
+			echo -e "\tbridge-ports $bridge_ports" >> interfaces
 		fi
 		case $type in
 		dhcp)
