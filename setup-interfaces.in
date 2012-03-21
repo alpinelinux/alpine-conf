@@ -242,8 +242,8 @@ prompt_for_interfaces() {
 
 	if yesno "$answer"; then
 		case "$EDITOR" in
-			nano)	pkg_inst nano;;
-			vim)	pkg_inst vim;;
+			nano)	apk add nano;;
+			vim)	apk add vim;;
 		esac
 		${EDITOR:-vi} interfaces
 	fi
