@@ -233,10 +233,14 @@ prompt_for_interfaces() {
 	
 	while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
 		ask "Do you want to do any manual network configuration?" no
-		answer=$resp
+		case $resp in
+			y) answer=yes;;
+			n) answer=no;;
+			*) answer=$resp;;
+		esac
 	done
 
-	if [ "$answer" = "yes" ]; then
+	if yesno "$answer"; then
 		case "$EDITOR" in
 			nano)	pkg_inst nano;;
 			vim)	pkg_inst vim;;
