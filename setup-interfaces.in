@@ -80,8 +80,8 @@ config_iface() {
 	local answer=
 
 	while [ -n "$ask_bridge" ]; do
-		echon "Do you want to bridge the interface $iface? [no] "
-		default_read answer no
+		ask "Do you want to bridge the interface $iface?" no
+		answer=$resp
 		case "$answer" in
 			yes|y) answer=yes; break;;
 			no|n) break;;
@@ -91,8 +91,8 @@ config_iface() {
 	if [ "$answer" = "yes" ]; then
 		bridge="br"`echo $iface | sed 's/[^0-9]//g'`
 		while [ 1 ]; do
-			echon "Name of the bridge you would like to create: [$bridge] "
-			default_read bridge $bridge
+			ask "Name of the bridge you would like to create:" $bridge
+			bridge=$resp
 			`echo "$bridges" | grep -q "$bridge"` || break
 			echo "Name already in use, please choose another one"
 		done
@@ -106,8 +106,8 @@ config_iface() {
 	while ! ipcalc -s -m $address >/dev/null 2>&1; do
 		address=`get_default_addr $iface`
 		[ -z "$address" ] && address="dhcp"
-		echon "Ip address for $iface? (or 'dhcp') [$address] "
-		default_read address $address
+		ask "Ip address for $iface? (or 'dhcp')" $address
+		address=$resp
 		[ "$address" = "abort" ] && return
 		if [ "$address" = "dhcp" ] ; then
 			HAS_DHCP=yes
@@ -126,8 +126,8 @@ config_iface() {
 	# so we pass on a dummy mask to ipcalc.
 	while ! ipcalc -s -m $netmask/0 >/dev/null 2>&1; do
 		netmask=`get_default_mask $address`
-		echon "Netmask? [$netmask] "
-		default_read netmask "$netmask"
+		ask "Netmask?" $netmask
+		netmask=$resp
 		[ "$netmask" = "abort" ] && return
 	done
 
@@ -136,8 +136,8 @@ config_iface() {
 	while ! ipcalc -s -m $gateway/0 >/dev/null 2>&1; do
 		gateway=`get_default_gateway $iface`
 		[ -z "$gateway" ] && gateway=none
-		echon "Gateway? (or 'none') [$gateway] "
-		default_read gateway $gateway
+		ask "Gateway? (or 'none')" $gateway
+		gateway=$resp
 		[ "$gateway" = "abort" ] && return
 		[ "$gateway" = "none" ] && gateway=""
 		[ -z "$gateway" ] && break
@@ -157,7 +157,7 @@ config_iface() {
 
 usage() {
         cat <<__EOF__
-usage: setup-interfaces [-bhi]
+usage: setup-interfaces [-bhi] [-p ROOT]
 
 Setup network interfaces
 
@@ -165,6 +165,7 @@ options:
  -b  Ask for bridging of interfaces
  -h  Show this help
  -i  Read new contents of /etc/network/interfaces from stdin
+ -p  Use ROOT as system prefix
 __EOF__
         exit 1
 }
@@ -178,10 +179,9 @@ prompt_for_interfaces() {
 	index=1
 	while ! unconfigured_all_done; do
 		echo "Available interfaces are: $(unconfigured_list)."
-	
-		firstif=`unconfigured_get_first`
-		echon "Which one do you want to initialize? (or 'done') [$firstif] "
-		default_read iface "$firstif"
+		ask "Which one do you want to initialize? (or 'done')" \
+			$(unconfigured_get_first)
+		iface=$resp
 	
 		[ "$iface" = "done" ] && break
 		unconfigured_isin $iface || continue
@@ -232,8 +232,8 @@ prompt_for_interfaces() {
 	done
 	
 	while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
-		echon "Do you want to do any manual network configuration? [no] "
-		default_read answer no
+		ask "Do you want to do any manual network configuration?" no
+		answer=$resp
 	done
 
 	if [ "$answer" = "yes" ]; then
