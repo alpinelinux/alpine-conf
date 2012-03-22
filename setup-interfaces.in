@@ -7,8 +7,6 @@ for i in ./libalpine.sh $PREFIX/lib/libalpine.sh; do
 	[ -e $i ] && . $i && break
 done
 
-bridges=""
-
 unconfigured_add() {
 	touch $1.noconf
 }
@@ -90,6 +88,16 @@ To add this interface to a bridge enter the bridge name (eg 'br0' or 'bridge0')
 __EOF__
 }
 
+bridge_add_iface() {
+	local bridge=$1 iface=
+	shift
+	for iface; do
+		echo $iface >> $bridge.bridge_ports
+		unconfigured_add $bridge
+		unconfigured_del $iface
+	done
+}
+
 config_iface() {
 	local iface=$1
 	local prefix=$2
@@ -100,23 +108,17 @@ config_iface() {
 
 	while [ -n "$ask_bridge" ]; do
 		ask "Do you want to bridge the interface $iface?" no
-		answer=$resp
-		case "$answer" in
-			yes|y) answer=yes; break;;
+		case "$resp" in
+			yes|y) resp=yes; break;;
 			no|n) break;;
 		esac
 	done
 
-	if [ "$answer" = "yes" ]; then
+	if [ "$resp" = "yes" ]; then
 		bridge="br"`echo $iface | sed 's/[^0-9]//g'`
-		while [ 1 ]; do
-			ask "Name of the bridge you would like to create:" $bridge
-			bridge=$resp
-			`echo "$bridges" | grep -q "$bridge"` || break
-			echo "Name already in use, please choose another one"
-		done
-		echo "bridge=${bridge}" > $conf
-		bridges="$bridges $bridge"
+		ask "Name of the bridge you want add $iface to:" $bridge
+		bridge_add_iface $resp $iface
+		return
 	fi
 
 	if [ -r "$iface.bridge_ports" ]; then
@@ -144,9 +146,7 @@ config_iface() {
 				# we dont allow bridge bridges
 				br[0-9]*|bridge[0-9]*) continue;;
 			esac
-			echo "$iface" >> $resp.bridge_ports
-			unconfigured_add $resp
-			unconfigured_del $iface
+			bridge_add_iface $resp $iface
 			return ;;
 		esac
 	done
@@ -239,20 +239,8 @@ prompt_for_interfaces() {
 		type=
 		gateway=
 		. ./$i
-		if [ -n "$bridge" ]; then
-			echo "auto $iface $bridge" >> interfaces
-			echo "" >> interfaces
-			echo "iface $iface inet manual" >> interfaces
-			echo -e "\tup ip link set \$IFACE up" >> interfaces
-			echo -e "\tdown ip link set \$IFACE down" >> interfaces
-			echo "" >> interfaces
-			echo "iface $bridge inet $type" >> interfaces
-			echo -e "\tpre-up brctl addbr $bridge" >> interfaces
-			echo -e "\tpre-up brctl addif $bridge $iface" >> interfaces
-		else
-			echo "auto $iface" >> interfaces
-			echo "iface $iface inet $type" >> interfaces
-		fi
+		echo "auto $iface" >> interfaces
+		echo "iface $iface inet $type" >> interfaces
 		if [ -n "$bridge_ports" ]; then
 			echo -e "\tbridge-ports $bridge_ports" >> interfaces
 		fi
