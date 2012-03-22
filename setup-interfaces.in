@@ -141,16 +141,19 @@ config_iface() {
 	while ! ipcalc -s -m $address >/dev/null 2>&1; do
 		address=`get_default_addr $iface`
 		[ -z "$address" ] && address="dhcp"
-		ask "Ip address for $iface? (or 'dhcp' or '?')" $address
+		ask "Ip address for $iface? (or 'dhcp', 'none', '?')" $address
 		address=$resp
 		case "$resp" in
 		'?')	ipaddr_help;;
 		"abort") return;;
 		"dhcp")
-			HAS_DHCP=yes
 			echo "type=dhcp" >> $conf
 			unconfigured_del $iface
 			return ;;
+		"none")
+			echo "type=manual" >> $conf
+			unconfigured_del $iface
+			return;;
 		br[0-9]*|bridge[0-9]*)
 			case "$iface" in
 				# we dont allow bridge bridges
@@ -357,6 +360,10 @@ prompt_for_interfaces() {
 			echo -e "\tbond-slaves $bond_slaves" >> interfaces
 		fi
 		case $type in
+		manual)
+			echo -e "\tup ip link set \$IFACE up" >> interfaces
+			echo -e "\tdown ip link set \$IFACE down" >> interfaces
+			;;
 		dhcp)
 			[ -n "$hostname" ] \
 				&& echo -e "\thostname $hostname" >> interfaces
