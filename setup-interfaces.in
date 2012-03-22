@@ -301,12 +301,6 @@ prompt_for_interfaces() {
 				&& echo -e "\tgateway $gateway" >> interfaces
 			;;
 		esac
-		if [ -n "$bridge" ]; then
-			echo -e "\tpost-down brctl delif $bridge $iface" >> interfaces
-			echo -e "\tpost-down brctl delbr $bridge" >> interfaces
-		fi
-		echo "" >> interfaces
-		bridge=""
 	done
 	
 	while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
