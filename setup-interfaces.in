@@ -3,6 +3,8 @@
 PROGRAM=setup-interfaces
 PREFIX=
 
+PKGS=
+
 for i in ./libalpine.sh $PREFIX/lib/libalpine.sh; do
 	[ -e $i ] && . $i && break
 done
@@ -354,9 +356,11 @@ prompt_for_interfaces() {
 		echo "auto $iface" >> interfaces
 		echo "iface $iface inet $type" >> interfaces
 		if [ -n "$bridge_ports" ]; then
+			PKGS="$PKGS bridge"
 			echo -e "\tbridge-ports $bridge_ports" >> interfaces
 		fi
 		if [ -n "$bond_slaves" ]; then
+			PKGS="$PKGS bonding"
 			echo -e "\tbond-slaves $bond_slaves" >> interfaces
 		fi
 		case $type in
@@ -394,7 +398,11 @@ prompt_for_interfaces() {
 		esac
 		${EDITOR:-vi} interfaces
 	fi
-		
+
+	if [ -n "$PKGS" ]; then
+		apk add -q $PKGS
+	fi
+
 	mkdir -p $ROOT/etc/network
 	cp interfaces $ROOT/etc/network/
 }
