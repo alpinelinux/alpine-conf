@@ -220,8 +220,8 @@ config_bridge() {
 	while ! unconfigured_all_done; do
 		set -- $(unconfigured_non_bridges)
 		[ $# -eq 0 ] && return 0;
-		echo "Available interfaces are: $@"
-		ask "Which interface(s) do you want add to bridge $bridge? (or 'done')" $1
+		echo "Available bridge ports are: $@"
+		ask "Which port(s) do you want add to bridge $bridge? (or 'done')" $1
 		case $resp in
 			'abort') return 1;;
 			'done') return 0;;
