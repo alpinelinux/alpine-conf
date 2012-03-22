@@ -131,6 +131,10 @@ config_iface() {
 		bridge_ports=$(echo $(cat $iface.bridge_ports))
 		echo "bridge_ports=\"$bridge_ports\"" >> $conf
 	fi
+	if [ -r "$iface.bond_slaves" ]; then
+		bond_slaves=$(echo $(cat $iface.bond_slaves))
+		echo "bond_slaves=\"$bond_slaves\"" >> $conf
+	fi
 	# use ipcalc to validate the address. we do accept /mask
 	# we are no interested in the result, only error code, so
 	# we send result to /dev/null
@@ -200,13 +204,17 @@ config_iface() {
 }
 
 is_bridge() {
-	[ -e /sys/class/net/$1/bridge ] || [ -e $i.bridge_ports ]
+	[ -e /sys/class/net/$1/bridge ] || [ -e $1.bridge_ports ]
 }
 
-unconfigured_non_bridges() {
+is_bond_master() {
+	[ -e $1.bond_slaves ]
+}
+
+unconfigured_available() {
 	local local i= iflist=
 	for i in $(unconfigured_list); do
-		if ! is_bridge $i; then
+		if ! is_bridge $i && ! is_bond_master $i; then
 			iflist="${iflist}${iflist:+ }$i"
 		fi
 	done
@@ -224,7 +232,7 @@ unconfigured_all_are() {
 config_bridge() {
 	local bridge=$1 iflist= i= ports=
 	while ! unconfigured_all_done; do
-		set -- $(unconfigured_non_bridges)
+		set -- $(unconfigured_available)
 		[ $# -eq 0 ] && return 0;
 		ports=$(bridge_list_ports $bridge)
 		if [ -n "$ports" ]; then
@@ -239,6 +247,47 @@ config_bridge() {
 		for i in $resp; do
 			if unconfigured_isin $i; then
 				bridge_add_port $bridge $i
+			else
+				echo "$i is not valid"
+			fi
+		done
+	done
+}
+
+bond_add_slave() {
+	local master=$1 slave=
+	shift
+	for slave; do
+		echo $slave >> $master.bond_slaves
+		unconfigured_add $master
+		unconfigured_del $slave
+	done
+}
+
+bond_list_slaves() {
+	if [ -r $1.bond_slaves ]; then
+		echo $(cat $1.bond_slaves)
+	fi
+}
+
+config_bond() {
+	local master=$1 slaves=
+	while ! unconfigured_all_done; do
+		set -- $(unconfigured_available)
+		[ $# -eq 0 ] && return 0;
+		slaves=$(bond_list_slaves $master)
+		if [ -n "$slaves" ]; then
+			echo "Bond slaves in $master are: $slaves"
+		fi
+		echo "Available bond slaves are: $@"
+		ask "Which slave(s) do you want add to $master? (or 'done')" $1
+		case $resp in
+			'abort') return 1;;
+			'done') return 0;;
+		esac
+		for i in $resp; do
+			if unconfigured_isin $i; then
+				bond_add_slave $master $i
 			else
 				echo "$i is not valid"
 			fi
@@ -278,6 +327,8 @@ prompt_for_interfaces() {
 			"done") break;;
 			br[0-9]*|bridge[0-9]*|virbr[0-9]*)
 				config_bridge $iface || continue;;
+			bond[0-9]*)
+				config_bond $iface || continue;;
 			*) unconfigured_isin $iface || continue;;
 		esac
 		config_iface $iface $(printf "%.3d~" $index)
@@ -292,6 +343,7 @@ prompt_for_interfaces() {
 		iface=`basename $i .conf`
 		iface=${iface#[0-9]*~}
 		bridge_ports=
+		bond_slaves=
 		address=
 		type=
 		gateway=
@@ -300,6 +352,9 @@ prompt_for_interfaces() {
 		echo "iface $iface inet $type" >> interfaces
 		if [ -n "$bridge_ports" ]; then
 			echo -e "\tbridge-ports $bridge_ports" >> interfaces
+		fi
+		if [ -n "$bond_slaves" ]; then
+			echo -e "\tbond-slaves $bond_slaves" >> interfaces
 		fi
 		case $type in
 		dhcp)
@@ -313,6 +368,7 @@ prompt_for_interfaces() {
 				&& echo -e "\tgateway $gateway" >> interfaces
 			;;
 		esac
+		echo "" >> interfaces
 	done
 	
 	while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
