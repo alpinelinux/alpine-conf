@@ -88,7 +88,7 @@ To add this interface to a bridge enter the bridge name (eg 'br0' or 'bridge0')
 __EOF__
 }
 
-bridge_add_iface() {
+bridge_add_port() {
 	local bridge=$1 iface=
 	shift
 	for iface; do
@@ -96,6 +96,12 @@ bridge_add_iface() {
 		unconfigured_add $bridge
 		unconfigured_del $iface
 	done
+}
+
+bridge_list_ports() {
+	if [ -r $1.bridge_ports ]; then
+		echo $(cat $1.bridge_ports)
+	fi
 }
 
 config_iface() {
@@ -117,7 +123,7 @@ config_iface() {
 	if [ "$resp" = "yes" ]; then
 		bridge="br"`echo $iface | sed 's/[^0-9]//g'`
 		ask "Name of the bridge you want add $iface to:" $bridge
-		bridge_add_iface $resp $iface
+		bridge_add_port $resp $iface
 		return
 	fi
 
@@ -146,7 +152,7 @@ config_iface() {
 				# we dont allow bridge bridges
 				br[0-9]*|bridge[0-9]*) continue;;
 			esac
-			bridge_add_iface $resp $iface
+			bridge_add_port $resp $iface
 			return ;;
 		esac
 	done
@@ -216,21 +222,27 @@ unconfigured_all_are() {
 }
 
 config_bridge() {
-	local bridge=$1 iflist=
+	local bridge=$1 iflist= i= ports=
 	while ! unconfigured_all_done; do
 		set -- $(unconfigured_non_bridges)
 		[ $# -eq 0 ] && return 0;
+		ports=$(bridge_list_ports $bridge)
+		if [ -n "$ports" ]; then
+			echo "Bridge ports in $bridge are: $ports"
+		fi
 		echo "Available bridge ports are: $@"
 		ask "Which port(s) do you want add to bridge $bridge? (or 'done')" $1
 		case $resp in
 			'abort') return 1;;
 			'done') return 0;;
 		esac
-		if unconfigured_all_are $resp; then
-			bridge_add_iface $bridge $resp
-			continue
-		fi
-		echo "$resp is not a valid interface"
+		for i in $resp; do
+			if unconfigured_isin $i; then
+				bridge_add_port $bridge $i
+			else
+				echo "$i is not valid"
+			fi
+		done
 	done
 }
 
