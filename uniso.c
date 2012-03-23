@@ -340,7 +340,7 @@ static int queue_reader(
 
 	if (offset < ctx->pos) {
 		fprintf(stderr, "ERROR: non-linear reads are not supported "
-				"(asked %x, we are at %x)\n",
+				"(asked %zx, we are at %zx)\n",
 			offset, ctx->last_queued_read);
 		return -1;
 	}
