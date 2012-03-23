@@ -1,8 +1,9 @@
 #!/bin/sh
 
 PREFIX=
-. "$PREFIX/lib/libalpine.sh"
-
+for i in ./libalpine.sh $PREFIX/lib/libalpine.sh; do
+	[ -e $i ] && . $i && break
+done
 
 usage() {
 	cat <<__EOF__
@@ -21,10 +22,11 @@ __EOF__
 
 
 
-while getopts "hq" opt; do
+while getopts "hp:q" opt; do
 	case "$opt" in
 	q) quiet=1;;
 	h) usage;;
+	p) ROOT=$OPTARG;;
 	esac
 done
 
@@ -44,13 +46,14 @@ while true; do
 		http://*) break;;
 		none) proxyurl= ; break;;
 	esac
-	echon "HTTP/FTP proxy URL? (e.g. 'http://proxy:8080', or 'none') [$suggest] "
-	default_read proxyurl $suggest
+	ask "HTTP/FTP proxy URL? (e.g. 'http://proxy:8080', or 'none')" $suggest
+	proxyurl=$resp
 done
 
 if [ -z "$proxyurl" ]; then
 	rm -f "$PROFILE"
 else
+	mkdir -p "${PROFILE%/*}"
 	cat >"$PROFILE" <<__EOF__
 # this file was generated with and might get overwritten by setup-proxy
 
