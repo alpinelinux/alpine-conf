@@ -27,7 +27,7 @@ unconfigured_get_first() {
 }
 
 unconfigured_del() {
-	rm $1.noconf
+	rm -f $1.noconf
 }
 
 unconfigured_all_done() {
@@ -136,6 +136,10 @@ config_iface() {
 	if [ -r "$iface.bond_slaves" ]; then
 		bond_slaves=$(echo $(cat $iface.bond_slaves))
 		echo "bond_slaves=\"$bond_slaves\"" >> $conf
+	fi
+	if [ -r "$iface.raw_device" ]; then
+		raw_device=$(cat $iface.raw_device)
+		echo "raw_device=\"$raw_device\"" >> $conf
 	fi
 	# use ipcalc to validate the address. we do accept /mask
 	# we are no interested in the result, only error code, so
@@ -300,6 +304,23 @@ config_bond() {
 	done
 }
 
+config_vlan() {
+	local iface=$1 vid= raw_device=
+	case $iface in
+	*.*)	raw_device=${iface%.*}
+		vid=${iface#*.}
+		;;
+	vlan*)	vid=${iface#vlan}
+		ask_which "raw device" "do you want use for $iface" "$(unconfigured_list)"
+		echo "$resp" > $iface.raw_device
+		return 0
+		;;
+	esac
+	unconfigured_isin $raw_device && return 0
+	echo "$raw_device is not a valid raw device for $iface"
+	return 1
+}
+
 usage() {
         cat <<__EOF__
 usage: setup-interfaces [-bhi] [-p ROOT]
@@ -334,6 +355,8 @@ prompt_for_interfaces() {
 				config_bridge $iface || continue;;
 			bond[0-9]*)
 				config_bond $iface || continue;;
+			*.[0-9]*|vlan[0-9]*)
+				config_vlan $iface || continue;;
 			*) unconfigured_isin $iface || continue;;
 		esac
 		config_iface $iface $(printf "%.3d~" $index)
@@ -349,6 +372,7 @@ prompt_for_interfaces() {
 		iface=${iface#[0-9]*~}
 		bridge_ports=
 		bond_slaves=
+		raw_device=
 		address=
 		type=
 		gateway=
@@ -363,6 +387,12 @@ prompt_for_interfaces() {
 			PKGS="$PKGS bonding"
 			echo -e "\tbond-slaves $bond_slaves" >> interfaces
 		fi
+		if [ -n "$raw_device" ]; then
+			echo -e "\traw-device $raw_device" >> interfaces
+		fi
+		case "$iface" in
+			*.[0-9]*|vlan[0-9]*) PKGS="$PKGS vlan";;
+		esac
 		case $type in
 		manual)
 			echo -e "\tup ip link set \$IFACE up" >> interfaces
