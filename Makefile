@@ -10,26 +10,27 @@ TMP		:= $(PV)
 
 LIB_FILES	:= libalpine.sh
 SBIN_FILES	:= lbu\
+		setup-acf\
 		setup-ads\
-		setup-alpine\
 		setup-alpine-web\
+		setup-alpine\
 		setup-apkcache\
 		setup-apkrepos\
-		setup-ntp\
+		setup-bootable\
 		setup-cryptswap\
 		setup-disk\
 		setup-dns\
+		setup-gparted-desktop\
 		setup-hostname\
 		setup-interfaces\
 		setup-keymap\
 		setup-lbu\
 		setup-mta\
-		setup-acf\
-		setup-bootable\
+		setup-ntp\
+		setup-proxy\
 		setup-sshd\
 		setup-timezone\
 		setup-xorg-base\
-		setup-gparted-desktop\
 		update-conf
 
 BIN_FILES	:= uniso
