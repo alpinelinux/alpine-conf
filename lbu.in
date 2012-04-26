@@ -17,6 +17,8 @@ fi
 
 EXCLUDE_LIST="$sysconfdir"/exclude
 INCLUDE_LIST="$sysconfdir"/include
+LBU_LIST="/etc/apk/protected_paths.d/lbu.list"
+
 
 DEFAULT_CIPHER="aes-256-cbc"
 
@@ -123,35 +125,57 @@ check_openssl() {
 		|| die "Cipher $ENCRYPTION is not supported"
 }
 
-# list_add(char *listfile, char* file...)
+# grep and sed has issues with escaping '*' in lists so we rather do
+# our own filter functions
+list_has() {
+	local line=
+	while read line; do
+		[ "$line" = "$1" ] && return 0
+	done < "$LBU_LIST"
+	return 1
+}
+
+list_filter_out() {
+	local line=
+	while read line; do
+		if [ "$line" != "$1" ]; then
+			echo "$line"
+		fi
+	done < "$LBU_LIST"
+}
+
+# list_add(char prefix, char *listfile, char* file...)
 list_add() {
-	local list="$1"
+	local prefix="$1"
 	shift
-	mkdir -p `dirname "$list"`
+	mkdir -p "${LBU_LIST%/*}"
 	while [ $# -gt 0 ] ; do
-		filename=`echo "$1" | sed 's:^/\+::'`
-		if grep "^$filename$" "$list" >/dev/null 2>&1 ; then
-			vecho "$filename is already in $list."
+		filename="$(echo "$1" | sed 's:^/\+::')"
+		if list_has "${prefix}${filename}"; then
+			vecho "$filename is already in $LBU_LIST."
 		else
-			vecho "Adding $filename to $list."
-			echo "$filename" >> "$list"
+			vecho "Adding $filename to $LBU_LIST."
+			echo "${prefix}${filename}" >> "$LBU_LIST"
 		fi
 		shift
 	done
 }
 
-# list_delete(char *listfile, char *file...)
+# list_delete(char prefix, char *listfile, char *file...)
 list_delete() {
-	local list="$1"
-	local tmp="$list.old"
+	local prefix="$1"
+	local tmp="$LBU_LIST.new"
 	shift
-	[ -f "$list" ] || return 1
+	[ -f "$LBU_LIST" ] || return 1
 	while [ $# -gt 0 ] ; do
-		filename=`echo "$1" | sed 's:^/\+::'`
-		mv "$list" "$tmp"
-		vecho "Removing $filename from list."
-		grep -v "^$filename$" "$tmp" > "$list"
-		rm "$tmp"
+		filename="$(echo "$1" | sed 's:^/\+::')"
+		if list_has "${prefix}${filename}"; then
+			vecho "Removing $filename from $LBU_LIST."
+			list_filter_out "${prefix}${filename}" > "$tmp" \
+				&& mv "$tmp" "$LBU_LIST"
+		else
+			vecho "$filename is not in $LBU_LIST"
+		fi
 		shift
 	done
 }
@@ -213,17 +237,17 @@ cmd_include() {
 
 	[ $# -lt 1 ] && usage_include
 	if [ "$REMOVE" ] ; then
-		list_delete "$INCLUDE_LIST" "$@"
+		list_delete + "$@"
 	else
-		list_add "$INCLUDE_LIST" "$@"
-		list_delete "$EXCLUDE_LIST" "$@"
+		list_add + "$@"
+		list_delete - "$@"
 	fi
 }
 
 show_include() {
-	if [ -f "$INCLUDE_LIST" ] ; then
+	if [ -f "$LBU_LIST" ] ; then
 		vecho "Include files:"
-		cat "$INCLUDE_LIST"
+		grep -- '^+' "$LBU_LIST" | sed 's/^+//'
 	fi
 }
 
@@ -252,7 +276,7 @@ If <dirname> nor <filename> is not specified, a package named
 }
 
 _gen_filelist() {
-	apk audit --backup -q
+	apk audit --backup --quiet --recursive
 	if [ -f var/lib/apk/world ]; then
 		echo var/lib/apk/world
 	fi
@@ -267,7 +291,7 @@ cmd_package() {
 	local rc=0
 	local owd="$PWD"
 	local suff="apkovl.tar.gz"
-	local tmpdir tmppkg tmpexclude tmpinclude
+	local tmpdir tmppkg
 
 	check_openssl
 	init_tmpdir tmpdir
@@ -286,8 +310,8 @@ cmd_package() {
 	fi
 
 	tmppkg="$tmpdir/$(basename $pkg)"
-	tmpexclude="$tmpdir"/exclude
-	tmpinclude="$tmpdir"/include
+
+	local tar_create="tar -c --no-recursion"
 
 	cd "${ROOT:-/}"
 	# remove old package.list
@@ -297,32 +321,22 @@ cmd_package() {
 		rm -f etc/lbu/packages.list
 	fi
 	# create tar archive
-	if [ -f "$EXCLUDE_LIST" ]; then
-		# strip empty lines and lines with only whitespace
-		sed -e '/^[[:space:]]*$/d' "$EXCLUDE_LIST" > $tmpexclude
-		excl="-X $tmpexclude"
-	fi
-	if [ -f "$INCLUDE_LIST" ]; then
-		# strip empty lines and lines with only whitespace
-		sed -e '/^[[:space:]]*$/d' "$INCLUDE_LIST" > $tmpinclude
-		incl="-T $tmpinclude"
-	fi
 	if [ -n "$VERBOSE" ]; then
 		echo "Archiving the following files:" >&2
 		# we dont want to mess the tar output with the
 		# password prompt. Lets get the tar output first.
-		_gen_filelist_0 | xargs -0 tar  $excl $incl -c -v > /dev/null
+		_gen_filelist_0 | xargs -0 $tar_create -v > /dev/null
 		rc=$?
 	fi
 	if [ $rc -eq 0 ]; then
 		if [ -z "$ENCRYPTION" ]; then
-			_gen_filelist_0 | xargs -0 tar $excl $incl -c \
+			_gen_filelist_0 | xargs -0 $tar_create \
 				| gzip -c  >"$tmppkg"
 			rc=$?
 		else
 			set -- enc "-$ENCRYPTION" -salt
 			[ -n "$PASSWORD" ] && set -- "$@" -pass pass:"$PASSWORD"
-			_gen_filelist_0 | xargs -0 tar $excl $incl -c \
+			_gen_filelist_0 | xargs -0 $tar_create \
 				| gzip -c \
 				| $OPENSSL "$@" > "$tmppkg"
 			rc=$?
@@ -518,17 +532,17 @@ cmd_exclude() {
 
 	[ $# -lt 1 ] && usage_exclude
 	if [ "$REMOVE" ] ; then
-		list_delete "$EXCLUDE_LIST" "$@"
+		list_delete - "$@"
 	else
-		list_delete "$INCLUDE_LIST" "$@"
-		list_add "$EXCLUDE_LIST" "$@"
+		list_delete + "$@"
+		list_add - "$@"
 	fi
 }
 
 show_exclude() {
-	if [ -f "$EXCLUDE_LIST" ] ; then
+	if [ -f "$LBU_LIST" ] ; then
 		vecho "Exclude files:"
-		cat "$EXCLUDE_LIST"
+		grep -- '^-' "$LBU_LIST" | sed 's/^-//'
 	fi
 }
 
