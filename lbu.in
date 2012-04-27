@@ -129,6 +129,7 @@ check_openssl() {
 # our own filter functions
 list_has() {
 	local line=
+	[ -e "$LBU_LIST" ] || return 1
 	while read line; do
 		[ "$line" = "$1" ] && return 0
 	done < "$LBU_LIST"
@@ -229,6 +230,7 @@ Options:
 }
 
 cmd_include() {
+	cmd_migrate_include_exclude
 	if [ "$LIST" ] ; then
 		[ $# -gt 0 ] && usage_include
 		show_include
@@ -293,6 +295,7 @@ cmd_package() {
 	local suff="apkovl.tar.gz"
 	local tmpdir tmppkg
 
+	cmd_migrate_include_exclude
 	check_openssl
 	init_tmpdir tmpdir
 
@@ -316,8 +319,8 @@ cmd_package() {
 	cd "${ROOT:-/}"
 	# remove old package.list
 	if [ -f etc/lbu/packages.list ] && [ -f var/lib/apk/world ]; then
-		echo "Note: Removing /etc/lbu/packages.list."
-		echo "      /var/lib/apk/world will be used."
+		echo "Note: Removing /etc/lbu/packages.list." >&2
+		echo "      /var/lib/apk/world will be used." >&2
 		rm -f etc/lbu/packages.list
 	fi
 	# create tar archive
@@ -382,10 +385,8 @@ usage: $PROGRAM list|ls
 }
 
 cmd_list() {
-	VERBOSE="-v"
-	DRYRUN="-n"
-	ENCRYPTION=
-	cmd_package /dev/null
+	cmd_migrate_include_exclude
+	_gen_filelist
 }
 
 #
@@ -524,6 +525,7 @@ Options:
 }
 
 cmd_exclude() {
+	cmd_migrate_include_exclude
 	if [ "$LIST" ] ; then
 		[ $# -gt 0 ] && usage_exclude
 		show_exclude
@@ -685,8 +687,39 @@ cmd_diff() {
 	cmd_package - | tar -C "$tmp/b" -zx
 	cd "$tmp" && diff -ruN a b 
 }
-	
 
+# migrate
+migrate_conf() {
+	local pref="$1" conf="$2" line=
+	echo "Note: Migrating  $conf to $LBU_LIST" >&2
+	echo "# Automatically imported from $conf" >> "$LBU_LIST"
+	while read line; do
+		if [ "${line#'#'}" != "$line" ]; then
+			# dont prefix comments
+			echo "$line" >> "$LBU_LIST" || return 1
+			continue
+		fi
+		case "$line" in
+			[a-zA-z0-9._/]*) line="$pref$line";;
+			*) continue;; # skip files with weird names
+		esac
+		if ! list_has "$line"; then
+			echo "$line" >> "$LBU_LIST" || return 1
+		fi
+	done < "$conf"
+	rm "$conf"
+}
+
+#-----------------------------------------------------------
+# lbu migrate_config - migrate include/exclude to protected_paths.d
+cmd_migrate_include_exclude() {
+	if [ -e "$INCLUDE_LIST" ]; then
+		migrate_conf + "$INCLUDE_LIST"
+	fi
+	if [ -e "$EXCLUDE_LIST" ]; then
+		migrate_conf - "$EXCLUDE_LIST"
+	fi
+}
 
 #-----------------------------------------------------------
 # Main
@@ -710,6 +743,7 @@ case "$cmd" in
 	list-backup|lb)		SUBCMD="listbackup";;
 	revert)			SUBCMD="revert";;
 	diff)			SUBCMD="diff";;
+	migrate_include_exclude) SUBCMD="migrate_include_exclude";;
 	*)			usage;;
 esac
 
