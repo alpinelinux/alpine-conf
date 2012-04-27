@@ -11,13 +11,10 @@ TMP		:= $(PV)
 LIB_FILES	:= libalpine.sh
 SBIN_FILES	:= lbu\
 		setup-acf\
-		setup-ads\
-		setup-alpine-web\
 		setup-alpine\
 		setup-apkcache\
 		setup-apkrepos\
 		setup-bootable\
-		setup-cryptswap\
 		setup-disk\
 		setup-dns\
 		setup-gparted-desktop\
