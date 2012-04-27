@@ -81,6 +81,9 @@ DNSOPTS="-d example.com -n 8.8.8.8"
 # Set timezone to UTC
 TIMEZONEOPTS="-z UTC"
 
+# set http/ftp proxy 
+PROXYOPTS="http://webproxy:8080"
+
 # Add a random mirror
 APKREPOSOPTS="-r"
 
@@ -157,6 +160,11 @@ _hn=${_hn%%.*}
 
 sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn)} ${_hn} localhost.localdomain localhost/" /etc/hosts
 
+$PREFIX/sbin/setup-proxy -q ${PROXYOPTS}
+# activate the proxy if configured
+if [ -r "$ROOT/etc/profile" ]; then
+	. "$ROOT/etc/profile"
+fi
 $PREFIX/sbin/setup-apkrepos ${APKREPOSOPTS}
 
 # lets stop here if in "quick mode"
