@@ -87,7 +87,7 @@ EOF
 	mv $CRTFILE $PEMFILE
 fi
 
-cat >/etc/mini_httpd.conf <<EOF
+cat >/etc/mini_httpd/mini_httpd.conf <<EOF
 nochroot
 dir=/var/www/localhost/htdocs
 user=nobody
@@ -97,7 +97,7 @@ port=443
 ssl
 EOF
 if [ -n "$address" ]; then
-	echo "host=$address" >> /etc/mini_httpd.conf
+	echo "host=$address" >> /etc/mini_httpd/mini_httpd.conf
 fi
 
 rc-update -q add mini_httpd default
