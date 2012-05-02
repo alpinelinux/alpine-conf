@@ -30,6 +30,9 @@ while [ $# -gt 0 ]; do
 	shift
 done
 
+# install packages 
+apk add mini_httpd $pkgs || exit 1
+
 if [ "$create_passwd" != "no" ]; then
 	mkdir -p /etc/acf
 	if [ -f /etc/acf/passwd ]; then
@@ -39,9 +42,6 @@ if [ "$create_passwd" != "no" ]; then
 	chmod 600 /etc/acf/passwd
 	acfpasswd -s root
 fi
-
-# install packages 
-apk add mini_httpd $pkgs || exit 1
 
 # setup mini_httpd and start it
 if [ -d /var/www/localhost/htdocs ]; then
