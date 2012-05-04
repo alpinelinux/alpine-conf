@@ -4,10 +4,14 @@ prog=${0##*/}
 version=@VERSION@
 
 cleanup() {
+	local i=
 	cd /
 	if [ -n "$uninstalls" ]; then
 		apk del -q syslinux
 	fi
+	for i in $read_only_mounts; do
+		mount -o remount,ro "$i"
+	done
 	if [ -n "$umounts" ]; then
 		umount $umounts
 	fi
@@ -48,6 +52,14 @@ mount_srcdir() {
 vecho() {
 	[ -z "$verbose" ] && return 0
 	echo "$@"
+}
+
+# check if given dir is read-only
+is_read_only() {
+	local tmpfile=$(mktemp -p "$1" 2>/dev/null)
+	[ -z "$tmpfile" ] && return 0
+	rm -f "$tmpfile"
+	return 1
 }
 
 usage() {
@@ -121,6 +133,13 @@ elif [ -b "$dest" ]; then
 	mkdir -p "$destdir"
 	mount "$dest" "$destdir" || die "Failed to mount $dest on $destdir"
 	umounts="$umounts $destdir"
+fi
+
+# remount as rw if needed
+if is_read_only "$destdir"; then
+	vecho "Remounting $destdir as read/write"
+	mount -o remount,rw "$dest" || die "Failed to remount $destdir as rw"
+	read_only_mounts="$read_only_mounts $destdir"
 fi
 
 # fish out label, uuid and type
