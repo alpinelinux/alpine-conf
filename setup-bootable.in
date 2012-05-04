@@ -12,7 +12,7 @@ cleanup() {
 	sync
 	sleep 1
 	for i in $read_only_mounts; do
-		mount -o remount,ro "$i"
+		mount -o remount,ro "$i" || echo "Warning: Failed to remount as read-only. Is modloop mounted?"
 	done
 	if [ -n "$umounts" ]; then
 		umount $umounts
