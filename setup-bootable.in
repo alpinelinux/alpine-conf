@@ -9,6 +9,8 @@ cleanup() {
 	if [ -n "$uninstalls" ]; then
 		apk del -q syslinux
 	fi
+	sync
+	sleep 1
 	for i in $read_only_mounts; do
 		mount -o remount,ro "$i"
 	done
@@ -205,6 +207,7 @@ elif [ -n "$srcurl" ]; then
 	cd "$destdir"/.new
 	${WGET:-wget} -O - "$srcurl" | uniso \
 		|| die "Failed to download or extract $srcurl"
+	echo ""
 fi
 
 # make sure files are really there before we replace existing
@@ -246,7 +249,6 @@ fi
 
 # cleanup
 [ -z "$keep_old" ] && rm -rf "$destdir"/.old "$destdir"/.new
-sync
 
 # If we only copy then we are done.
 if [ -n "$upgrade" ] && [ -z "$syslinux" ]; then
@@ -270,4 +272,3 @@ else
 fi
 
 cleanup
-sync
