@@ -64,6 +64,22 @@ is_read_only() {
 	return 1
 }
 
+# find what disk this partition belongs to
+find_disk_dev() {
+	local i= sysfsname=${1#/dev/}
+	sysfsname=${sysfsname//\/!}	# cciss/c0d0 -> cciss!c0d0
+	if [ -e /sys/block/$sysfsname ]; then
+		echo "/dev/${sysfsname//!/'/'}"
+		return 0
+	fi
+	for i in /sys/block/*/$sysfsname; do
+		[ -e "$i" ] || continue
+		echo "$i" | cut -d/ -f4 | sed -e 's:!:/:g' -e 's:^:/dev/:'
+		return 0
+	done
+	return 1
+}
+
 usage() {
 	cat <<__EOF__
 $prog $version
@@ -149,13 +165,12 @@ eval $(blkid $dest | cut -d: -f2-)
 
 vecho "Using $dest as target (mounted on $destdir)"
 
-
 # find parent device (i.e sda)
 dev="$dest"
 while [ -L "$dev" ]; do
 	dev=$(readlink -f $dev)
 done
-parent_dev=/dev/$(basename $(dirname /sys/block/*/$(basename $dev)))
+parent_dev=$(find_disk_dev)
 
 # check if this files exist and not in upgrade mode
 if [ -z "$upgrade" ] && [ -z "$force" ]; then
