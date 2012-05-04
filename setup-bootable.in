@@ -45,6 +45,11 @@ mount_srcdir() {
 	fi
 }
 
+vecho() {
+	[ -z "$verbose" ] && return 0
+	echo "$@"
+}
+
 usage() {
 	cat <<__EOF__
 $prog $version
@@ -121,7 +126,7 @@ fi
 # fish out label, uuid and type
 eval $(blkid $dest | cut -d: -f2-)
 
-[ -n "$verbose" ] && echo "Using $dest as target (mounted on $destdir)"
+vecho "Using $dest as target (mounted on $destdir)"
 
 
 # find parent device (i.e sda)
@@ -164,17 +169,17 @@ free_blocks=$(stat -f -c "%f" "$destdir")
 block_size=$(stat -f -c "%s" "$destdir")
 blocks_per_mb=$(( 1024 * 1024 / $block_size))
 available_space=$(( $free_blocks / $blocks_per_mb ))
-[ -n "$verbose" ] && echo "Available space: $available_space MiB"
+vecho "Available space: $available_space MiB"
 
 if [ -n "$srcdir" ]; then
 	needed_space=$(cd "$srcdir" && du -m -s -c boot apks syslinux.cfg .alpine-release | awk '$2 == "total" {print $1}')
-	[ -n "$verbose" ] && echo "Needed space:    $needed_space MiB"
+	vecho "Needed space:    $needed_space MiB"
 	[ $available_space -lt $needed_space ] \
 		&& die "Not enough space on $destdir. Aborting."
 
 	# copy the files to .new
 	for i in boot apks syslinux.cfg .alpine-release; do
-		[ -n "$verbose" ] && echo "Copying $srcdir/$i to $destdir/.new/"
+		vecho "Copying $srcdir/$i to $destdir/.new/"
 		cp -a "$srcdir"/$i "$destdir"/.new/
 	done
 elif [ -n "$srcurl" ]; then
@@ -184,10 +189,10 @@ elif [ -n "$srcurl" ]; then
 fi
 
 # make sure files are really there before we replace existing
-[ -n "$verbose" ] && echo "Flushing cache..."
+vecho "Flushing cache..."
 sync
 
-[ -n "$verbose" ] && echo "Replacing existing files..."
+vecho "Replacing existing files..."
 mkdir -p "$destdir"/.old || die "Failed to create $destdir/.old"
 
 # do we want keep existing syslinux.cfg?
@@ -197,7 +202,7 @@ if [ -n "$force" ] || ! [ -e "$destdir"/syslinux.cfg ]; then
 	# update syslinux.cfg unless device is on usb bus
 	# this is so we can boot from CF's and harddisk 
 	if ! on_usb_bus $parent_dev; then
-		[ -n "$verbose" ] && echo "Updating syslinux.cfg to use $dest"
+		vecho "Updating syslinux.cfg to use $dest"
 		sed -i -e "s/usbdisk/${dest##*/}/g" \
 			"$destdir"/.new/syslinux.cfg
 	fi
