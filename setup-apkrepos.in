@@ -60,6 +60,10 @@ add_fastest_mirror() {
 		fi
 	done
 	mirror=$mirror_lowest_rtt_mirror
+	if [ -z "$mirror" ]; then
+		eecho "Failed to ping any mirror"
+		return 1
+	fi
 	add_mirror "$mirror"
 }
 
