@@ -59,7 +59,7 @@ get_default_addr() {
 	# check if dhcpcd is running
 	if pidof dhcpcd > /dev/null && [ -f "$ROOT/var/lib/dhcpc/dhcpcd-$1.info" ]; then
 		echo dhcp
-	elif iface_exists; then
+	elif iface_exists $1; then
 		ip addr show $1 | awk '/inet / {print $2}' | head -n 1 | sed 's:/.*::'
 	fi
 }
@@ -122,7 +122,7 @@ config_iface() {
 	local answer=
 
 	while [ -n "$ask_bridge" ] && ! is_bridge $iface; do
-		ask "Do you want to bridge the interface $iface?" no
+		ask "Do you want to bridge the interface $iface?" yes
 		case "$resp" in
 			yes|y) resp=yes; break;;
 			no|n) break;;
