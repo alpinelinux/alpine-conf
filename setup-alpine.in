@@ -48,6 +48,12 @@ while getopts "af:c:hq" opt ; do
 done
 shift `expr $OPTIND - 1`
 
+# mount xenfs so we can detect xen dom0
+if [ "$(rc --sys)" = "XENU" ] && ! grep -q '^xenfs' /proc/mounts; then
+	modprobe xenfs
+	mount -t xenfs xenfs /proc/xen
+fi
+
 if [ "$USEANSWERFILE" != "" ]; then
 	if [ -e "$USEANSWERFILE" ]; then
 		. "$USEANSWERFILE"
@@ -176,6 +182,10 @@ $PREFIX/sbin/setup-sshd ${SSHDOPTS}
 
 if ! is_qemu; then
 	$PREFIX/sbin/setup-ntp ${NTPOPTS}
+fi
+
+if is_xen_dom0; then
+	setup-xen-dom0
 fi
 
 DEFAULT_DISK=none \

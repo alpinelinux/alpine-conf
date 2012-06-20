@@ -27,6 +27,7 @@ SBIN_FILES	:= lbu\
 		setup-proxy\
 		setup-sshd\
 		setup-timezone\
+		setup-xen-dom0\
 		setup-xorg-base\
 		update-conf
 
