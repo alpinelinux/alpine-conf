@@ -109,6 +109,10 @@ bridge_list_ports() {
 	fi
 }
 
+is_bridge() {
+	test -r $1.bridge_ports
+}
+
 config_iface() {
 	local iface=$1
 	local prefix=$2
@@ -117,7 +121,7 @@ config_iface() {
 	local conf=$prefix$iface.conf
 	local answer=
 
-	while [ -n "$ask_bridge" ]; do
+	while [ -n "$ask_bridge" ] && ! is_bridge $iface; do
 		ask "Do you want to bridge the interface $iface?" no
 		case "$resp" in
 			yes|y) resp=yes; break;;
