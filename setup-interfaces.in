@@ -116,6 +116,7 @@ is_bridge() {
 config_iface() {
 	local iface=$1
 	local prefix=$2
+	local default_address=$3
 	local address= netmask= gateway= bridge_ports=
 	local bridge
 	local conf=$prefix$iface.conf
@@ -152,7 +153,7 @@ config_iface() {
 	# we are no interested in the result, only error code, so
 	# we send result to /dev/null
 	while ! ipcalc -s -m $address >/dev/null 2>&1; do
-		address=`get_default_addr $iface`
+		address=${default_address:-$(get_default_addr $iface)}
 		[ -z "$address" ] && address="dhcp"
 		ask "Ip address for $iface? (or 'dhcp', 'none', '?')" $address
 		address=$resp
@@ -323,7 +324,9 @@ config_vlan() {
 		return 0
 		;;
 	esac
-	unconfigured_isin $raw_device && return 0
+	if unconfigured_isin $raw_device || is_bond_master $raw_device; then
+		return 0
+	fi
 	echo "$raw_device is not a valid raw device for $iface"
 	return 1
 }
@@ -380,6 +383,12 @@ prompt_for_interfaces() {
 			'?') iface_help; continue;;
 			br[0-9]*|bridge[0-9]*|virbr[0-9]*)
 				config_bridge $iface || continue;;
+			bond[0-9]*.[0-9]*)
+				config_bond ${iface%.*} || continue
+				config_iface ${iface%.*} $(printf "%.3d~" $index) none
+				index=$(( $index + 1 ))
+				config_vlan $iface || continue
+				;;
 			bond[0-9]*)
 				config_bond $iface || continue;;
 			*.[0-9]*|vlan[0-9]*)
