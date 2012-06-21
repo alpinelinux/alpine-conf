@@ -73,10 +73,6 @@ is_vmware() {
 		|| grep -q VMware /proc/ide/hd*/model 2>/dev/null
 }
 
-is_xen() {
-	[ -d /proc/xen ]
-}
-
 # return true (0) if given device is lvm
 is_lvm() {
 	lvs "$1" >/dev/null 2>&1
@@ -250,15 +246,15 @@ install_mounted_root() {
 	if is_vmware; then
 		kernel_opts="pax_nouderef $kernel_opts"
 	fi
-	if is_xen; then
-		kernel_opts="xen $kernel_opts"
-	fi
 	modules="sd-mod,usb-storage,${root_fs}${raidmod}"
 	sed -e "s:^root=.*:root=$root:" \
 		-e "s:^default_kernel_opts=.*:default_kernel_opts=\"$kernel_opts\":" \
 		-e "s:^modules=.*:modules=$modules:" \
 		/etc/update-extlinux.conf > "$mnt"/etc/update-extlinux.conf
-
+	if [ "$(rc --sys)" = "XEN0" ]; then
+		sed -i -e "s:^default=.*:default=xen-grsec:" \
+			"$mnt"/etc/update-extlinux.conf
+	fi
 
 	# generate the fstab
 	if [ -f "$mnt"/etc/fstab ]; then
@@ -282,6 +278,9 @@ EOF
 	local apkflags="--initdb --quiet --progress --update-cache --clean-protected"
 	local pkgs=$(cat "$mnt"/etc/apk/world "$mnt"/var/lib/apk/world 2>/dev/null)
 	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base"
+	if [ "$(rc --sys)" = "XEN0" ]; then
+		pkgs="$pkgs xen-hypervisor"
+	fi
 	local repos=$(sed -e 's/\#.*//' /etc/apk/repositories)
 	local repoflags=
 	for i in $repos; do
@@ -291,9 +290,7 @@ EOF
 	apk add --root "$mnt" $apkflags --overlay-from-stdin \
 		$repoflags $pkgs <$ovlfiles>/dev/null || return 1
 	echo ""
-	if ! is_xen; then
-		extlinux $extlinux_raidopt --install "$mnt"/boot
-	fi
+	extlinux $extlinux_raidopt --install "$mnt"/boot
 }
 
 unmount_partitions() {
