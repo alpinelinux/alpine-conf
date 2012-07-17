@@ -278,7 +278,7 @@ If <dirname> nor <filename> is not specified, a package named
 }
 
 _gen_filelist() {
-	apk audit --backup --quiet --recursive
+	apk audit --backup --quiet --recursive --check-permissions
 }
 
 cmd_package() {
