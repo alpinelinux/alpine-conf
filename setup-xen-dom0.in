@@ -3,26 +3,20 @@
 # simple script to setup basic xen dom0
 
 # kernel modules
-for mod in xen_netback xen_blkback xenfs xen-platform-pci xen_wdt tun; do
-	modprobe $mod
-	grep -q -w $mod /etc/modules || echo $mod >> /etc/modules
+for mod in xen_netback xen_blkback xenfs xen_pciback xen_wdt tun; do
+	if modprobe $mod; then
+		grep -q -w $mod /etc/modules || echo $mod >> /etc/modules
+	fi
 done
 
 # install packages
-apk add -q xen udev
+apk add -q xen
 
 # setup and start services
-rc-update -q del mdev sysinit
-rc-update -q add udev sysinit
-for svc in udev-postmount xenstored xenconsoled; do
+for svc in xenstored xenconsoled xenqemu; do
 	rc-update -q add $svc default
 done
 
-if ! rc-service -q udev status; then
-	rc-service udev start
-	rc-service udev-postmount start
-fi
-
 rc-service xenstored start
 rc-service xenconsoled start
-
+rc-service xenqemu start
