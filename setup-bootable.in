@@ -170,7 +170,7 @@ dev="$dest"
 while [ -L "$dev" ]; do
 	dev=$(readlink -f $dev)
 done
-parent_dev=$(find_disk_dev)
+parent_dev=$(find_disk_dev $dev)
 
 # check if this files exist and not in upgrade mode
 if [ -z "$upgrade" ] && [ -z "$force" ]; then
