@@ -73,7 +73,9 @@ get_default_mask() {
 }
 
 get_default_gateway() {
-	ip route show dev $1 | awk '/^default/ {print $3}'
+	if iface_exists $1; then
+		ip route show dev $1 | awk '/^default/ {print $3}'
+	fi
 }
 
 ipaddr_help() {
