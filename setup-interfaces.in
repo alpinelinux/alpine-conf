@@ -426,7 +426,7 @@ prompt_for_interfaces() {
 			echo -e "\tbond-slaves $bond_slaves" >> interfaces
 		fi
 		if [ -n "$raw_device" ]; then
-			echo -e "\traw-device $raw_device" >> interfaces
+			echo -e "\tvlan-raw-device $raw_device" >> interfaces
 		fi
 		case "$iface" in
 			*.[0-9]*|vlan[0-9]*) PKGS="$PKGS vlan";;
