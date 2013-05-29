@@ -80,8 +80,8 @@ while true; do
 	esac
 
 	while [ -d "$zroot/$zonepath" ]; do
-		local zone=
-		echo -n "What sub-timezone of '$zonepath' are you in? ('?' for list)"
+		zone=
+		echo -n "What sub-timezone of '$zonepath' are you in? ('?' for list) "
 		default_read zone
 		case "$zone" in
 		"?") show_tz_list "$zonepath"; continue;;
