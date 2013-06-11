@@ -160,11 +160,6 @@ if [ -z "$MIRRORS" ] && [ -r "$MIRRORS_PATH" ]; then
 	MIRRORS=`cat $MIRRORS_PATH`
 fi
 
-RELEASES_PATH=/usr/share/alpine-mirrors/RELEASES.txt
-if [ -z "$RELEASES" ] && [ -r "$RELEASES_PATH" ]; then
-	RELEASES=`cat $RELEASES_PATH`
-fi
-
 APKREPOS_PATH=/etc/apk/repositories
 if [ -r "$APKREPOS_PATH" ]; then
 	APKREPOS=`cat "$APKREPOS_PATH"`
