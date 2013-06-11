@@ -108,7 +108,11 @@ get_alpine_release() {
 add_mirror() {
 	local mirror="$1"
 	echo "${mirror%/}/${release}/main" >> $APKREPOS_PATH
-	echo "#${mirror%/}/${release}/testing" >> $APKREPOS_PATH
+	case "$release" in
+	v[0-9]*)
+		echo "#${mirror%/}/edge/main" >> $APKREPOS_PATH;;
+	esac
+	echo "#${mirror%/}/edge/testing" >> $APKREPOS_PATH
 	echo "" >> $APKREPOS_PATH
 	echo "Added mirror $(get_hostname_from_url $mirror)"
 }
