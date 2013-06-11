@@ -33,38 +33,39 @@ add_random_mirror() {
 	add_mirror $mirror
 }
 
-add_fastest_mirror() {
-	local tmp_mirror_nslookup
-	local tmp_mirror_time
-	local tmp_mirror_time_failed
-	local tmp_mirror_rtt
-	local mirror_lowest_rtt
-	local mirror_lowest_rtt_mirror
+time_cmd() {
+	local start=$(cut -d ' ' -f1 /proc/uptime)
+	$@ >&2
+	awk -v start=$start -v end=$(cut -d ' ' -f1 /proc/uptime) \
+		'BEGIN {print end - start; exit}'
+}
 
-	echo -n "Finding fastest mirror... "
-	mirror_lowest_rtt=-1
-	for mirror in $MIRRORS; do
-		tmp_mirror_time="`(time wget -qO - $mirror) 2>&1 || echo "E_MIRROR_FAILED"`"
-		tmp_mirror_time_failed=`echo $tmp_mirror_time | grep "E_MIRROR_FAILED"`
-		if [ ${#tmp_mirror_time_failed} -eq 0 ]; then
-			tmp_mirror_rtt=`echo "$tmp_mirror_time" | grep -E "^real" | sed -r "s/^real[ 	]+[0-9]+m[ 	]+([0-9]+)\.([0-9]+)s$/\1\2/"`
-			if [ $mirror_lowest_rtt -eq -1 ]; then
-				mirror_lowest_rtt=$tmp_mirror_rtt
-				mirror_lowest_rtt_mirror=$mirror
-			else
-				if [ $tmp_mirror_rtt -lt $mirror_lowest_rtt ]; then
-					mirror_lowest_rtt=$tmp_mirror_rtt
-					mirror_lowest_rtt_mirror=$mirror
-				fi
-			fi
-		fi
-	done
-	mirror=$mirror_lowest_rtt_mirror
-	if [ -z "$mirror" ]; then
-		eecho "Failed to ping any mirror"
-		return 1
-	fi
-	add_mirror "$mirror"
+find_fastest_mirror() {
+	export http_proxy=
+	local url=
+	for url in $MIRRORS; do
+		echo $(time_cmd apk update --quiet \
+				--repository $url/edge/main \
+				--repositories-file /dev/null) $url
+	done | awk ' {
+		if (!current) {
+			current=$1
+			url=$2
+		} else {
+			if ($1 < current) {
+				current=$1
+				url=$2
+			}
+		}
+		printf("%6.2f %s\n", $1, $2) > "/dev/stderr"
+	}
+	END { print url }'
+}
+
+add_fastest_mirror() {
+	echo "Finding fastest mirror... "
+	local fastest=$(find_fastest_mirror)
+	add_mirror "$fastest"
 }
 
 # show mirrors and store how many in global mirror_count
