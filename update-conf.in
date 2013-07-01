@@ -10,14 +10,16 @@ init_tmpdir TMPD
 LBUCACHE="$TMPD/lbucache"
 
 usage() {
-	echo "$PROGRAM $VERSION
-Usage: $PROGAM [-aihl]
+	cat >&2 << __EOF__
+$PROGRAM $VERSION
+Usage: $PROGRAM [-a|--all] [-i|--initd] [-l|--list] [-h|--help]
+Options:
+  -a, --all    Select all updated files
+  -i, --initd  Use all new init.d scripts
+  -l, --list   List updated files
+  -h, --help   Show this help
 
-  -a  Select all updated files.
-  -h  Show this help.
-  -i  Use all new init.d scripts.
-  -l  List updated files.
-"	
+__EOF__
 }
 
 
@@ -31,15 +33,23 @@ is_initd() {
 	echo "$1" | grep etc/init.d/ > /dev/null
 }
 
-while getopts "alih" opt ; do
-	case "$opt" in
-		a)	aflag="-a" ;;
-		i)	iflag="-i" ;;
-		l)	lflag="-l" ;;
-		h|*)	usage;;
-	esac	
+args=`getopt -o ailh --long all,initd,list,help -n "$PROGRAM" -- "$@"`
+if [ $? -ne 0 ]; then
+	usage
+	exit 2
+fi
+eval set -- "$args"
+while true; do
+	case $1 in
+		-a|--all) aflag="-a";;
+		-i|--initd) iflag="-i";;
+		-l|--list) lflag="-l";;
+		-h|--help) usage; exit;;
+		--) shift; break;;
+		*) exit 1;; # getopt error
+	esac
+	shift
 done
-shift `expr $OPTIND - 1`
 
 for apknew in $(find "$ROOT/etc" -name '*.apk-new') ; do
 	p="${apknew%.apk-new}"
