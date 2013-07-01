@@ -46,7 +46,7 @@ openntpd)
 	;;
 esac
 
-apk add -q $pkgs
+apk add --quiet $pkgs
 rc-update add $svc default
 rc-service $svc start
 

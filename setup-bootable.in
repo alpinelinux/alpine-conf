@@ -7,7 +7,7 @@ cleanup() {
 	local i=
 	cd /
 	if [ -n "$uninstalls" ]; then
-		apk del -q syslinux
+		apk del --quiet syslinux
 	fi
 	sync
 	sleep 1
@@ -274,7 +274,7 @@ fi
 echo "Making $dest bootable..."
 
 if ! [ -x "$(which syslinux)" ]; then
-	apk add -q syslinux || die "Failed to install syslinux"
+	apk add --quiet syslinux || die "Failed to install syslinux"
 	uninstalls="syslinux"
 fi
 

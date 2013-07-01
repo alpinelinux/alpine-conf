@@ -51,8 +51,8 @@ while getopts "hp:z:" opt; do
         esac
 done
 
-if ! apk info -q -e tzdata; then
-	apk add -q tzdata && apkdel="tzdata" || exit 1
+if ! apk info --quiet --installed tzdata; then
+	apk add --quiet tzdata && apkdel="tzdata" || exit 1
 fi
 
 zonepath=$(cat /etc/TZ 2>/dev/null)
@@ -105,6 +105,6 @@ while true; do
 done
 
 if [ -n "$apkdel" ]; then
-	apk del -q $apkdel
+	apk del --quiet $apkdel
 fi
 

@@ -468,7 +468,7 @@ prompt_for_interfaces() {
 	fi
 
 	if [ -n "$PKGS" ]; then
-		apk add -q $PKGS
+		apk add --quiet $PKGS
 	fi
 
 	mkdir -p $ROOT/etc/network

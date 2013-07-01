@@ -110,7 +110,7 @@ unpack_apkovl() {
 		return 0 
 	fi
 
-	apk add -q openssl
+	apk add --quiet openssl
 
 	if ! openssl list-cipher-commands | grep "^$suffix$" > /dev/null; then
 		errstr="Cipher $suffix is not supported"
@@ -387,7 +387,7 @@ stop_all_raid() {
 init_progs() {
 	local raidpkg=
 	[ -n "$USE_RAID" ] && raidpkg="mdadm"
-	apk add -q sfdisk e2fsprogs lvm2 $raidpkg syslinux $@
+	apk add --quiet sfdisk e2fsprogs lvm2 $raidpkg syslinux $@
 }
 
 show_disk_info() {
@@ -875,7 +875,7 @@ shift $(( $OPTIND - 1))
 
 if [ -d "$1" ]; then
 	# install to given mounted root
-	apk add -q syslinux
+	apk add --quiet syslinux
 	install_mounted_root "${1%/}" \
 		&& echo "You might need fix the MBR to be able to boot" >&2
 	exit $?

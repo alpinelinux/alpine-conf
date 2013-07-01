@@ -154,8 +154,8 @@ done
 # main
 # install alpine-mirrors if its not already there
 to_uninstall=
-if ! apk info -q -e alpine-mirrors; then
-	apk add -q alpine-mirrors
+if ! apk info --quiet --installed alpine-mirrors; then
+	apk add --quiet alpine-mirrors
 	to_uninstall=alpine-mirrors
 fi
 
@@ -199,10 +199,10 @@ done
 
 if [ -n "$changed" ]; then
 	echo -n "Updating repository indexes... "
-	apk update -q && echo "done."
+	apk update --quiet && echo "done."
 fi
 
 # clean up
 if [ -n "$to_uninstall" ]; then
-	apk del -q alpine-mirrors
+	apk del --quiet alpine-mirrors
 fi

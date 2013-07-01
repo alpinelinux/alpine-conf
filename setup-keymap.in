@@ -73,15 +73,15 @@ select_variant() {
 
 goodbye() {
 	if [ $was_installed -ne 0 ]; then
-		apk del -q bkeymaps
+		apk del --quiet bkeymaps
 	fi
 	exit $1
 }
 
-apk info -eq bkeymaps
+apk info --quiet --installed bkeymaps
 was_installed=$?
 
-apk add -q bkeymaps
+apk add --quiet bkeymaps
 
 deflayout="$1"
 defvariant="$2"
