@@ -2,6 +2,8 @@
 
 
 PREFIX=
+VERSION=@VERSION@
+
 . $PREFIX/lib/libalpine.sh
 
 # set up temp dir
