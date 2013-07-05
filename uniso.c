@@ -31,6 +31,7 @@
 #include <string.h>
 #include <endian.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 /**/
 
