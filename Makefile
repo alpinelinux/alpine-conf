@@ -53,10 +53,10 @@ SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
 			-e 's:@sysconfdir@:$(sysconfdir):g'
 
 .SUFFIXES:	.sh.in .in
-.sh.in.sh:
+%.sh: %.sh.in
 	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@
 
-.in:
+%: %.in
 	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@
 
 .PHONY:	all apk clean install uninstall
