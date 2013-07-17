@@ -2,11 +2,7 @@ VERSION		:= 2.13.0
 
 sysconfdir      ?= /etc/lbu
 
-P		:= alpine-conf
-PV		:= $(P)-$(VERSION)
-TARBZ2		:= $(PV).tar.bz2
 PREFIX		?=
-TMP		:= $(PV)
 
 LIB_FILES	:= libalpine.sh
 SBIN_FILES	:= lbu\
@@ -34,12 +30,8 @@ SBIN_FILES	:= lbu\
 BIN_FILES	:= uniso
 
 SCRIPTS		:= $(LIB_FILES) $(SBIN_FILES)
-SCRIPT_SOURCES	:= $(addsuffix .in,$(SCRIPTS))
-
 
 ETC_LBU_FILES	:= lbu.conf
-EXTRA_DIST	:= Makefile README
-DIST_FILES	:= $(SCRIPT_SOURCES) $(ETC_LBU_FILES) $(EXTRA_DIST)
 
 GIT_REV		:= $(shell test -d .git && git describe || echo exported)
 ifneq ($(GIT_REV), exported)
@@ -55,7 +47,6 @@ WWW="http://alpinelinux.org/alpine-conf"
 
 
 SED		:= sed
-TAR		:= tar
 
 SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
 			-e 's:@PREFIX@:$(PREFIX):g' \
@@ -68,23 +59,13 @@ SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
 .in:
 	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@
 
-.PHONY:	all apk clean dist install uninstall
+.PHONY:	all apk clean install uninstall
 all:	$(SCRIPTS) $(BIN_FILES)
 
 uniso:	uniso.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 apk:	$(APKF)
-
-dist:	$(TARBZ2)
-
-
-$(TARBZ2): $(DIST_FILES)
-	rm -rf $(TMP)
-	mkdir -p $(TMP)
-	cp $(DIST_FILES) $(TMP)
-	$(TAR) -cjf $@ $(TMP)
-	rm -rf $(TMP)
 	
 install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES)
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/bin
@@ -105,5 +86,5 @@ uninstall:
 	done
 	
 clean:
-	rm -rf $(SCRIPTS) $(BIN_FILES) $(TMP) $(TARBZ2)
+	rm -rf $(SCRIPTS) $(BIN_FILES)
 
