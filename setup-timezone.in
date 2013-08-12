@@ -47,7 +47,7 @@ while getopts "hp:z:" opt; do
         case $opt in
                 h) usage;;
                 p) POSIXTZ="$OPTARG";;
-		t) ZONEINFOFOLDER="$OPTARG";;
+		z) ZONEINFOFOLDER="$OPTARG";;
         esac
 done
 
