@@ -160,6 +160,31 @@ find_pvs_in_vg() {
 	pvs --noheadings | awk "\$2 == \"$vg\" {print \$1}"
 }
 
+# echo current grsecurity option and set new
+set_grsec() {
+	local key="$1" value="$2"
+	if ! [ -e /proc/sys/kernel/grsecurity/$key ]; then
+		return 0
+	fi
+	cat /proc/sys/kernel/grsecurity/$key
+	echo $value > /proc/sys/kernel/grsecurity/$key
+}
+
+init_chroot_mounts() {
+	local mnt="$1" i=
+	for i in proc dev; do
+		mkdir -p "$mnt"/$i
+		mount --bind /$i "$mnt"/$i
+	done
+}
+
+cleanup_chroot_mounts() {
+	local mnt="$1" i=
+	for i in proc dev; do
+		umount "$mnt"/$i
+	done
+}
+
 install_mounted_root() {
 	local mnt="$1" mnt_boot= boot_fs= root_fs=
 	local initfs_features="ata base ide scsi usb virtio"
@@ -266,14 +291,14 @@ install_mounted_root() {
 /dev/fd0	/media/floppy	vfat	noauto	0 0
 /dev/usbdisk	/media/usb	vfat	noauto	0 0
 EOF
-
 	# remove the installed db in case its there so we force re-install
 	rm -f "$mnt"/var/lib/apk/installed "$mnt"/lib/apk/db/installed
 	echo "Installing system on $rootdev:"
+	extlinux $extlinux_raidopt --install "$mnt"/boot
+
 	# apk reads config from target root so we need to copy the config
 	mkdir -p "$mnt"/etc/apk/keys/
 	cp /etc/apk/keys/* "$mnt"/etc/apk/keys/
-
 
 	local apkflags="--initdb --quiet --progress --update-cache --clean-protected"
 	local pkgs=$(cat "$mnt"/etc/apk/world "$mnt"/var/lib/apk/world 2>/dev/null)
@@ -287,10 +312,14 @@ EOF
 		repoflags="$repoflags --repository $i"
 	done
 	
+	chroot_caps=$(set_grsec chroot_caps 0)
+	init_chroot_mounts "$mnt"
 	apk add --root "$mnt" $apkflags --overlay-from-stdin \
-		$repoflags $pkgs <$ovlfiles>/dev/null || return 1
-	echo ""
-	extlinux $extlinux_raidopt --install "$mnt"/boot
+		$repoflags $pkgs <$ovlfiles>/dev/null
+	local ret=$?
+	cleanup_chroot_mounts "$mnt"
+	set_grsec chroot_caps $chroot_caps > /dev/null
+	return $ret
 }
 
 unmount_partitions() {
