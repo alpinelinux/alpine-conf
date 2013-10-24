@@ -286,6 +286,10 @@ install_mounted_root() {
 		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
 	fi
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
+	if [ -n "$SWAP_DEVICE" ]; then
+		echo -e "${SWAP_DEVICE}\tswap\tswap\tdefaults\t0 0" \
+			>> "$mnt"/etc/fstab
+	fi
 	cat >>"$mnt"/etc/fstab <<EOF
 /dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
 /dev/fd0	/media/floppy	vfat	noauto	0 0
@@ -573,6 +577,7 @@ setup_swap_dev() {
 		mkswap $swap_dev >/dev/null
 		echo -e "$swap_dev\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
 	done
+	SWAP_DEVICE="$(uuid_or_device $swap_dev)"
 	swapon -a
 	rc-update --quiet add swap boot
 }
