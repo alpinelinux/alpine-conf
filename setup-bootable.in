@@ -83,18 +83,17 @@ find_disk_dev() {
 usage() {
 	cat <<__EOF__
 $prog $version
-usage: $prog [-hu] SOURCE [DEST]
+usage: $prog [-fhUusv] SOURCE [DEST]
 
 Copy the contents of SOURCE to DEST and make DEST bootable.
 
-SOURCE can be a directory or a ISO image. DEST can be a mounted directory 
+SOURCE can be a directory or a ISO image. DEST can be a mounted directory
 or a device. If DEST is ommitted /media/usb will be used.
 
 Options:
  -f  Force overwrite existing files. Will overwrite syslinux.cfg if upgrade.
  -h  Show this help.
- -k  Keep current alpine_dev in syslinux.cfg. Without this it will be replaced
-     with the UUID.
+ -U  Replace current alpine_dev in syslinux.cfg with UUID if UUID found.
  -u  Upgrade mode. Keep existing syslinux.cfg and don't run syslinux.
  -s  Force run syslinux, even if upgrade mode.
  -v  Verbose mode. Display whats going on.
@@ -103,11 +102,11 @@ __EOF__
 	exit 1
 }
 
-while getopts "fhkusv" opt; do
+while getopts "fhUusv" opt; do
 	case "$opt" in
 	f) force=1;;
 	h) usage;;
-	k) keep_alpine_dev=1;;
+	U) replace_alpine_dev=1;;
 	u) upgrade=1;;
 	s) syslinux=1;;
 	v) verbose=1;;
@@ -257,7 +256,7 @@ for i in $tomove; do
 	mv "$destdir"/.new/$i "$destdir"/ || die "Failed to move $destdir/.new/ to $destdir"
 done
 
-if [ -z "$keep_alpine_dev" ] && [ -n "$UUID" ]; then
+if [ -n "$replace_alpine_dev" ] && [ -n "$UUID" ]; then
 	sed -i -e "s/alpine_dev=[^ \t:]\+/alpine_dev=UUID=$UUID/" \
 		"$destdir"/syslinux.cfg
 fi
