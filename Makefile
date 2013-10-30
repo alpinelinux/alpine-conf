@@ -1,4 +1,4 @@
-VERSION		:= 2.13.0
+VERSION		:= 2.14.0
 
 sysconfdir      ?= /etc/lbu
 
@@ -66,7 +66,7 @@ uniso:	uniso.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 apk:	$(APKF)
-	
+
 install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES)
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/bin
 	install -m 755 $(BIN_FILES) $(DESTDIR)$(PREFIX)/bin
