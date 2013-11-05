@@ -256,7 +256,7 @@ for i in $tomove; do
 	mv "$destdir"/.new/$i "$destdir"/ || die "Failed to move $destdir/.new/ to $destdir"
 done
 
-if [ -n "$replace_alpine_dev" ] && [ -n "$UUID" ]; then
+if [ -n "$replace_alpine_dev" -o -z "$upgrade" ] && [ -n "$UUID" ]; then
 	sed -i -e "s/alpine_dev=[^ \t:]\+/alpine_dev=UUID=$UUID/" \
 		"$destdir"/syslinux.cfg
 fi
