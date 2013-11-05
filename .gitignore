@@ -12,11 +12,16 @@ setup-cryptswap
 setup-desktop
 setup-disk
 setup-dns
+setup-gparted-desktop
 setup-hostname
 setup-interfaces
 setup-keymap
 setup-lbu
 setup-mta
+setup-ntp
+setup-proxy
+setup-sshd
 setup-timezone
+setup-xen-dom0
 setup-xorg-base
 update-conf
