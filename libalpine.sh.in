@@ -89,7 +89,7 @@ is_xen() {
 # Detect if we are running Xen Dom0
 is_xen_dom0() {
 	is_xen && \
-	grep -q "control_d" /proc/xen/capabilities
+	grep -q "control_d" /proc/xen/capabilities 2>/dev/null
 }
 
 # list of available network interfaces that aren't part of any bridge or bond
