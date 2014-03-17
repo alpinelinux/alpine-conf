@@ -12,7 +12,7 @@ Setup NTP time synchronization
 
 options:
  -h  Show this help
- -c  Choice of NTP daemon: chrony openntpd none
+ -c  Choice of NTP daemon: busybox openntpd chrony none
 __EOF__
         exit 1
 }
@@ -25,7 +25,7 @@ while getopts "hc:" opt; do
 done
 
 if [ -z "$ntpchoice" ]; then
-        echo -n "Which NTP client to run? ('openntpd', 'chrony' or 'none') [chrony] "
+        echo -n "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none') [chrony] "
         default_read ntpchoice "chrony"
 fi
 
@@ -35,6 +35,10 @@ case "$ntpchoice" in
 none|abort)
 	exit 0
 	;;
+busybox)
+	pkgs=''
+	svc=ntpd
+	;;
 chrony)
 	if apk info --installed --quiet acf-core; then
 		pkgs="$pkgs acf-chrony"
@@ -42,11 +46,11 @@ chrony)
 	svc=chronyd
 	;;
 openntpd)
-	svc=ntpd
+	svc=openntpd
 	;;
 esac
 
-apk add --quiet $pkgs
+[ -z "$pkgs" ] || apk add --quiet $pkgs
 rc-update add $svc default
 rc-service $svc start
 
