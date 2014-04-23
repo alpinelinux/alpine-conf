@@ -8,13 +8,12 @@ zroot=/usr/share/zoneinfo
 
 usage() {
         cat <<__EOF__
-usage: setup-timezone [-h] [-p posixtz format] [-z subfolder of $zroot]
+usage: setup-timezone [-h] [-z subdir of $zroot]
 
 Sets the timezone for the system.
 
 options:
  -h  Show this help
- -p  Specify the timezone in PosixTZ format
  -z  Specify the timezone as a subfolder of $zroot
 __EOF__
         exit 1
@@ -43,10 +42,9 @@ valid_tz() {
 		| xargs posixtz | sort | uniq | grep -q -w "$1"
 }
 
-while getopts "hp:z:" opt; do
+while getopts "hz:" opt; do
         case $opt in
                 h) usage;;
-                p) POSIXTZ="$OPTARG";;
 		z) ZONEINFOFOLDER="$OPTARG";;
         esac
 done
@@ -59,11 +57,6 @@ zonepath=$(cat /etc/TZ 2>/dev/null)
 [ -z "$zonepath" ] && zonepath="UTC"
 
 while true; do
-	if [ -n "$POSIXTZ" ]; then
-		echo $POSIXTZ > /etc/TZ || rm -f /etc/TZ
-		break
-	fi
-
 	if [ -n "$ZONEINFOFOLDER" ]; then
 		TZ=$(posixtz "$ZONEINFOFOLDER") || echo "Failed to convert '$ZONEINFOFOLDER' to POSIX TZ"
 		if [ -n "$TZ" ]; then
