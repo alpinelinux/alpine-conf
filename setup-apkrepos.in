@@ -5,6 +5,9 @@ PREFIX=
 
 . $PREFIX/lib/libalpine.sh
 
+if [ "$ROOT" != "/" ]; then
+	apk_root_opt="--root $ROOT"
+fi
 
 get_hostname_from_url() {
 	local n=${1#*://}
@@ -14,7 +17,7 @@ get_hostname_from_url() {
 prompt_setup_method() {
 	echo "r) Add random from the above list"
 	echo "f) Detect and add fastest mirror from above list"
-	echo "e) Edit /etc/apk/repositores with text editor"
+	echo "e) Edit "${ROOT}"etc/apk/repositores with text editor"
 	echo ""
 	echo -n "Enter mirror number (1-$mirror_count) or URL to add (or r/f/e/done) [$1]: "
 }
@@ -22,7 +25,7 @@ prompt_setup_method() {
 add_random_mirror() {
 	local i=0
 	local random_mirror_index=$(( $RANDOM % $mirror_count ))
-	
+
 	echo -n "Picking random mirror... "
 	for mirror in $MIRRORS; do
 		if [ $i -eq $random_mirror_index ]; then
@@ -44,7 +47,7 @@ find_fastest_mirror() {
 	export http_proxy=
 	local url=
 	for url in $MIRRORS; do
-		echo $(time_cmd apk update --quiet \
+		echo $(time_cmd apk update --quiet $apk_root_opt \
 				--repository $url/edge/main \
 				--repositories-file /dev/null) $url
 	done | awk ' {
@@ -94,7 +97,7 @@ add_from_list() {
 }
 
 get_alpine_release() {
-	local version=$(cat /etc/alpine-release 2>/dev/null)
+	local version=$(cat "${ROOT}"etc/alpine-release 2>/dev/null)
 	case "$version" in
 		*_git*|*_alpha*) release="edge";;
 		[0-9]*.[0-9]*.[0-9]*)
@@ -107,6 +110,7 @@ get_alpine_release() {
 
 add_mirror() {
 	local mirror="$1"
+	mkdir -p "${APKREPOS_PATH%/*}"
 	echo "${mirror%/}/${release}/main" >> $APKREPOS_PATH
 	case "$release" in
 	v[0-9]*)
@@ -118,15 +122,17 @@ add_mirror() {
 }
 
 add_from_url() {
+	mkdir -p "${APKREPOS_PATH%/*}"
 	echo "$1" >> $APKREPOS_PATH
 	echo "" >> $APKREPOS_PATH
 }
 
 edit_repositories() {
-	local md5=$(md5sum $APKREPOS_PATH)
+	local md5=$(md5sum $APKREPOS_PATH 2>/dev/null)
+	mkdir -p "${APKREPOS_PATH%/*}"
 	${EDITOR:-vi} "$APKREPOS_PATH"
 	# return true if file changed
-	test "$(md5sum $APKREPOS_PATH)" != "$md5"
+	test "$(md5sum $APKREPOS_PATH 2>/dev/null)" != "$md5"
 }
 
 usage() {
@@ -155,8 +161,8 @@ done
 # install alpine-mirrors if its not already there
 to_uninstall=
 if ! apk info --quiet --installed alpine-mirrors; then
-	apk add --quiet alpine-mirrors
-	to_uninstall=alpine-mirrors
+	apk add --quiet --virtual .setup-apkrepos alpine-mirrors
+	to_uninstall=.setup-apkrepos
 fi
 
 MIRRORS_PATH=/usr/share/alpine-mirrors/MIRRORS.txt
@@ -164,7 +170,7 @@ if [ -z "$MIRRORS" ] && [ -r "$MIRRORS_PATH" ]; then
 	MIRRORS=`cat $MIRRORS_PATH`
 fi
 
-APKREPOS_PATH=/etc/apk/repositories
+APKREPOS_PATH="${ROOT}"etc/apk/repositories
 if [ -r "$APKREPOS_PATH" ]; then
 	APKREPOS=`cat "$APKREPOS_PATH"`
 fi
@@ -181,7 +187,7 @@ while true; do
 	else
 		show_mirror_list
 		prompt_setup_method $default_answer
-	
+
 		default_read answer $default_answer
 		case "$answer" in
 			"done") break;;
@@ -199,7 +205,7 @@ done
 
 if [ -n "$changed" ]; then
 	echo -n "Updating repository indexes... "
-	apk update --quiet && echo "done."
+	apk update --quiet $apk_root_opt && echo "done."
 fi
 
 # clean up
