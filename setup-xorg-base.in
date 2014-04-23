@@ -3,8 +3,8 @@
 # simple script to setup x basic org server
 # you will still need a window manager and login manager or xinit
 
-base_pkgs="xorg-server xf86-video-vesa xf86-input-evdev xf86-input-mouse
-	xf86-input-keyboard udev"
+base_pkgs="xorg-server xf86-video-vesa xf86-video-modesetting
+	xf86-input-evdev xf86-input-mouse xf86-input-keyboard udev"
 
 # TODO: detect graphics card and pick proper xf86-video-* driver based on that
 
