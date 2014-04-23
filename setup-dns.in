@@ -5,14 +5,15 @@ PREFIX=
 
 usage() {
         cat <<__EOF__
-usage: setup-dns [-h] [-d domain name] [-n name server(s)]
+usage: setup-dns [-h] [-d domain name] [IPADDR...]
 
-Setup /etc/resolv.conf DNS settings
+Setup ${ROOT}etc/resolv.conf DNS settings
 
 options:
  -h  Show this help
  -d  specify search domain name
- -n  DNS server(s) to use.  For multiple servers, surround in quotes and space-seperate the list
+
+The optional IPADDR are a list of DNS servers to use.
 __EOF__
         exit 1
 }
@@ -24,8 +25,10 @@ while getopts "d:n:h" opt; do
                 n) NAMESERVERS="$OPTARG";;
         esac
 done
+shift $(($OPTIND - 1))
 
-conf="$ROOT/etc/resolv.conf"
+
+conf="${ROOT}etc/resolv.conf"
 
 if [ -f "$conf" ] ; then
 	domain=`awk '/^domain/ {print $2}' $conf`
@@ -39,7 +42,7 @@ else
 	default_read domain $domain
 fi
 
-if [ -n "$NAMESERVERS" ];then
+if [ -n "$NAMESERVERS" ] || [ $# -gt 0 ];then
 	dns="$NAMESERVERS"
 else
 	echon "DNS nameserver(s)? ["
@@ -51,9 +54,15 @@ else
 fi
 
 if [ "$domain" != "" ]; then
+	mkdir -p "${conf%/*}"
 	echo "search $domain" > $conf
 fi
-for i in $dns ; do
+
+if [ -n "$dns" ] || [ $# -gt 0 ]; then
+	sed -i -e '/^nameserver/d' $conf
+fi
+for i in $dns $@; do
+	mkdir -p "${conf%/*}"
 	echo "nameserver $i" >> $conf
 done
 
