@@ -253,6 +253,10 @@ install_mounted_root() {
 	if [ -z "$APKOVL" ]; then
 		ovlfiles=/tmp/ovlfiles
 		lbu package - | tar -C "$mnt" -zxv > "$ovlfiles"
+		# comment out local repositories
+		if [ -f "$mnt"/etc/apk/repositories ]; then
+			sed -i -e 's:^/:#/:' "$mnt"/etc/apk/repositories
+		fi
 	else
 		echo "Restoring backup from $APKOVL to $rootdev..."
 		unpack_apkovl "$APKOVL" "$mnt" || return 1
