@@ -8,12 +8,14 @@ zroot=/usr/share/zoneinfo
 
 usage() {
         cat <<__EOF__
-usage: setup-timezone [-h] [-z subdir of $zroot]
+usage: setup-timezone [-h] [-k|-i] [-z subdir of $zroot]
 
 Sets the timezone for the system.
 
 options:
  -h  Show this help
+ -i  Install tzdata and symlink instead of making a copy
+ -k  Keep previous copies of tzdata
  -z  Specify the timezone as a subdirectory of $zroot
 __EOF__
         exit 1
@@ -38,22 +40,51 @@ show_tz_list() {
 }
 
 setup_tz() {
+	local zonepath="$1"
 	mkdir -p "${ROOT}"etc/zoneinfo
-	cp "$1" "${ROOT}"etc/zoneinfo/localtime
+	if ! $INSTALL_TZDATA; then
+		local zone="${zonepath#*/zoneinfo/}"
+		local zdir="${zonepath%/*}"/
+		zdir="${zdir#*/zoneinfo/}"
+		if ! $KEEP_TZDATA; then
+			rm -r "${ROOT}"/etc/zoneinfo
+		fi
+		mkdir -p "${ROOT}"etc/zoneinfo/$zdir
+		cp "$zonepath" "${ROOT}"etc/zoneinfo/$zdir/
+		zonepath=/etc/zoneinfo/$zone
+	fi
+	rm -f "${ROOT}"etc/zoneinfo/localtime
+	ln -s "$zonepath" "${ROOT}"etc/zoneinfo/localtime
 }
 
-while getopts "hz:" opt; do
+INSTALL_TZDATA=false
+KEEP_TZDATA=false
+while getopts "hikz:" opt; do
         case $opt in
                 h) usage;;
+		i) INSTALL_TZDATA=true;;
+		k) KEEP_TZDATA=true;;
 		z) ZONEINFODIR="$OPTARG";;
         esac
 done
 
-if ! apk info --quiet --installed tzdata; then
-	apk add --quiet tzdata && apkdel="tzdata" || exit 1
+if $INSTALL_TZDATA; then
+	pkg=tzdata
+	apkdel=
+else
+	pkg="--virtual .setup-timezone tzdata"
+	apkdel=".setup-timezone"
 fi
 
-zonepath=UTC
+apk add --quiet $pkg
+
+if [ -L "${ROOT}"etc/zoneinfo/localtime ]; then
+	zonepath=$(readlink "${ROOT}"etc/zoneinfo/localtime)
+	zonepath=${zonepath#*/zoneinfo/}
+else
+	zonepath=UTC
+fi
+
 
 while true; do
 	if [ -n "$ZONEINFODIR" ]; then
