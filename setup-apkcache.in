@@ -13,7 +13,7 @@ Setup apk caching.
 If DIR is not specified user will be asked for location.
 
 options:
- -h  Show this help 
+ -h  Show this help
 __EOF__
         exit 1
 }
@@ -25,8 +25,11 @@ is_mounted() {
 find_fstab_mount_point() {
 	local dir="$1"
 	local res=
+	if ! [ -r "${ROOT}"etc/fstab ]; then
+		return
+	fi
 	while [ -n "$dir" ]; do
-		res=$(awk "\$2 == \"$dir\" {print \$2}" /etc/fstab)
+		res=$(awk "\$2 == \"$dir\" {print \$2}" "${ROOT}"etc/fstab)
 		if [ -n "$res" ]; then
 			echo $res
 			return
@@ -102,12 +105,12 @@ shift $(( $OPTIND - 1 ))
 
 # try auto detetect what we suggest
 suggestion=
-if [ -L /etc/apk/cache ]; then
-	suggestion=$(readlink /etc/apk/cache)
+if [ -L "${ROOT}"etc/apk/cache ]; then
+	suggestion=$(readlink "${ROOT}"etc/apk/cache)
 fi
 
-if [ -z "$suggestion" ] && [ -f /etc/lbu/lbu.conf ]; then
-	. /etc/lbu/lbu.conf
+if [ -z "$suggestion" ] && [ -f "${ROOT}"etc/lbu/lbu.conf ]; then
+	. "${ROOT}"etc/lbu/lbu.conf
 	if [ -n "$LBU_MEDIA" ]; then
 		suggestion=/media/$LBU_MEDIA/cache
 	fi
@@ -152,10 +155,11 @@ elif is_mounted_ro $mount; then
 fi
 
 mkdir -p $cachedir
-if [ -L /etc/apk/cache ]; then
-	rm -f /etc/apk/cache
+if [ -L "${ROOT}"etc/apk/cache ]; then
+	rm -f "${ROOT}"etc/apk/cache
 fi
-ln -s $cachedir /etc/apk/cache
+mkdir -p "${ROOT}"etc/apk
+ln -s $cachedir "${ROOT}"etc/apk/cache
 
 case "$cleanup" in
 	umount) umount $mount;;
