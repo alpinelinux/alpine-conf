@@ -37,9 +37,9 @@ show_tz_list() {
 	( cd $path && ls --color=never -Cd $z )
 }
 
-valid_tz() {
-	find $zroot -type f -a -not -name '*.tab' -a -not -name 'Factory' \
-		| xargs posixtz | sort | uniq | grep -q -w "$1"
+setup_tz() {
+	mkdir -p "${ROOT}"etc/zoneinfo
+	cp "$1" "${ROOT}"etc/zoneinfo/localtime
 }
 
 while getopts "hz:" opt; do
@@ -53,15 +53,11 @@ if ! apk info --quiet --installed tzdata; then
 	apk add --quiet tzdata && apkdel="tzdata" || exit 1
 fi
 
-zonepath=$(cat /etc/TZ 2>/dev/null)
-[ -z "$zonepath" ] && zonepath="UTC"
+zonepath=UTC
 
 while true; do
 	if [ -n "$ZONEINFODIR" ]; then
-		TZ=$(posixtz "$ZONEINFODIR") || echo "Failed to convert '$ZONEINFODIR' to POSIX TZ"
-		if [ -n "$TZ" ]; then
-			echo $TZ > /etc/TZ || rm -f /etc/TZ
-		fi
+		setup_tz "$ZONEINFODIR"
 		break
 	fi
 
@@ -82,16 +78,8 @@ while true; do
 		zonepath="$zonepath/$zone"
 	done
 
-	TZ=
-	if valid_tz "$zonepath"; then
-		TZ="$zonepath"
-	elif [ -f "$zroot/$zonepath" ]; then
-		TZ=$(posixtz "$zroot/$zonepath") \
-			|| echo "Failed to convert '$zroot/$zonepath' to POSIX TZ"
-	fi
-
-	if [ -n "$TZ" ]; then
-		echo $TZ > /etc/TZ || rm -f /etc/TZ
+	if [ -f "$zroot/$zonepath" ]; then
+		setup_tz "$zroot/$zonepath"
 		break
 	fi
 	echo "'$zonepath' is not a valid timezone on this system"
