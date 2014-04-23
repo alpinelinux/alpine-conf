@@ -57,16 +57,25 @@ set_media() {
 		mnt="$media"
 		media=${mnt#/media/}
 	fi
-	if ! [ -d "$mnt" ]; then
+	if [ "$ROOT" = "/" ] && ! [ -d "$mnt" ]; then
 		echo "$mnt: not a directory" >&2
 		exit 1
 	fi
 
 	# set  LBU_MEDIA in /etc/lbu/lbu.conf
-	sed -i -e "/^\#\?[[:space:]]*LBU_MEDIA=.*/s/.*/LBU_MEDIA=$media/" \
-		/etc/lbu/lbu.conf
-	if ! egrep -q '^LBU_MEDIA=' /etc/lbu/lbu.conf; then
-		echo "LBU_MEDIA=$media" >> /etc/lbu/lbu.conf
+	if [ -f "${ROOT}"etc/lbu/lbu.conf ]; then
+		sed -e "/^\#\?[[:space:]]*LBU_MEDIA=.*/s/.*/LBU_MEDIA=$media/" \
+			-i "${ROOT}"etc/lbu/lbu.conf
+		if ! egrep -q '^LBU_MEDIA=' "${ROOT}"etc/lbu/lbu.conf; then
+			echo "LBU_MEDIA=$media" >> "${ROOT}"etc/lbu/lbu.conf
+		fi
+	else
+		mkdir -p "${ROOT}"etc/lbu
+		echo "LBU_MEDIA=$media" >> "${ROOT}"etc/lbu/lbu.conf
+	fi
+
+	if [ -n "$ROOT" ] && [ "$ROOT" != "/" ]; then
+		return
 	fi
 
 	# append to fstab if its missing
@@ -74,7 +83,7 @@ set_media() {
 		get_mnt_line "$mnt" /proc/mounts >> /etc/fstab
 	fi
 
-	# hack in case we have alpine_dev moutned on /media/usbdisk but
+	# hack in case we have alpine_dev mounted on /media/usbdisk but
 	# lbu is stored on /media/usb
 	# Otherwise we get issues when we do lbu commit.
 	if [ "$media" = "usb" ] && is_mounted /media/usbdisk; then
