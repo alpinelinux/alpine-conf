@@ -205,7 +205,7 @@ config_iface() {
 		[ "$gateway" = "none" ] && gateway=""
 		[ -z "$gateway" ] && break
 	done
-	
+
 	echo "type=static" >> $conf
 	if [ -n "$bridge_ports" ]; then
 		echo "bridge_ports=$bridge_ports" >> $conf
@@ -218,7 +218,7 @@ config_iface() {
 	# print summary
 	echo "Configuration for $iface:"
 	sed 's/^/  /' $conf
-	
+
 	unconfigured_del $iface
 }
 
@@ -335,15 +335,14 @@ config_vlan() {
 
 usage() {
         cat <<__EOF__
-usage: setup-interfaces [-bhi] [-p ROOT]
+usage: setup-interfaces [-bhi]
 
 Setup network interfaces
 
 options:
  -b  Ask for bridging of interfaces
  -h  Show this help
- -i  Read new contents of /etc/network/interfaces from stdin
- -p  Use ROOT as system prefix
+ -i  Read new contents of ${ROOT}etc/network/interfaces from stdin
 __EOF__
         exit 1
 }
@@ -368,10 +367,10 @@ __EOF__
 }
 prompt_for_interfaces() {
 	init_tmpdir TMP
-	
+
 	cd $TMP
 	unconfigured_detect
-	
+
 	index=1
 	while ! unconfigured_all_done; do
 		echo "Available interfaces are: $(unconfigured_list)."
@@ -379,7 +378,7 @@ prompt_for_interfaces() {
 		ask "Which one do you want to initialize? (or '?' or 'done')" \
 			$(unconfigured_get_first)
 		iface=$resp
-	
+
 		case "$iface" in
 			"done") break;;
 			'?') iface_help; continue;;
@@ -400,11 +399,11 @@ prompt_for_interfaces() {
 		config_iface $iface $(printf "%.3d~" $index)
 		index=$(( $index + 1 ))
 	done
-	
+
 	echo "type=loopback" > 000~lo.conf
 	echo "" > interface
 	hostname=$(cat $ROOT/etc/hostname 2>/dev/null)
-	
+
 	for i in *.conf ; do
 		iface=`basename $i .conf`
 		iface=${iface#[0-9]*~}
@@ -449,7 +448,7 @@ prompt_for_interfaces() {
 		esac
 		echo "" >> interfaces
 	done
-	
+
 	while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
 		ask "Do you want to do any manual network configuration?" no
 		case $resp in
