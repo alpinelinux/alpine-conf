@@ -14,7 +14,7 @@ Sets the timezone for the system.
 
 options:
  -h  Show this help
- -z  Specify the timezone as a subfolder of $zroot
+ -z  Specify the timezone as a subdirectory of $zroot
 __EOF__
         exit 1
 }
@@ -45,7 +45,7 @@ valid_tz() {
 while getopts "hz:" opt; do
         case $opt in
                 h) usage;;
-		z) ZONEINFOFOLDER="$OPTARG";;
+		z) ZONEINFODIR="$OPTARG";;
         esac
 done
 
@@ -57,8 +57,8 @@ zonepath=$(cat /etc/TZ 2>/dev/null)
 [ -z "$zonepath" ] && zonepath="UTC"
 
 while true; do
-	if [ -n "$ZONEINFOFOLDER" ]; then
-		TZ=$(posixtz "$ZONEINFOFOLDER") || echo "Failed to convert '$ZONEINFOFOLDER' to POSIX TZ"
+	if [ -n "$ZONEINFODIR" ]; then
+		TZ=$(posixtz "$ZONEINFODIR") || echo "Failed to convert '$ZONEINFODIR' to POSIX TZ"
 		if [ -n "$TZ" ]; then
 			echo $TZ > /etc/TZ || rm -f /etc/TZ
 		fi
