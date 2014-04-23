@@ -4,6 +4,10 @@ PREFIX=@PREFIX@
 
 PROGRAM=`basename $0`
 
+: ${ROOT:=/}
+[ "${ROOT}" = "${ROOT%/}" ] && ROOT="${ROOT}/"
+[ "${ROOT}" = "${ROOT#/}" ] && ROOT="${PWD}/${ROOT}"
+
 echon () {
 	if [ X"$ECHON" = X ]; then
 		# Determine how to "echo" without newline: "echo -n"
