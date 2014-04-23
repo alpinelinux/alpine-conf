@@ -7,13 +7,14 @@ PREFIX=
 
 usage() {
         cat <<__EOF__
-usage: setup-hostname [-h] [-n hostname]
+usage: setup-hostname [-h] [HOSTNAME]
 
 Sets the system hostname.
 
 options:
  -h  Show this help
- -n  Specify the hostname to set
+
+Sets hostname to HOSTNAME or prompt if unspecified.
 __EOF__
         exit 1
 }
@@ -44,7 +45,10 @@ while getopts "hn:" opt; do
 		n) HOSTNAME="$OPTARG";;
         esac
 done
-
+shift $(( $OPTIND - 1 ))
+if [ -z "$HOSTNAME" ] && [ $# -eq 1 ]; then
+	HOSTNAME="$1"
+fi
 
 while true; do
 	if [ -n "$HOSTNAME" ]; then
