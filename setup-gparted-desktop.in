@@ -1,6 +1,6 @@
 #!/bin/sh
 
-setup-xorg-base gparted xinit aterm openbox ttf-freefont $@
+setup-xorg-base gparted xinit st openbox ttf-freefont $@
 
 # create openbox menu
 mkdir -p ~/.config/openbox
