@@ -72,7 +72,7 @@ if $INSTALL_TZDATA; then
 	pkg=tzdata
 	apkdel=
 else
-	pkg="--virtual .setup-timezone tzdata"
+	pkg="--force --virtual .setup-timezone tzdata"
 	apkdel=".setup-timezone"
 fi
 
