@@ -1,4 +1,4 @@
-VERSION		:= 2.14.0
+VERSION		:= 3.0.0
 
 sysconfdir      ?= /etc/lbu
 
@@ -84,7 +84,7 @@ uninstall:
 	for i in $(LIB_FILES); do \
 		rm -f "$(DESTDIR)/$(PREFIX)/lib/$$i";\
 	done
-	
+
 clean:
 	rm -rf $(SCRIPTS) $(BIN_FILES)
 
