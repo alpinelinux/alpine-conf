@@ -38,13 +38,17 @@ usage() {
 
 Available subcommands:
   commit (ci)
+  diff
   exclude (ex, delete)
   include (inc, add)
   list (ls)
+  list-backup (lb)
+  migrate_include_exclude
   package (pkg)
-  status (stat, st)
-  list-backup (lb) 
   revert
+  status (stat, st)
+
+
 
 Common options:
  -h	Show help for subcommand.
@@ -193,7 +197,7 @@ unpack_apkovl() {
 	fi
 	if [ -n "$ENCRYPTION" ]; then
 		f="$f.$ENCRYPTION"
-	fi	
+	fi
 	if [ ! -f "$mnt/$f" ]; then
 		return 1
 	fi
@@ -209,7 +213,7 @@ unpack_apkovl() {
 	done
 	cleanup
 	die "Failed to unpack $mnt/$f"
-}		
+}
 
 #
 # lbu_include - add/remove files to include list
@@ -451,16 +455,16 @@ cmd_commit() {
 			[ -z "$DRYRUN" ] && rm "$mnt/"*.apkovl.tar.gz*
 		fi
 	else
-       		lines=$(ls -1 "$mnt"/*.apkovl.tar.gz* 2>/dev/null)
+		lines=$(ls -1 "$mnt"/*.apkovl.tar.gz* 2>/dev/null)
 		if [ "$lines" = "$outfile" ]; then
 			backup_apkovl "$outfile"
 		elif [ -n "$lines" ]; then
-	               	# More then one apkovl, this is a security concern
+			# More then one apkovl, this is a security concern
 			cleanup
 			eecho "The following apkovl file(s) were found:"
 			eecho "$lines"
 			eecho ""
-	               	die "Please use -d to replace."
+			die "Please use -d to replace."
 		fi
 	fi
 
@@ -474,10 +478,10 @@ cmd_commit() {
 	# delete old backups if needed
 	# poor mans 'head -n -N' done with awk.
 	ls "$mnt"/$(hostname).[0-9][0-9][0-9][0-9]*[0-9].tar.gz 2>/dev/null \
-		| awk '{ a[++i] = $0; } END { 
-			print a[0]; 
-			while (i-- > '"${BACKUP_LIMIT:-0}"') { 
-				print a[++j] 
+		| awk '{ a[++i] = $0; } END {
+			print a[0];
+			while (i-- > '"${BACKUP_LIMIT:-0}"') {
+				print a[++j]
 			}
 		}' | xargs rm 2>/dev/null
 
@@ -639,7 +643,7 @@ cmd_status() {
 		fi
 		echo "D $f"
 	done
-	
+
 	# compare files in b with files in a
 	( cd "$tmp"/b && find ) | while read f; do
 		f=${f#./}
@@ -676,7 +680,7 @@ cmd_diff() {
 	unpack_apkovl "$tmp/a"
 	ENCRYPTION=
 	cmd_package - | tar -C "$tmp/b" -zx
-	cd "$tmp" && diff -ruN a b 
+	cd "$tmp" && diff -ruN a b
 }
 
 # migrate
@@ -741,18 +745,18 @@ esac
 # parse common args
 while getopts "adehlM:np:qrv" opt ; do
 	case "$opt" in
-		a) 	[ $SUBCMD = status ] || usage_$SUBCMD
+		a)	[ $SUBCMD = status ] || usage_$SUBCMD
 			USE_DEFAULT="-a"
 			;;
 		d)	DELETEOLDCONFIGS="yes"
 			;;
 		e)	[ -z "$ENCRYPTION" ] && ENCRYPTION="$DEFAULT_CIPHER"
 			;;
-		h) 	usage_$SUBCMD
+		h)	usage_$SUBCMD
 			;;
 		l)	LIST="-l"
 			;;
-		n) 	[ $SUBCMD = commit ] || usage_$SUBCMD
+		n)	[ $SUBCMD = commit ] || usage_$SUBCMD
 			DRYRUN="-n"
 			;;
 		p)	PASSWORD="$OPTARG"
@@ -761,7 +765,7 @@ while getopts "adehlM:np:qrv" opt ; do
 			;;
 		r)	REMOVE="-r"
 			;;
-		v) 	VERBOSE="$VERBOSE -v"
+		v)	VERBOSE="$VERBOSE -v"
 			;;
 	esac
 done
