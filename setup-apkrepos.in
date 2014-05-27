@@ -161,7 +161,7 @@ done
 # install alpine-mirrors if its not already there
 to_uninstall=
 if ! apk info --quiet --installed alpine-mirrors; then
-	apk add --quiet --virtual .setup-apkrepos alpine-mirrors
+	apk add --force --quiet --virtual .setup-apkrepos alpine-mirrors
 	to_uninstall=.setup-apkrepos
 fi
 
