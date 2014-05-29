@@ -210,5 +210,5 @@ fi
 
 # clean up
 if [ -n "$to_uninstall" ]; then
-	apk del --quiet alpine-mirrors
+	apk del --quiet $to_uninstall
 fi
