@@ -323,7 +323,7 @@ EOF
 	chroot_caps=$(set_grsec chroot_caps 0)
 	init_chroot_mounts "$mnt"
 	apk add --root "$mnt" $apkflags --overlay-from-stdin \
-		$repoflags $pkgs <$ovlfiles>/dev/null
+		$repoflags $pkgs <$ovlfiles
 	local ret=$?
 	cleanup_chroot_mounts "$mnt"
 	set_grsec chroot_caps $chroot_caps > /dev/null
