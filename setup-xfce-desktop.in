@@ -1,0 +1,6 @@
+#!/bin/sh
+
+videodrivers=$(apk search --quiet --exact xf86-video* | grep -v -- '-doc$')
+
+setup-xorg-base $videodrivers xfce4 firefox slim
+
