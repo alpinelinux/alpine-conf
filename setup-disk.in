@@ -263,11 +263,11 @@ install_mounted_root() {
 	fi
 
 	# generate mkinitfs.conf
-	mkdir -p "$mnt"/etc/mkinitfs/files.d
+	mkdir -p "$mnt"/etc/mkinitfs/features.d
 	echo "features=\"$initfs_features\"" > "$mnt"/etc/mkinitfs/mkinitfs.conf
 	if [ -n "$raidmod" ]; then
-		echo "/sbin/mdadm" > "$mnt"/etc/mkinitfs/files.d/raid
-		echo "/etc/mdadm.conf" >> "$mnt"/etc/mkinitfs/files.d/raid
+		echo "/sbin/mdadm" > "$mnt"/etc/mkinitfs/features.d/raid.files
+		echo "/etc/mdadm.conf" >> "$mnt"/etc/mkinitfs/features.d/raid.files
 	fi
 
 	# generate update-extlinux.conf
