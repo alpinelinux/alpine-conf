@@ -895,6 +895,7 @@ KERNEL_FLAVOR=grsec
 case "$(uname -r)" in
 	*-vs[0-9]*) KERNEL_FLAVOR=vserver;;
 	*-pae) KERNEL_FLAVOR=pae;;
+	*-vanilla) KERNEL_FLAVOR=vanilla;;
 esac
 
 DISK_MODE=
