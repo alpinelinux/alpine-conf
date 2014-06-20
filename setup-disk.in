@@ -891,11 +891,11 @@ __EOF__
 	exit 1
 }
 
-KERNEL_FLAVOR=grsec
-case "$(uname -r)" in
-	*-vs[0-9]*) KERNEL_FLAVOR=vserver;;
-	*-pae) KERNEL_FLAVOR=pae;;
-	*-vanilla) KERNEL_FLAVOR=vanilla;;
+kver=$(uname -r)
+case $kver in
+        *-rc[0-9]*) KERNEL_FLAVOR=vanilla;;
+        *-[a-z]*) KERNEL_FLAVOR=${kver##*-};;
+        *) KERNEL_FLAVOR=vanilla;;
 esac
 
 DISK_MODE=
