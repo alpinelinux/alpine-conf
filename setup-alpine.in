@@ -39,7 +39,7 @@ __EOF__
 while getopts "af:c:hq" opt ; do
 	case $opt in
 		a) ARCHIVE=yes;;
-		f) USEANSWERFILE="$OPTARG";;  
+		f) USEANSWERFILE="$OPTARG";;
 		c) CREATEANSWERFILE="$OPTARG";;
 		h) usage;;
 		q) quick=1;;
@@ -48,8 +48,9 @@ while getopts "af:c:hq" opt ; do
 done
 shift `expr $OPTIND - 1`
 
+rc_sys=$(rc --sys)
 # mount xenfs so we can detect xen dom0
-if [ "$(rc --sys)" = "XENU" ] && ! grep -q '^xenfs' /proc/mounts; then
+if [ "$rc_sys" = "XENU" ] && ! grep -q '^xenfs' /proc/mounts; then
 	modprobe xenfs
 	mount -t xenfs xenfs /proc/xen
 fi
@@ -87,7 +88,7 @@ DNSOPTS="-d example.com -n 8.8.8.8"
 # Set timezone to UTC
 TIMEZONEOPTS="-z UTC"
 
-# set http/ftp proxy 
+# set http/ftp proxy
 PROXYOPTS="http://webproxy:8080"
 
 # Add a random mirror
@@ -118,8 +119,10 @@ else
 	PKGADD="apk add"
 fi
 
-$PREFIX/sbin/setup-keymap ${KEYMAPOPTS}
-$PREFIX/sbin/setup-hostname ${HOSTNAMEOPTS}
+if [ "$rc_sys" != LXC ]; then
+	$PREFIX/sbin/setup-keymap ${KEYMAPOPTS}
+	$PREFIX/sbin/setup-hostname ${HOSTNAMEOPTS}
+fi
 
 if [ -n "$INTERFACESOPTS" ]; then
 	printf "$INTERFACESOPTS" | $PREFIX/sbin/setup-interfaces -i
@@ -180,12 +183,16 @@ fi
 
 $PREFIX/sbin/setup-sshd ${SSHDOPTS}
 
-if ! is_qemu; then
+if ! is_qemu && [ "$rc_sys" != "LXC" ]; then
 	$PREFIX/sbin/setup-ntp ${NTPOPTS}
 fi
 
 if is_xen_dom0; then
 	setup-xen-dom0
+fi
+
+if [ "$rc_sys" = "LXC" ]; then
+	exit 0
 fi
 
 DEFAULT_DISK=none \
