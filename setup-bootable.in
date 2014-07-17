@@ -284,7 +284,7 @@ for i in $tomove; do
 done
 
 if [ -n "$replace_alpine_dev" -o -z "$upgrade" ] && [ -n "$UUID" ]; then
-	sed -i -e "s/alpine_dev=[^ \t:]\+/alpine_dev=UUID=$UUID/" \
+	sed -E -i -e "s/alpine_dev=[^ \t:]+/alpine_dev=UUID=$UUID/" \
 		"$destdir"/$syslinux_cfg
 fi
 
