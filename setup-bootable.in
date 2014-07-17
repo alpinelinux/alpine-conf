@@ -3,12 +3,9 @@
 prog=${0##*/}
 version=@VERSION@
 
-cleanup() {
+cleanup_mounts() {
 	local i=
 	cd /
-	if [ -n "$uninstalls" ]; then
-		apk del --quiet syslinux
-	fi
 	sync
 	sleep 1
 	for i in $read_only_mounts; do
@@ -19,9 +16,16 @@ cleanup() {
 	fi
 }
 
+cleanup_installs() {
+	if [ -n "$uninstalls" ]; then
+		apk del --quiet syslinux
+	fi
+}
+
 die() {
 	echo "$@" >&2
-	cleanup
+	cleanup_mounts
+	cleanup_installs
 	exit 1
 }
 
@@ -142,6 +146,10 @@ if [ -d "$dest" ]; then
 	if ! awk '{print $2}' /proc/mounts | grep -q "^$dest\$"; then
 		mount "$dest" || die "Failed to mount $dest"
 		umounts="$umounts $dest"
+	elif [ -n "$syslinux" ]; then
+		die "Cannot run syslinux on mounted device"
+	else
+		nosyslinux=1
 	fi
 	destdir="$dest"
 	dest=$(find_dev "$destdir")
@@ -285,7 +293,15 @@ fi
 
 # If we only copy then we are done.
 if [ -n "$upgrade" ] && [ -z "$syslinux" ]; then
-	cleanup
+	cleanup_installs
+	cleanup_mounts
+	exit 0
+fi
+
+# prevent running syslinux on mounted device
+if [ -n "$nosyslinux" ]; then
+	echo "Warning: Can not run syslinux on a mounted device"
+	echo "         You might need run syslinux manually and install MBR manually"
 	exit 0
 fi
 
@@ -296,6 +312,9 @@ if ! [ -x "$(which syslinux)" ]; then
 	uninstalls="syslinux"
 fi
 
+# we need to unmount the device before we can run syslinux
+cleanup_mounts
+fsync $dest
 syslinux $dest
 
 if [ -b $parent_dev ]; then
@@ -303,5 +322,5 @@ if [ -b $parent_dev ]; then
 else
 	echo "Warning: Could not find the parent device for $dest"
 fi
+cleanup_installs
 
-cleanup
