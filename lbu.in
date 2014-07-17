@@ -155,7 +155,7 @@ list_add() {
 	shift
 	mkdir -p "${LBU_LIST%/*}"
 	while [ $# -gt 0 ] ; do
-		filename="$(echo "$1" | sed 's:^/\+::')"
+		filename="$(echo "$1" | sed -E 's:^/+::')"
 		if list_has "${prefix}${filename}"; then
 			vecho "$filename is already in $LBU_LIST."
 		else
@@ -173,7 +173,7 @@ list_delete() {
 	shift
 	[ -f "$LBU_LIST" ] || return 1
 	while [ $# -gt 0 ] ; do
-		filename="$(echo "$1" | sed 's:^/\+::')"
+		filename="$(echo "$1" | sed -E 's:^/+::')"
 		if list_has "${prefix}${filename}"; then
 			vecho "Removing $filename from $LBU_LIST."
 			list_filter_out "${prefix}${filename}" > "$tmp" \
