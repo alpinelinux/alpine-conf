@@ -83,7 +83,7 @@ iface eth0 inet dhcp
 "
 
 # Search domain of example.com, Google public nameserver
-DNSOPTS="-d example.com -n 8.8.8.8"
+DNSOPTS="-d example.com 8.8.8.8"
 
 # Set timezone to UTC
 TIMEZONEOPTS="-z UTC"
