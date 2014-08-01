@@ -424,7 +424,12 @@ stop_all_raid() {
 init_progs() {
 	local raidpkg=
 	[ -n "$USE_RAID" ] && raidpkg="mdadm"
-	apk add --quiet sfdisk e2fsprogs lvm2 $raidpkg syslinux $@
+	case $ROOTFS in
+	ext*) fstools=e2fsprogs; mkfs_args="-q";;
+	xfs) fstools=xfsprogs; mkfs_args="-q";;
+	btrfs) fstools=btrs-progs; mkfs_args="";;
+	esac
+	apk add --quiet sfdisk e2fsprogs lvm2 $raidpkg syslinux $fstools $@
 }
 
 show_disk_info() {
@@ -614,7 +619,7 @@ setup_var() {
 	local var_dev="$1"
 	local varfs=${VARFS}
 	echo "Creating file systems..."
-	mkfs.$varfs -q $var_dev >/dev/null || return 1
+	mkfs.$varfs $var_dev >/dev/null || return 1
 	sed -i -e '/[[:space:]]\/var[[:space:]]/d' /etc/fstab
 	echo -e "${var_dev}\t/var\t\t${varfs}\tdefaults 1 2" >> /etc/fstab
 
@@ -710,7 +715,7 @@ data_only_disk_install() {
 # setup
 setup_root() {
 	local root_dev="$1" boot_dev="$2"
-	mkfs.$ROOTFS -q "$root_dev"
+	mkfs.$ROOTFS $mkfs_args "$root_dev"
 	mkdir -p "$SYSROOT"
 	mount -t $ROOTFS $root_dev "$SYSROOT" || return 1
 	if [ -n "$boot_dev" ]; then
