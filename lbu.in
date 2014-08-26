@@ -672,6 +672,7 @@ usage: $PROGRAM diff [<media>]
 }
 
 cmd_diff() {
+	local diff_opts=
 	LBU_MEDIA=${1:-"$LBU_MEDIA"}
 	[ -z "$LBU_MEDIA" ] && [ -z "$LBU_BACKUPDIR" ] && usage_diff
 	local tmp
@@ -680,7 +681,10 @@ cmd_diff() {
 	unpack_apkovl "$tmp/a"
 	ENCRYPTION=
 	cmd_package - | tar -C "$tmp/b" -zx
-	cd "$tmp" && diff -ruN a b
+	if diff --help 2>&1 | grep -q -- --no-dereference; then
+		diff_opts="--no-dereference"
+	fi
+	cd "$tmp" && diff -ruN $diff_opts a b
 }
 
 # migrate
