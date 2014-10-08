@@ -217,117 +217,114 @@ struct uniso_context {
 
 static int do_splice(struct uniso_context *ctx, int to_fd, int bytes)
 {
-	int r;
+	int r, left;
 
-	do {
-		r = splice(ctx->stream_fd, NULL, to_fd, NULL, bytes,
+	for (left = bytes; left; ) {
+		r = splice(ctx->stream_fd, NULL, to_fd, NULL, left,
 			   SPLICE_F_MOVE);
-		if (r < 0)
-			return -errno;
-
-		bytes -= r;
+		if (r < 0) return -errno;
+		if (r == 0) return bytes - left;
+		left -= r;
 		ctx->pos += r;
-	} while (bytes != 0);
+	}
 
-	return 0;
+	return bytes;
 }
 
 static int do_read(struct uniso_context *ctx, unsigned char *buf, int bytes)
 {
-	int r;
+	int r, left;
 
-	do {
-		r = read(ctx->stream_fd, buf, bytes);
+	for (left = bytes; left; ) {
+		r = read(ctx->stream_fd, buf, left);
 		if (r < 0) {
 			perror("read");
 			return -errno;
 		}
-		bytes -= r;
+		if (r == 0) return bytes - left;
+		left -= r;
 		buf += r;
 		ctx->pos += r;
-	} while (bytes != 0);
+	}
 
-	return 0;
+	return bytes;
 }
 
 static int do_write(int tofd, const unsigned char *buf, int bytes)
 {
-	int r;
+	int r, left;
 
-	do {
-		r = write(tofd, buf, bytes);
+	for (left = bytes; left; ) {
+		r = write(tofd, buf, left);
 		if (r < 0) {
 			perror("write");
 			return -errno;
 		}
-		bytes -= r;
+		left -= r;
 		buf += r;
-	} while (bytes != 0);
+	}
 
-	return 0;
+	return bytes;
 }
 
 static int do_skip(struct uniso_context *ctx, unsigned int bytes)
 {
-	int r, now;
+	int r, left, now;
 
 	switch (ctx->skip_method) {
 	case 0:
 		if (lseek(ctx->stream_fd, bytes, SEEK_CUR) != (off_t) -1) {
 			ctx->pos += bytes;
-			break;
+			return bytes;
 		}
 		ctx->skip_method = 1;
 	case 1:
-		if (do_splice(ctx, ctx->null_fd, bytes) == 0)
-			break;
+		r = do_splice(ctx, ctx->null_fd, bytes);
+		if (r >= 0) return r;
 		ctx->skip_method = 2;
 	case 2:
-		while (bytes) {
-			now = bytes;
+		for (left = bytes; left; ) {
+			now = left;
 			if (now > ISOFS_TMPBUF_SIZE)
 				now = ISOFS_TMPBUF_SIZE;
-
 			r = do_read(ctx, ctx->tmpbuf, now);
-			if (r < 0)
-				return r;
-
-			bytes -= now;
+			if (r < 0) return r;
+			if (r == 0) return bytes - left;
+			left -= now;
 		}
-		break;
+		return bytes;
 	}
 	return 0;
 }
 
-static int do_copy(struct uniso_context *ctx, int tofd, unsigned int bytes)
+static int do_copy(struct uniso_context *ctx, int tofd, int bytes)
 {
-	int r, now;
+	int r, now, left;
 
 	switch (ctx->copy_method) {
 	case 0:
-		if (do_splice(ctx, tofd, bytes) == 0)
-			break;
+		r = do_splice(ctx, tofd, bytes);
+		if (r >= 0) return r;
 		ctx->skip_method = 1;
 	case 1:
 		/* FIXME: Use mmaped IO */
 		ctx->skip_method = 2;
 	case 2:
-		while (bytes) {
-			now = bytes;
+		for (left = bytes; left; ) {
+			now = left;
 			if (now > ISOFS_TMPBUF_SIZE)
 				now = ISOFS_TMPBUF_SIZE;
 
 			r = do_read(ctx, ctx->tmpbuf, now);
-			if (r < 0)
-				return r;
+			if (r <= 0) return r < 0 ? r : -EIO;
 
+			now = r;
 			r = do_write(tofd, ctx->tmpbuf, now);
-			if (r < 0)
-				return r;
+			if (r != now) return r < 0 ? r : -EIO;
 
-			bytes -= now;
+			left -= now;
 		}
-		break;
+		return bytes;
 	}
 	return 0;
 }
@@ -392,12 +389,10 @@ static int link_or_clone(const char *src, const char *dst, size_t bytes)
 		if (now > sizeof(buf))
 			now = sizeof(buf);
 		r = read(src_fd, buf, now);
-		if (r < 0)
-			return r;
+		if (r < 0) return r;
 
 		r = write(dst_fd, buf, now);
-		if (r < 0)
-			return r;
+		if (r < 0) return r;
 		bytes -= now;
 	}
 	close(dst_fd);
@@ -441,7 +436,9 @@ static int uniso_read_file(struct uniso_context *ctx,
 	rc = do_copy(ctx, fd, dir->size);
 	close(fd);
 
-	return rc;
+	if (rc < 0) return rc;
+	if (rc != dir->size) return -EIO;
+	return 0;
 }
 
 static int uniso_read_directory(struct uniso_context *ctx,
@@ -581,7 +578,7 @@ int uniso(int fd)
 {
 	struct uniso_context context, *ctx = &context;
 	struct uniso_reader *rd;
-	int r;
+	int r, skipped;
 
 	memset(ctx, 0, sizeof(*ctx));
 	list_init(&ctx->parser_head);
@@ -606,6 +603,15 @@ int uniso(int fd)
 		r = rd->handler(ctx, rd);
 		if (r != 0)
 			return r;
+	}
+
+	if (ctx->skip_method) {
+		skipped = 0;
+		do {
+			r = do_skip(ctx, ISOFS_TMPBUF_SIZE);
+			if (r > 0) skipped += r;
+		} while (r == ISOFS_TMPBUF_SIZE);
+		if (ctx->loglevel > 1) fprintf(stderr, "Skipped %d bytes at the end\n", skipped);
 	}
 
 	free(ctx->tmpbuf);
