@@ -25,7 +25,8 @@ SBIN_FILES	:= lbu\
 		setup-timezone\
 		setup-xen-dom0\
 		setup-xorg-base\
-		update-conf
+		update-conf\
+		update-kernel
 
 BIN_FILES	:= uniso
 
