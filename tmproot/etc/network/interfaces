@@ -1,7 +1,0 @@
-auto lo
-iface lo inet loopback
-
-auto br64
-iface br64 inet dhcp
-	hostname ncopa-desktop
-
