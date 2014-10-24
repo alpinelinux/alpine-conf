@@ -57,7 +57,7 @@ TMPDIR=$(mktemp -dt $SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
 
 apk add --arch $ARCH --root $ROOT --keys-dir /etc/apk/keys \
-        --repositories /etc/apk/repositories \
+        --repositories /etc/apk/repositories --no-scripts \
         --initdb -U alpine-base dahdi-linux linux-$FLAVOR linux-firmware
 
 KVER=$(ls $ROOT/lib/modules)
