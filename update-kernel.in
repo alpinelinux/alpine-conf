@@ -12,6 +12,9 @@
 SCRIPT=update-kernel
 VIRTUAL=.tmp-$SCRIPT
 
+SUPERUSER=
+[ $(id -u) -eq 0 ] && SUPERUSER=Y
+
 BUILDDIR=
 FLAVOR=
 MNTDIR=
@@ -80,6 +83,9 @@ if [ -z "$DESTDIR" ]; then
     [ "$FLAVOR" ] && \
 	usage 1 "Cannot specify flavor when updating the current kernel"
 
+    [ "$SUPERUSER" ] || \
+	usage 1 "Specify destination directory or run as superuser"
+
     while read MOUNT; do
 	set -- $MOUNT
 	[ $2 = /.modloop ] || continue
@@ -107,14 +113,16 @@ clean_up() {
     set +e
     ignore_sigs
 
-    apk del -q $VIRTUAL
+    [ "$SUPERUSER" ] && apk del -q $VIRTUAL
     rm -fr $TMPDIR
 }
 
 trap clean_up EXIT $SIGNALS
 
 
-apk add -qU -t $VIRTUAL mkinitfs squashfs-tools
+if [ "$SUPERUSER" ]; then
+    apk add -qU -t $VIRTUAL mkinitfs squashfs-tools
+fi
 
 if [ -z "$features" ]; then
     . /etc/mkinitfs/mkinitfs.conf
@@ -128,11 +136,28 @@ fi
 TMPDIR=$(mktemp -d /tmp/$SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
 BOOT=$ROOT/boot
+WRAPPER=eval
+
+_exec() {
+    $WRAPPER "$1"
+}
 
 _apk() {
     local cmd=$1
     shift
-    apk $cmd -p $ROOT --keys-dir /etc/apk/keys \
+
+    local wrapper=
+    if [ -z "$SUPERUSER" ]; then
+	local opt=
+	local fake_env=$TMPDIR/fake-env
+	if [ -f $fake_env ]; then
+	    opt="-i $fake_env"
+	    WRAPPER="fakeroot $opt --"
+	fi
+	wrapper="fakeroot $opt -s $fake_env --"
+    fi
+
+    $wrapper apk $cmd -p $ROOT --keys-dir /etc/apk/keys \
 	--repositories-file /etc/apk/repositories $*
 }
 
@@ -174,10 +199,10 @@ MODIMG=$FLAVOR.modloop.squashfs
 mkdir $MODLOOP $STAGING
 cp -a $ROOT/lib/modules $MODLOOP
 cp -a $ROOT/lib/firmware $MODLOOP/modules
-mksquashfs $MODLOOP $STAGING/$MODIMG -comp xz
+_exec "mksquashfs $MODLOOP $STAGING/$MODIMG -comp xz"
 
-mkinitfs -q -b $ROOT -F "$features base squashfs" -o "$STAGING/$FLAVOR.gz" \
-    "$KVER"
+_exec "mkinitfs -q -b $ROOT -F '$features base squashfs' \
+    -o '$STAGING/$FLAVOR.gz' '$KVER'"
 cp "$BOOT/vmlinuz$KVER_FLAVOR" "$STAGING/$FLAVOR"
 
 
