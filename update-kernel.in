@@ -23,7 +23,7 @@ if [ -z "$DESTDIR" ]; then
 	set -- $MOUNT
 	[ $2 = /.modloop ] || continue
 	DESTDIR=$(dirname $(losetup $1 | cut -d " " -f 3))
-	MNTDIR=$(dirname $DESTDIR)
+	MNTDIR=$(dirname "$DESTDIR")
 	break
     done < /proc/mounts
 
@@ -34,7 +34,7 @@ if [ -z "$DESTDIR" ]; then
 fi
 
 remount() {
-    mount $1 -o remount $MNTDIR
+    mount $1 -o remount "$MNTDIR"
 }
 
 
@@ -47,7 +47,7 @@ clean_up() {
     ignore_sigs
 
     apk del -q $VIRTUAL
-    rm -fr $TMPDIR
+    rm -fr "$TMPDIR"
 }
 
 trap clean_up EXIT $SIGNALS
@@ -63,7 +63,7 @@ TMPDIR=$(mktemp -dt $SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
 
 _apk() {
-    apk add -q -p $ROOT --no-scripts --arch $ARCH --keys-dir /etc/apk/keys \
+    apk add -q -p "$ROOT" --no-scripts --arch $ARCH --keys-dir /etc/apk/keys \
 	--repositories-file /etc/apk/repositories $*
 }
 
@@ -72,21 +72,21 @@ _apk dahdi-linux dahdi-linux-$FLAVOR || :
 _apk xtables-addons-$FLAVOR || :
 
 
-KVER=$(ls $ROOT/lib/modules)
-depmod -b $ROOT $KVER
+KVER=$(ls "$ROOT/lib/modules")
+depmod -b "$ROOT" $KVER
 
 
 STAGING=$TMPDIR/boot
 MODLOOP=$TMPDIR/modloop
 MODIMG=$FLAVOR.modloop.squashfs
 
-mkdir $MODLOOP $STAGING
-cp -a $ROOT/lib/modules $MODLOOP
-cp -a $ROOT/lib/firmware $MODLOOP/modules
-mksquashfs $MODLOOP $STAGING/$MODIMG -comp xz
+mkdir "$MODLOOP" "$STAGING"
+cp -a "$ROOT/lib/modules" "$MODLOOP"
+cp -a "$ROOT/lib/firmware" "$MODLOOP/modules"
+mksquashfs "$MODLOOP" "$STAGING/$MODIMG" -comp xz
 
-mkinitfs -q -F "$features squashfs" -b $ROOT -o $STAGING/$FLAVOR.gz $KVER
-cp $ROOT/boot/vmlinuz-$FLAVOR $STAGING/$FLAVOR
+mkinitfs -q -F "$features squashfs" -b "$ROOT" -o "$STAGING/$FLAVOR.gz" $KVER
+cp "$ROOT/boot/vmlinuz-$FLAVOR" "$STAGING/$FLAVOR"
 
 
 if [ "$MNTDIR" ]; then
@@ -95,7 +95,7 @@ if [ "$MNTDIR" ]; then
     rm -f "$DESTDIR/$MODIMG"
 fi
 
-mv $STAGING/* "$DESTDIR"
+mv "$STAGING"/* "$DESTDIR"
 
 if [ "$MNTDIR" ]; then
     set +e
