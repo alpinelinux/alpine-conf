@@ -108,7 +108,7 @@ clean_up() {
     ignore_sigs
 
     apk del -q $VIRTUAL
-    rm -fr "$TMPDIR"
+    rm -fr $TMPDIR
 }
 
 trap clean_up EXIT $SIGNALS
@@ -125,14 +125,14 @@ if [ -z "$FLAVOR" ]; then
     [ "$FLAVOR" ] || FLAVOR=vanilla
 fi
 
-TMPDIR=$(mktemp -dt $SCRIPT.XXXXXX)
+TMPDIR=$(mktemp -d /tmp/$SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
 BOOT=$ROOT/boot
 
 _apk() {
     local cmd=$1
     shift
-    apk $cmd -p "$ROOT" --keys-dir /etc/apk/keys \
+    apk $cmd -p $ROOT --keys-dir /etc/apk/keys \
 	--repositories-file /etc/apk/repositories $*
 }
 
@@ -149,9 +149,9 @@ extra_pkgs() {
 
 add_pkgs -U --initdb alpine-base $PACKAGES
 if [ "$BUILDDIR" ]; then
-    mkdir -p "$BOOT"
+    mkdir -p $BOOT
     make -C "$BUILDDIR" firmware_install install modules_install \
-	INSTALL_MOD_PATH="$ROOT" INSTALL_PATH="$BOOT"
+	INSTALL_MOD_PATH=$ROOT INSTALL_PATH=$BOOT
 else
     add_pkgs "linux-$FLAVOR" linux-firmware
     if [ -z "$PACKAGES" ]; then
@@ -163,20 +163,20 @@ fi
 
 KVER_FLAVOR=
 [ "$FLAVOR" = vanilla ] || KVER_FLAVOR=-$FLAVOR
-KVER=$(basename $(ls -d "$ROOT"/lib/modules/*"$KVER_FLAVOR"))
-depmod -b "$ROOT" "$KVER"
+KVER=$(basename $(ls -d $ROOT/lib/modules/*"$KVER_FLAVOR"))
+depmod -b $ROOT "$KVER"
 
 
 STAGING=$TMPDIR/boot
 MODLOOP=$TMPDIR/modloop
 MODIMG=$FLAVOR.modloop.squashfs
 
-mkdir "$MODLOOP" "$STAGING"
-cp -a "$ROOT/lib/modules" "$MODLOOP"
-cp -a "$ROOT/lib/firmware" "$MODLOOP/modules"
-mksquashfs "$MODLOOP" "$STAGING/$MODIMG" -comp xz
+mkdir $MODLOOP $STAGING
+cp -a $ROOT/lib/modules $MODLOOP
+cp -a $ROOT/lib/firmware $MODLOOP/modules
+mksquashfs $MODLOOP $STAGING/$MODIMG -comp xz
 
-mkinitfs -q -b "$ROOT" -F "$features base squashfs" -o "$STAGING/$FLAVOR.gz" \
+mkinitfs -q -b $ROOT -F "$features base squashfs" -o "$STAGING/$FLAVOR.gz" \
     "$KVER"
 cp "$BOOT/vmlinuz$KVER_FLAVOR" "$STAGING/$FLAVOR"
 
@@ -187,7 +187,7 @@ if [ "$MNTDIR" ]; then
     remount -w
 fi
 
-mv "$STAGING"/* "$DESTDIR"
+mv $STAGING/* "$DESTDIR"
 
 if [ "$MNTDIR" ]; then
     set +e
