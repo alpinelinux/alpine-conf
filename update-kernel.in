@@ -14,17 +14,23 @@ SIGNALS="HUP INT TERM"
 SCRIPT=update-kernel
 VIRTUAL=.tmp-$SCRIPT
 
-while read MOUNT; do
-    set -- $MOUNT
-    [ $2 = /.modloop ] || continue
-    DESTDIR=$(dirname $(losetup $1 | cut -d " " -f 3))
-    MNTDIR=$(dirname $DESTDIR)
-    break
-done < /proc/mounts
 
-if [ -z "$MNTDIR" ]; then
-    echo "Module loopback device not mounted" >&2
-    exit 1
+DESTDIR=$1
+MNTDIR=
+
+if [ -z "$DESTDIR" ]; then
+    while read MOUNT; do
+	set -- $MOUNT
+	[ $2 = /.modloop ] || continue
+	DESTDIR=$(dirname $(losetup $1 | cut -d " " -f 3))
+	MNTDIR=$(dirname $DESTDIR)
+	break
+    done < /proc/mounts
+
+    if [ -z "$MNTDIR" ]; then
+	echo "Module loopback device not mounted" >&2
+	exit 1
+    fi
 fi
 
 remount() {
@@ -83,14 +89,18 @@ mkinitfs -q -F "$features squashfs" -b $ROOT -o $STAGING/$FLAVOR.gz $KVER
 cp $ROOT/boot/vmlinuz-$FLAVOR $STAGING/$FLAVOR
 
 
-ignore_sigs
-remount -w
+if [ "$MNTDIR" ]; then
+    ignore_sigs
+    remount -w
+    rm -f "$DESTDIR/$MODIMG"
+fi
 
-rm -f $DESTDIR/$MODIMG
-mv $STAGING/* $DESTDIR
+mv $STAGING/* "$DESTDIR"
 
-set +e
-sync
-remount -r
+if [ "$MNTDIR" ]; then
+    set +e
+    sync
+    remount -r
+fi
 
 exit 0
