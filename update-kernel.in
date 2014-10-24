@@ -56,9 +56,15 @@ FLAVOR=$(uname -r | cut -d - -f 3-)
 TMPDIR=$(mktemp -dt $SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
 
-apk add -qU -p $ROOT --initdb --no-scripts --arch $ARCH \
-    --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories \
-    alpine-base dahdi-linux linux-$FLAVOR linux-firmware
+_apk() {
+    apk add -q -p $ROOT --no-scripts --arch $ARCH --keys-dir /etc/apk/keys \
+	--repositories-file /etc/apk/repositories $*
+}
+
+_apk -U --initdb alpine-base linux-$FLAVOR linux-firmware
+_apk dahdi-linux dahdi-linux-$FLAVOR || :
+_apk xtables-addons-$FLAVOR || :
+
 
 KVER=$(ls $ROOT/lib/modules)
 depmod -b $ROOT $KVER
