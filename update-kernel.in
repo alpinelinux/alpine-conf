@@ -57,19 +57,31 @@ apk add -qU -t $VIRTUAL mkinitfs squashfs-tools
 
 . /etc/mkinitfs/mkinitfs.conf
 
-ARCH=$(apk --print-arch)
 FLAVOR=$(uname -r | cut -d - -f 3-)
 TMPDIR=$(mktemp -dt $SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
 
 _apk() {
-    apk add -q -p "$ROOT" --no-scripts --arch $ARCH --keys-dir /etc/apk/keys \
+    local cmd=$1
+    shift
+    apk $cmd -p "$ROOT" --keys-dir /etc/apk/keys \
 	--repositories-file /etc/apk/repositories $*
 }
 
-_apk -U --initdb alpine-base linux-$FLAVOR linux-firmware
-_apk dahdi-linux dahdi-linux-$FLAVOR || :
-_apk xtables-addons-$FLAVOR || :
+add_pkgs() {
+    _apk add -q --no-scripts $*
+}
+
+extra_pkgs() {
+    local res=$(_apk search -x $1)
+    if [ "$res" ]; then
+	add_pkgs $*
+    fi
+}
+
+add_pkgs -U --initdb alpine-base linux-$FLAVOR linux-firmware
+extra_pkgs dahdi-linux-$FLAVOR dahdi-linux
+extra_pkgs xtables-addons-$FLAVOR
 
 
 KVER=$(ls "$ROOT/lib/modules")
