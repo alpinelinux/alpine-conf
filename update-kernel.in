@@ -9,16 +9,47 @@
 # Copyright (c) 2014 Kaarle Ritvanen
 
 
-TMPDIR=
-SIGNALS="HUP INT TERM"
 SCRIPT=update-kernel
 VIRTUAL=.tmp-$SCRIPT
 
-
-DESTDIR=$1
+FLAVOR=
 MNTDIR=
+PACKAGES=
+SIGNALS="HUP INT TERM"
+TMPDIR=
+features=
+
+OPTS=$(getopt -l flavor:,feature:,package: -n $SCRIPT -o f:F:p: -- "$@")
+eval set -- "$OPTS"
+while :; do
+    case "$1" in
+	-f|--flavor)
+	    FLAVOR=$2
+	    ;;
+	-F|--feature)
+	    features="$features $2"
+	    ;;
+	-p|--package)
+	    PACKAGES="$PACKAGES $2"
+	    ;;
+	--)
+	    break
+	    ;;
+    esac
+    shift 2
+done
+
+DESTDIR=$2
+
+
+error() {
+    echo "$1" >&2
+    exit 1
+}
 
 if [ -z "$DESTDIR" ]; then
+    [ "$FLAVOR" ] && error "Cannot specify flavor when updating the current kernel"
+
     while read MOUNT; do
 	set -- $MOUNT
 	[ $2 = /.modloop ] || continue
@@ -27,10 +58,7 @@ if [ -z "$DESTDIR" ]; then
 	break
     done < /proc/mounts
 
-    if [ -z "$MNTDIR" ]; then
-	echo "Module loopback device not mounted" >&2
-	exit 1
-    fi
+    [ "$MNTDIR" ] || error "Module loopback device not mounted"
 fi
 
 remount() {
@@ -55,13 +83,13 @@ trap clean_up EXIT $SIGNALS
 
 apk add -qU -t $VIRTUAL mkinitfs squashfs-tools
 
-. /etc/mkinitfs/mkinitfs.conf
+if [ -z "$features" ]; then
+    . /etc/mkinitfs/mkinitfs.conf
+fi
 
-FLAVOR=$(uname -r | cut -d - -f 3-)
-KVER_FLAVOR=-$FLAVOR
 if [ -z "$FLAVOR" ]; then
-    FLAVOR=vanilla
-    KVER_FLAVOR=
+    FLAVOR=$(uname -r | cut -d - -f 3-)
+    [ "$FLAVOR" ] || FLAVOR=vanilla
 fi
 
 TMPDIR=$(mktemp -dt $SCRIPT.XXXXXX)
@@ -85,13 +113,17 @@ extra_pkgs() {
     fi
 }
 
-add_pkgs -U --initdb alpine-base linux-$FLAVOR linux-firmware
-extra_pkgs dahdi-linux-$FLAVOR dahdi-linux
-extra_pkgs xtables-addons-$FLAVOR
+add_pkgs -U --initdb alpine-base "linux-$FLAVOR" linux-firmware $PACKAGES
+if [ -z "$PACKAGES" ]; then
+    extra_pkgs "dahdi-linux-$FLAVOR" dahdi-linux
+    extra_pkgs "xtables-addons-$FLAVOR"
+fi
 
 
-KVER=$(ls "$ROOT/lib/modules")
-depmod -b "$ROOT" $KVER
+KVER_FLAVOR=
+[ "$FLAVOR" = vanilla ] || KVER_FLAVOR=-$FLAVOR
+KVER=$(basename $(ls -d "$ROOT"/lib/modules/*"$KVER_FLAVOR"))
+depmod -b "$ROOT" "$KVER"
 
 
 STAGING=$TMPDIR/boot
@@ -103,7 +135,8 @@ cp -a "$ROOT/lib/modules" "$MODLOOP"
 cp -a "$ROOT/lib/firmware" "$MODLOOP/modules"
 mksquashfs "$MODLOOP" "$STAGING/$MODIMG" -comp xz
 
-mkinitfs -q -F "$features squashfs" -b "$ROOT" -o "$STAGING/$FLAVOR.gz" $KVER
+mkinitfs -q -b "$ROOT" -F "$features base squashfs" -o "$STAGING/$FLAVOR.gz" \
+    "$KVER"
 cp "$ROOT/boot/vmlinuz$KVER_FLAVOR" "$STAGING/$FLAVOR"
 
 
