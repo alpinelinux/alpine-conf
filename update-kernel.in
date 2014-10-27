@@ -58,6 +58,12 @@ apk add -qU -t $VIRTUAL mkinitfs squashfs-tools
 . /etc/mkinitfs/mkinitfs.conf
 
 FLAVOR=$(uname -r | cut -d - -f 3-)
+KVER_FLAVOR=-$FLAVOR
+if [ -z "$FLAVOR" ]; then
+    FLAVOR=vanilla
+    KVER_FLAVOR=
+fi
+
 TMPDIR=$(mktemp -dt $SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
 
@@ -98,7 +104,7 @@ cp -a "$ROOT/lib/firmware" "$MODLOOP/modules"
 mksquashfs "$MODLOOP" "$STAGING/$MODIMG" -comp xz
 
 mkinitfs -q -F "$features squashfs" -b "$ROOT" -o "$STAGING/$FLAVOR.gz" $KVER
-cp "$ROOT/boot/vmlinuz-$FLAVOR" "$STAGING/$FLAVOR"
+cp "$ROOT/boot/vmlinuz$KVER_FLAVOR" "$STAGING/$FLAVOR"
 
 
 if [ "$MNTDIR" ]; then
