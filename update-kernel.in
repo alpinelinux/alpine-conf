@@ -12,6 +12,7 @@
 SCRIPT=update-kernel
 VIRTUAL=.tmp-$SCRIPT
 
+BUILDDIR=
 FLAVOR=
 MNTDIR=
 PACKAGES=
@@ -19,10 +20,14 @@ SIGNALS="HUP INT TERM"
 TMPDIR=
 features=
 
-OPTS=$(getopt -l flavor:,feature:,package: -n $SCRIPT -o f:F:p: -- "$@")
+OPTS=$(getopt -l build-dir:,flavor:,feature:,package: -n $SCRIPT -o b:f:F:p: \
+    -- "$@")
 eval set -- "$OPTS"
 while :; do
     case "$1" in
+	-b|--build-dir)
+	    BUILDDIR=$2
+	    ;;
 	-f|--flavor)
 	    FLAVOR=$2
 	    ;;
@@ -46,6 +51,9 @@ error() {
     echo "$1" >&2
     exit 1
 }
+
+[ "$BUILDDIR" -a "$FLAVOR" ] && \
+    error "Cannot specify both build directory and flavor"
 
 if [ -z "$DESTDIR" ]; then
     [ "$FLAVOR" ] && error "Cannot specify flavor when updating the current kernel"
@@ -94,6 +102,7 @@ fi
 
 TMPDIR=$(mktemp -dt $SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
+BOOT=$ROOT/boot
 
 _apk() {
     local cmd=$1
@@ -113,10 +122,17 @@ extra_pkgs() {
     fi
 }
 
-add_pkgs -U --initdb alpine-base "linux-$FLAVOR" linux-firmware $PACKAGES
-if [ -z "$PACKAGES" ]; then
-    extra_pkgs "dahdi-linux-$FLAVOR" dahdi-linux
-    extra_pkgs "xtables-addons-$FLAVOR"
+add_pkgs -U --initdb alpine-base $PACKAGES
+if [ "$BUILDDIR" ]; then
+    mkdir -p "$BOOT"
+    make -C "$BUILDDIR" firmware_install install modules_install \
+	INSTALL_MOD_PATH="$ROOT" INSTALL_PATH="$BOOT"
+else
+    add_pkgs "linux-$FLAVOR" linux-firmware
+    if [ -z "$PACKAGES" ]; then
+	extra_pkgs "dahdi-linux-$FLAVOR" dahdi-linux
+	extra_pkgs "xtables-addons-$FLAVOR"
+    fi
 fi
 
 
@@ -137,7 +153,7 @@ mksquashfs "$MODLOOP" "$STAGING/$MODIMG" -comp xz
 
 mkinitfs -q -b "$ROOT" -F "$features base squashfs" -o "$STAGING/$FLAVOR.gz" \
     "$KVER"
-cp "$ROOT/boot/vmlinuz$KVER_FLAVOR" "$STAGING/$FLAVOR"
+cp "$BOOT/vmlinuz$KVER_FLAVOR" "$STAGING/$FLAVOR"
 
 
 if [ "$MNTDIR" ]; then
