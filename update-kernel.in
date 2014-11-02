@@ -57,6 +57,7 @@ while :; do
 	    features="$features $2"
 	    ;;
 	-h|--help)
+	    echo "$SCRIPT @VERSION@" >&2
 	    usage 0
 	    ;;
 	-p|--package)
