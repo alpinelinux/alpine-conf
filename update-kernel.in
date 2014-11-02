@@ -20,8 +20,30 @@ SIGNALS="HUP INT TERM"
 TMPDIR=
 features=
 
-OPTS=$(getopt -l build-dir:,flavor:,feature:,package: -n $SCRIPT -o b:f:F:p: \
-    -- "$@")
+error() {
+    echo "$SCRIPT: $1" >&2
+}
+
+usage() {
+    [ "$2" ] && error "$2"
+    local opts="[-F <feature>]... [-p <package>]..."
+    cat >&2 <<EOF
+
+Syntax: $SCRIPT $opts [<dest_dir>]
+        $SCRIPT -f <flavor> $opts <dest_dir>
+        $SCRIPT -b <build_dir> $opts [<dest_dir>]
+
+Options: -b|--build <build_dir>  Install custom-built kernel
+         -f|--flavor <flavor>    Install kernel of specified flavor
+         -F|--feature <feature>  Enable initfs feature
+         -p|--package <package>  Additional module or firmware package
+
+EOF
+    exit $1
+}
+
+OPTS=$(getopt -l build-dir:,flavor:,feature:,help,package: -n $SCRIPT \
+    -o b:f:F:hp: -- "$@") || usage 1
 eval set -- "$OPTS"
 while :; do
     case "$1" in
@@ -33,6 +55,9 @@ while :; do
 	    ;;
 	-F|--feature)
 	    features="$features $2"
+	    ;;
+	-h|--help)
+	    usage 0
 	    ;;
 	-p|--package)
 	    PACKAGES="$PACKAGES $2"
@@ -47,16 +72,12 @@ done
 DESTDIR=$2
 
 
-error() {
-    echo "$1" >&2
-    exit 1
-}
-
 [ "$BUILDDIR" -a "$FLAVOR" ] && \
-    error "Cannot specify both build directory and flavor"
+    usage 1 "Cannot specify both build directory and flavor"
 
 if [ -z "$DESTDIR" ]; then
-    [ "$FLAVOR" ] && error "Cannot specify flavor when updating the current kernel"
+    [ "$FLAVOR" ] && \
+	usage 1 "Cannot specify flavor when updating the current kernel"
 
     while read MOUNT; do
 	set -- $MOUNT
@@ -66,7 +87,10 @@ if [ -z "$DESTDIR" ]; then
 	break
     done < /proc/mounts
 
-    [ "$MNTDIR" ] || error "Module loopback device not mounted"
+    if [ -z "$MNTDIR" ]; then
+	error "Module loopback device not mounted"
+	exit 1
+    fi
 fi
 
 remount() {
