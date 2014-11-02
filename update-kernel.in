@@ -158,8 +158,8 @@ cp "$BOOT/vmlinuz$KVER_FLAVOR" "$STAGING/$FLAVOR"
 
 if [ "$MNTDIR" ]; then
     ignore_sigs
+    umount /.modloop
     remount -w
-    rm -f "$DESTDIR/$MODIMG"
 fi
 
 mv "$STAGING"/* "$DESTDIR"
@@ -168,6 +168,7 @@ if [ "$MNTDIR" ]; then
     set +e
     sync
     remount -r
+    mount -o loop "$DESTDIR/$MODIMG" /.modloop
 fi
 
 exit 0
