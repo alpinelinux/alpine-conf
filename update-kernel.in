@@ -136,10 +136,10 @@ fi
 TMPDIR=$(mktemp -d /tmp/$SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
 BOOT=$ROOT/boot
-WRAPPER=eval
+WRAPPER=
 
 _exec() {
-    $WRAPPER "$1"
+    $WRAPPER "$@"
 }
 
 _apk() {
@@ -199,10 +199,10 @@ MODIMG=$FLAVOR.modloop.squashfs
 mkdir $MODLOOP $STAGING
 cp -a $ROOT/lib/modules $MODLOOP
 cp -a $ROOT/lib/firmware $MODLOOP/modules
-_exec "mksquashfs $MODLOOP $STAGING/$MODIMG -comp xz"
+_exec mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz
 
-_exec "mkinitfs -q -b $ROOT -F '$features base squashfs' \
-    -o '$STAGING/$FLAVOR.gz' '$KVER'"
+_exec mkinitfs -q -b $ROOT -F "$features base squashfs" \
+    -o "$STAGING/$FLAVOR.gz" "$KVER"
 cp "$BOOT/vmlinuz$KVER_FLAVOR" "$STAGING/$FLAVOR"
 
 
