@@ -40,24 +40,29 @@ Options: -b|--build <build_dir>  Install custom-built kernel
          -f|--flavor <flavor>    Install kernel of specified flavor
          -F|--feature <feature>  Enable initfs feature
          -p|--package <package>  Additional module or firmware package
+         -v|--verbose            Verbose output
 
 EOF
     exit $1
 }
 
-OPTS=$(getopt -l build-dir:,flavor:,feature:,help,package: -n $SCRIPT \
-    -o b:f:F:hp: -- "$@") || usage 1
+QUIET_OPT="--quiet"
+OPTS=$(getopt -l build-dir:,flavor:,feature:,help,package:,verbose -n $SCRIPT \
+    -o b:f:F:hp:v -- "$@") || usage 1
 eval set -- "$OPTS"
 while :; do
     case "$1" in
 	-b|--build-dir)
 	    BUILDDIR=$2
+	    shift
 	    ;;
 	-f|--flavor)
 	    FLAVOR=$2
+	    shift
 	    ;;
 	-F|--feature)
 	    features="$features $2"
+	    shift
 	    ;;
 	-h|--help)
 	    echo "$SCRIPT @VERSION@" >&2
@@ -65,12 +70,16 @@ while :; do
 	    ;;
 	-p|--package)
 	    PACKAGES="$PACKAGES $2"
+	    shift
+	    ;;
+	-v|--verbose)
+	    QUIET_OPT=
 	    ;;
 	--)
 	    break
 	    ;;
     esac
-    shift 2
+    shift
 done
 
 DESTDIR=$2
@@ -113,7 +122,7 @@ clean_up() {
     set +e
     ignore_sigs
 
-    [ "$SUPERUSER" ] && apk del -q $VIRTUAL
+    [ "$SUPERUSER" ] && apk del $QUIET_OPT $VIRTUAL
     rm -fr $TMPDIR
 }
 
@@ -121,7 +130,7 @@ trap clean_up EXIT $SIGNALS
 
 
 if [ "$SUPERUSER" ]; then
-    apk add -qU -t $VIRTUAL mkinitfs squashfs-tools
+    apk add $QUIET_OPT --update--cache -t $VIRTUAL mkinitfs squashfs-tools
 fi
 
 if [ -z "$features" ]; then
@@ -157,7 +166,7 @@ _apk() {
 	wrapper="fakeroot $opt -s $fake_env --"
     fi
 
-    $wrapper apk $cmd -p $ROOT --keys-dir /etc/apk/keys \
+    $wrapper apk $cmd $QUIET_OPT -p $ROOT --keys-dir /etc/apk/keys \
 	--repositories-file /etc/apk/repositories $*
 }
 
@@ -169,7 +178,7 @@ extra_pkgs() {
 }
 
 # set up the root and get the APKINDEX for search
-_apk add --quiet --initdb --update-cache
+_apk add --initdb --update-cache
 
 if [ "$BUILDDIR" ]; then
     mkdir -p $BOOT
@@ -182,7 +191,7 @@ else
     fi
     PACKAGES="$PACKAGES linux-$FLAVOR linux-firmware"
 fi
-_apk add --quiet --no-scripts alpine-base $PACKAGES
+_apk add --no-scripts alpine-base $PACKAGES
 
 
 KVER_FLAVOR=
