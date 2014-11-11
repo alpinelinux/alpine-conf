@@ -161,29 +161,28 @@ _apk() {
 	--repositories-file /etc/apk/repositories $*
 }
 
-add_pkgs() {
-    _apk add -q --no-scripts $*
-}
-
 extra_pkgs() {
     local res=$(_apk search -x $1)
     if [ "$res" ]; then
-	add_pkgs $*
+	echo $*
     fi
 }
 
-add_pkgs -U --initdb alpine-base $PACKAGES
+# set up the root and get the APKINDEX for search
+_apk add --quiet --initdb --update-cache
+
 if [ "$BUILDDIR" ]; then
     mkdir -p $BOOT
     make -C "$BUILDDIR" firmware_install install modules_install \
 	INSTALL_MOD_PATH=$ROOT INSTALL_PATH=$BOOT
 else
-    add_pkgs "linux-$FLAVOR" linux-firmware
     if [ -z "$PACKAGES" ]; then
-	extra_pkgs "dahdi-linux-$FLAVOR" dahdi-linux
-	extra_pkgs "xtables-addons-$FLAVOR"
+	PACKAGES="$(extra_pkgs "dahdi-linux-$FLAVOR" dahdi-linux)
+		$(extra_pkgs "xtables-addons-$FLAVOR")"
     fi
+    PACKAGES="$PACKAGES linux-$FLAVOR linux-firmware"
 fi
+_apk add --quiet --no-scripts alpine-base $PACKAGES
 
 
 KVER_FLAVOR=
