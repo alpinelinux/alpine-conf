@@ -130,7 +130,7 @@ trap clean_up EXIT $SIGNALS
 
 
 if [ "$SUPERUSER" ]; then
-    apk add $QUIET_OPT --update--cache -t $VIRTUAL mkinitfs squashfs-tools
+    apk add $QUIET_OPT --update-cache -t $VIRTUAL mkinitfs squashfs-tools
 fi
 
 if [ -z "$features" ]; then
