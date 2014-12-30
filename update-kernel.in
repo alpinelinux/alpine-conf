@@ -202,7 +202,7 @@ depmod -b $ROOT "$KVER"
 
 STAGING=$TMPDIR/boot
 MODLOOP=$TMPDIR/modloop
-MODIMG=$FLAVOR.modloop.squashfs
+MODIMG=modloop-$FLAVOR
 
 mkdir $MODLOOP $STAGING
 cp -a $ROOT/lib/modules $MODLOOP
@@ -210,8 +210,8 @@ cp -a $ROOT/lib/firmware $MODLOOP/modules
 _exec mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz
 
 _exec mkinitfs -q -b $ROOT -F "$features base squashfs" \
-    -o "$STAGING/$FLAVOR.gz" "$KVER"
-cp "$BOOT/vmlinuz$KVER_FLAVOR" "$STAGING/$FLAVOR"
+    -o "$STAGING/initramfs-$FLAVOR" "$KVER"
+cp "$BOOT/vmlinuz$KVER_FLAVOR" $STAGING
 
 
 if [ "$MNTDIR" ]; then
