@@ -6,7 +6,7 @@
 # with setup-bootable
 #
 # Copyright (c) 2014 Timo Teräs
-# Copyright (c) 2014 Kaarle Ritvanen
+# Copyright (c) 2014-2015 Kaarle Ritvanen
 
 
 SCRIPT=update-kernel
@@ -211,7 +211,10 @@ _exec mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz
 
 _exec mkinitfs -q -b $ROOT -F "$features base squashfs" \
     -o "$STAGING/initramfs-$FLAVOR" "$KVER"
-cp "$BOOT/vmlinuz$KVER_FLAVOR" $STAGING
+
+for file in System.map config vmlinuz; do
+    cp "$BOOT/$file$KVER_FLAVOR" $STAGING
+done
 
 
 if [ "$MNTDIR" ]; then
