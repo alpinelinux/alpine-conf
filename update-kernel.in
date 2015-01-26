@@ -15,6 +15,7 @@ VIRTUAL=.tmp-$SCRIPT
 SUPERUSER=
 [ $(id -u) -eq 0 ] && SUPERUSER=Y
 
+ARCH=
 BUILDDIR=
 FLAVOR=
 MNTDIR=
@@ -30,13 +31,15 @@ error() {
 usage() {
     [ "$2" ] && error "$2"
     local opts="[-F <feature>]... [-p <package>]..."
+    local dest_args="[-a <arch>] <dest_dir>"
     cat >&2 <<EOF
 
-Syntax: $SCRIPT $opts [<dest_dir>]
-        $SCRIPT -f <flavor> $opts <dest_dir>
-        $SCRIPT -b <build_dir> $opts [<dest_dir>]
+Syntax: $SCRIPT $opts [$dest_args]
+        $SCRIPT -f <flavor> $opts $dest_args
+        $SCRIPT -b <build_dir> $opts [$dest_args]
 
-Options: -b|--build <build_dir>  Install custom-built kernel
+Options: -a|--arch <arch>        Install kernel for specified architecture
+         -b|--build <build_dir>  Install custom-built kernel
          -f|--flavor <flavor>    Install kernel of specified flavor
          -F|--feature <feature>  Enable initfs feature
          -p|--package <package>  Additional module or firmware package
@@ -47,30 +50,34 @@ EOF
 }
 
 QUIET_OPT="--quiet"
-OPTS=$(getopt -l build-dir:,flavor:,feature:,help,package:,verbose -n $SCRIPT \
-    -o b:f:F:hp:v -- "$@") || usage 1
+OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,verbose \
+	      -n $SCRIPT -o a:b:f:F:hp:v -- "$@") || usage 1
 eval set -- "$OPTS"
 while :; do
     case "$1" in
-	-b|--build-dir)
-	    BUILDDIR=$2
+	-a|--arch)
 	    shift
+	    ARCH=$1
+	    ;;
+	-b|--build-dir)
+	    shift
+	    BUILDDIR=$1
 	    ;;
 	-f|--flavor)
-	    FLAVOR=$2
 	    shift
+	    FLAVOR=$1
 	    ;;
 	-F|--feature)
-	    features="$features $2"
 	    shift
+	    features="$features $1"
 	    ;;
 	-h|--help)
 	    echo "$SCRIPT @VERSION@" >&2
 	    usage 0
 	    ;;
 	-p|--package)
-	    PACKAGES="$PACKAGES $2"
 	    shift
+	    PACKAGES="$PACKAGES $1"
 	    ;;
 	-v|--verbose)
 	    QUIET_OPT=
@@ -89,6 +96,9 @@ DESTDIR=$2
     usage 1 "Cannot specify both build directory and flavor"
 
 if [ -z "$DESTDIR" ]; then
+    [ "$ARCH" ] && \
+	usage 1 "Cannot specify architecture when updating the current kernel"
+
     [ "$FLAVOR" ] && \
 	usage 1 "Cannot specify flavor when updating the current kernel"
 
@@ -166,7 +176,8 @@ _apk() {
 	wrapper="fakeroot $opt -s $fake_env --"
     fi
 
-    $wrapper apk $cmd $QUIET_OPT -p $ROOT --keys-dir /etc/apk/keys \
+    $wrapper apk $cmd $QUIET_OPT -p $ROOT ${ARCH:+--arch "$ARCH"} \
+	--keys-dir /etc/apk/keys \
 	--repositories-file /etc/apk/repositories $*
 }
 
