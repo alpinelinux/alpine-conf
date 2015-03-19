@@ -47,10 +47,10 @@ find_mount_point() {
 	fi
 
 	local dir="$1"
-	while ! [ -d "$dir" ]; do
+	while [ -n "$dir" ] && ! [ -d "$dir" ]; do
 		dir=${dir%/*}
 	done
-	local fs_id=$(stat -f -c %i "$dir")
+	local fs_id=$(stat -f -c %i "${dir:-/}")
 	local parent="${dir%/*}"
 	while [ -n "$dir" ] && [ "$(stat -f -c %i $parent/)" = "$fs_id" ]; do
 		dir=$parent
