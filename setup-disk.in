@@ -460,7 +460,7 @@ confirm_erase() {
 	local answer=
 	local erasedisks="$@"
 	if [ "$ERASE_DISKS" = "$erasedisks" ]; then
-		reeturn 0
+		return 0
 	fi
 	echo "WARNING: The following disk(s) will be erased:"
 	show_disk_info $@
