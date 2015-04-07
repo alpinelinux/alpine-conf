@@ -137,11 +137,12 @@ edit_repositories() {
 
 usage() {
 	cat <<__EOF__
-usage: setup-apkrepos [-hr] [REPO...]
+usage: setup-apkrepos [-fhr] [REPO...]
 
 Setup apk repositories
 
 options:
+ -f  Detect and add fastest mirror
  -h  Show this help
  -r  Add a random mirror and do not prompt
 __EOF__
@@ -149,8 +150,9 @@ __EOF__
 
 }
 
-while getopts "hr" opt; do
+while getopts "fhr" opt; do
         case $opt in
+                f) JUSTADDFASTEST=1;;
                 h) usage;;
                 r) JUSTADDRANDOM=1;;
         esac
@@ -191,6 +193,11 @@ fi
 if [ -n "$JUSTADDRANDOM" ]; then
 	show_mirror_list > /dev/null
 	add_random_mirror && changed=true
+fi
+
+if [ -n "$JUSTADDFASTEST" ]; then
+	show_mirror_list > /dev/null
+	add_fastest_mirror && changed=true
 fi
 
 while ! $changed; do
