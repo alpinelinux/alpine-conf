@@ -39,17 +39,20 @@ add_random_mirror() {
 time_cmd() {
 	local start=$(cut -d ' ' -f1 /proc/uptime)
 	$@ >&2
+	local ret=$?
 	awk -v start=$start -v end=$(cut -d ' ' -f1 /proc/uptime) \
 		'BEGIN {print end - start; exit}'
+	return $ret
 }
 
 find_fastest_mirror() {
 	export http_proxy=
 	local url=
 	for url in $MIRRORS; do
-		echo $(time_cmd apk update --quiet $apk_root_opt \
+		local time=$(time_cmd apk update --quiet $apk_root_opt \
 				--repository $url/edge/main \
-				--repositories-file /dev/null) $url
+				--repositories-file /dev/null) || continue
+		echo "$time $url"
 	done | awk ' {
 		if (!current) {
 			current=$1
