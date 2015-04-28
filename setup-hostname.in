@@ -50,14 +50,16 @@ if [ -z "$name" ] && [ $# -eq 1 ]; then
 	name="$1"
 fi
 
-while true; do
-	if [ -n "$name" ]; then
-		HOST="$name"
-	else
-		HOST=`hostname`
-		echon "Enter system hostname (short form, e.g. 'foo') [$HOST]: "
-		default_read HOST `hostname`
-	fi
+# if name is set, then we run non-interactively
+if [ -n "$name" ] && ! valid_hostname "$name"; then
+	exit 1
+fi
+
+HOST="$name"
+while [ -z "$name" ]; do
+	HOST=`hostname`
+	echon "Enter system hostname (short form, e.g. 'foo') [$HOST]: "
+	default_read HOST "$HOST"
 	if valid_hostname "$HOST"; then
 		break
 	fi
