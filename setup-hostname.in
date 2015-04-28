@@ -42,17 +42,17 @@ valid_hostname() {
 while getopts "hn:" opt; do
         case $opt in
 		h) usage;;
-		n) HOSTNAME="$OPTARG";;
+		n) name="$OPTARG";;
         esac
 done
 shift $(( $OPTIND - 1 ))
-if [ -z "$HOSTNAME" ] && [ $# -eq 1 ]; then
-	HOSTNAME="$1"
+if [ -z "$name" ] && [ $# -eq 1 ]; then
+	name="$1"
 fi
 
 while true; do
-	if [ -n "$HOSTNAME" ]; then
-		HOST="$HOSTNAME"
+	if [ -n "$name" ]; then
+		HOST="$name"
 	else
 		HOST=`hostname`
 		echon "Enter system hostname (short form, e.g. 'foo') [$HOST]: "
