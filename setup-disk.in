@@ -490,7 +490,7 @@ setup_partitions() {
 	# fix the MBR while here so extlinux can boot
 	cat "$MBR" > $diskdev
 
-	local start=0
+	local start=1M
 	local line=
 	# create new partitions
 	(
@@ -498,7 +498,7 @@ setup_partitions() {
 			echo "$start,$line"
 			start=
 		done
-	) | sfdisk -q -L -uM $diskdev >/dev/null || return 1
+	) | sfdisk --quiet $diskdev >/dev/null || return 1
 
 	# create device nodes if not exist
 	mdev -s
@@ -513,7 +513,7 @@ find_boot_partition() {
 # this is not marked as bootable and is type 8e
 find_lvm_partition() {
 	local type=8e
-	sfdisk -d $1 | grep -v bootable | awk "/Id=$type/ {print \$1}"
+	sfdisk -d $1 | grep -v bootable | awk "/(Id|type)=$type/ {print \$1}"
 }
 
 # set up optional raid and create filesystem on boot device.
@@ -551,7 +551,7 @@ find_nth_non_boot_parts() {
 	shift
 	for disk in $@; do
 		sfdisk -d $disk | grep -v bootable \
-			| awk "/Id=$id/ { i++; if (i==$idx) print \$1 }"
+			| awk "/(Id|type)=$id/ { i++; if (i==$idx) print \$1 }"
 	done
 }
 
@@ -677,7 +677,7 @@ data_only_disk_install_lvm() {
 	fi
 
 	for diskdev in "$@"; do
-		setup_partitions $diskdev "$size,$part_type" || return 1
+		setup_partitions $diskdev "${size}${size:+M},$part_type" || return 1
 	done
 
 	setup_lvm_volume_group $vgname $@ || return 1
@@ -707,8 +707,8 @@ data_only_disk_install() {
 
 	for diskdev in "$@"; do
 		setup_partitions $diskdev \
-			"$SWAP_SIZE,$swap_part_type" \
-			"$size,$var_part_type" || return 1
+			"${SWAP_SIZE}M,$swap_part_type" \
+			"${size}${size:+M},$var_part_type" || return 1
 	done
 
 	if [ "$USE_RAID" ]; then
@@ -762,8 +762,8 @@ native_disk_install_lvm() {
 	fi
 	for diskdev in "$@"; do
 		setup_partitions $diskdev \
-			"$boot_size,$boot_part_type,*" \
-			"$lvm_size,$lvm_part_type" || return 1
+			"${boot_size}M,$boot_part_type,*" \
+			"${lvm_size}${lvm_size:+M},$lvm_part_type" || return 1
 	done
 
 	# will find BOOT_DEV for us
@@ -794,9 +794,9 @@ native_disk_install() {
 	fi
 	for diskdev in "$@"; do
 		setup_partitions $diskdev \
-			"$boot_size,$boot_part_type,*" \
-			"$swap_size,$swap_part_type" \
-			"$root_size,$root_part_type" \
+			"${boot_size}M,$boot_part_type,*" \
+			"${swap_size}M,$swap_part_type" \
+			"${root_size}${root_size:+M},$root_part_type" \
 			|| return 1
 	done
 
