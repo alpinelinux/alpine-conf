@@ -144,10 +144,10 @@ if [ -z "$quick" ]; then
 	$PREFIX/sbin/setup-timezone ${TIMEZONEOPTS}
 fi
 
-rc-update -q add networking boot 
-rc-update -q add urandom boot 
-rc-update -q add acpid
-rc-update -q add cron
+rc-update --quiet add networking boot
+rc-update --quiet add urandom boot
+rc-update --quiet add acpid
+rc-update --quiet add cron
 
 # enable new hostname
 /etc/init.d/hostname --quiet restart
