@@ -400,7 +400,7 @@ prompt_for_interfaces() {
 		index=$(( $index + 1 ))
 	done
 
-	if [ "$(openrc --sys)" != "LXC" ] || ! ip addr show lo | grep -q 'inet.*127\.0'; then
+	if [ "$(openrc --sys)" != "LXC" ] || ! ip addr show lo | grep -q 'inet.*127\.0'; then
 		echo "type=loopback" > 000~lo.conf
 		echo "" > interface
 	fi
