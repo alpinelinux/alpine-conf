@@ -832,7 +832,7 @@ __EOF__
 diskmode_help() {
 	cat <<__EOF__
 
-You can select between 'sys' or 'data'.
+You can select between 'sys', 'data', 'lvm', 'lvmsys' or 'lvmdata'.
 
 sys:
   This mode is a traditional disk install. The following partitions will be
@@ -846,6 +846,15 @@ data:
 
   Use this mode if you only want to use the disk(s) for a mailspool, databases,
   logs, etc.
+
+lvm:
+  Enable logical volume manager and ask again for 'sys' or 'data'.
+
+lvmsys:
+  Same as 'sys' but use logical volume manager for partitioning.
+
+lvmdata:
+  Same as 'data' but use logical volume manager for partitioning.
 
 __EOF__
 }
@@ -993,13 +1002,21 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 	fi
 
 	while true; do
-		echo "The following $disk_is_or_disks_are selected:"
+		echo "The following $disk_is_or_disks_are selected${USE_LVM:+ (with LVM)}:"
 		show_disk_info $diskdevs
-		echon "How would you like to use $it_them? ('sys', 'data' or '?' for help) [?] "
+		local _lvm=${USE_LVM:-", 'lvm'"}
+		echon "How would you like to use $it_them? ('sys', 'data'${_lvm#_lvm} or '?' for help) [?] "
 		default_read answer '?'
 		case "$answer" in
 		'?') diskmode_help;;
 		sys|data) break;;
+		lvm) USE_LVM="_lvm" ;;
+		nolvm) USE_LVM="";;
+		lvmsys|lvmdata)
+			answer=${answer#lvm}
+			USE_LVM="_lvm"
+			break
+			;;
 		esac
 	done
 	DISK_MODE="$answer"
