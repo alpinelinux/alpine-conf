@@ -48,7 +48,7 @@ find_fastest_mirror() {
 	local url=
 	for url in $MIRRORS; do
 		local time=$(time_cmd apk update --quiet $apk_root_opt \
-				--repository $url/edge/main \
+				--repository ${url%/}/edge/main \
 				--repositories-file /dev/null)
 		if [ -n "$time" ]; then
 			echo "$time $url"
