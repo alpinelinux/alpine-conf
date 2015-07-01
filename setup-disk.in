@@ -234,6 +234,14 @@ install_mounted_root() {
 	# check if our root is on raid so we can feed mkinitfs and
 	# update-exlinux.conf with the proper kernel module params
 	for dev in $rootdev $pvs; do
+
+		# check if we need hardware raid drivers
+		case $dev in
+		/dev/cciss/*)
+			initfs_features="${initfs_features% raid} raid"
+			;;
+		esac
+
 		[ -e "/sys/block/${dev#/dev/}/md" ] || continue
 
 		local md=${dev#/dev/}
@@ -245,12 +253,6 @@ install_mounted_root() {
 		esac
 	done
 
-	# check if we need hardware raid drivers
-	case $rootdev in
-		/dev/cciss/*)
-			initfs_features="${initfs_features% raid} raid"
-			;;
-	esac
 
 	if [ -n "$VERBOSE" ]; then
 		echo "Root device:     $rootdev"
