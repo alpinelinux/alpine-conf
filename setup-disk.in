@@ -441,7 +441,9 @@ init_progs() {
 	case $ROOTFS in
 	ext*) fstools=e2fsprogs; mkfs_args="-q";;
 	xfs) fstools=xfsprogs; mkfs_args="-q";;
-	btrfs) fstools=btrs-progs; mkfs_args="";;
+	# we need load btrfs module early to avoid the error message:
+	# 'failed to open /dev/btrfs-control'
+	btrfs) fstools=btrfs-progs; mkfs_args=""; modprobe btrfs;;
 	esac
 	apk add --quiet sfdisk e2fsprogs lvm2 $raidpkg syslinux $fstools $@
 }
