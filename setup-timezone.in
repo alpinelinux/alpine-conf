@@ -8,7 +8,7 @@ zroot=/usr/share/zoneinfo
 
 usage() {
         cat <<__EOF__
-usage: setup-timezone [-h] [-k|-i] [-z subdir of $zroot]
+usage: setup-timezone [-h] [-k|-i] [-z TIMEZONE]
 
 Sets the timezone for the system.
 
@@ -16,7 +16,7 @@ options:
  -h  Show this help
  -i  Install tzdata and symlink instead of making a copy
  -k  Keep previous copies of tzdata
- -z  Specify the timezone as a subdirectory of $zroot
+ -z  Set given timezone. (relative $zroot)
 __EOF__
         exit 1
 }
@@ -64,7 +64,7 @@ while getopts "hikz:" opt; do
                 h) usage;;
 		i) INSTALL_TZDATA=true;;
 		k) KEEP_TZDATA=true;;
-		z) ZONEINFODIR="$OPTARG";;
+		z) ZONE="$OPTARG";;
         esac
 done
 
@@ -87,8 +87,8 @@ fi
 
 
 while true; do
-	if [ -n "$ZONEINFODIR" ]; then
-		setup_tz "$ZONEINFODIR"
+	if [ -n "$ZONE" ]; then
+		setup_tz "$zroot"/"$ZONE"
 		break
 	fi
 
