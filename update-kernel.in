@@ -234,7 +234,8 @@ done
 if [ "$ARM" ]; then
     DTBDIR=$ROOT/usr/lib/linux-$KVER
     [ "$BUILDDIR" ] && DTBDIR=$BUILDDIR/source/arch/arm/boot/dts
-    cp "$DTBDIR"/*.dtb $DTB_STAGING
+    cp -a "$DTBDIR"/* $DTB_STAGING
+    find "$DTB_STAGING" -type f \! -name "*.dtb" -delete
 fi
 
 
