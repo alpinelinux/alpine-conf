@@ -140,7 +140,7 @@ trap clean_up EXIT $SIGNALS
 
 
 if [ "$SUPERUSER" ]; then
-    apk add $QUIET_OPT --update-cache -t $VIRTUAL mkinitfs squashfs-tools
+    apk add $QUIET_OPT --update-cache -t $VIRTUAL mkinitfs squashfs-tools kmod
 fi
 
 if [ -z "$features" ]; then
@@ -221,7 +221,10 @@ DTB_STAGING=$TMPDIR/dtbs
 
 mkdir $DTB_STAGING $MODLOOP $STAGING
 cp -a $ROOT/lib/modules $MODLOOP
-cp -a $ROOT/lib/firmware $MODLOOP/modules
+mkdir -p $MODLOOP/modules/firmware
+find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -u | while read FW; do
+	[ -e "$ROOT/lib/firmware/$FW" ] && install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
+done
 _exec mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz
 
 _exec mkinitfs -q -b $ROOT -F "$features base squashfs" \
