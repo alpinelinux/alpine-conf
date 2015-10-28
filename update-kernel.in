@@ -223,7 +223,9 @@ mkdir $DTB_STAGING $MODLOOP $STAGING
 cp -a $ROOT/lib/modules $MODLOOP
 mkdir -p $MODLOOP/modules/firmware
 find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -u | while read FW; do
-	[ -e "$ROOT/lib/firmware/$FW" ] && install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
+	if [ -e "$ROOT/lib/firmware/$FW" ]; then
+		install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
+	fi
 done
 _exec mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz
 
