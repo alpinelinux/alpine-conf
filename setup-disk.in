@@ -436,8 +436,9 @@ stop_all_raid() {
 
 # install needed programs
 init_progs() {
-	local raidpkg= fs= fstools=
+	local raidpkg= lvmpkg= fs= fstools=
 	[ -n "$USE_RAID" ] && raidpkg="mdadm"
+	[ -n "$USE_LVM" ] && lvmpkg="lvm2"
 	for fs in $BOOTFS $ROOTFS $VARFS; do
 		# we need load btrfs module early to avoid the error message:
 		# 'failed to open /dev/btrfs-control'
@@ -449,7 +450,7 @@ init_progs() {
 		btrfs) fstools="$fstools btrfs-progs";;
 		esac
 	done
-	apk add --quiet sfdisk lvm2 $raidpkg syslinux $fstools $@
+	apk add --quiet sfdisk $lvmpkg $raidpkg syslinux $fstools $@
 }
 
 show_disk_info() {
