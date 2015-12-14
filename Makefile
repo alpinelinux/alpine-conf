@@ -76,7 +76,7 @@ install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES)
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/lib
 	install -m 755 $(LIB_FILES) $(DESTDIR)/$(PREFIX)/lib
 	install -m 755 -d $(DESTDIR)/$(sysconfdir)
-	install -m 755 $(ETC_LBU_FILES) $(DESTDIR)/$(sysconfdir)
+	install -m 644 $(ETC_LBU_FILES) $(DESTDIR)/$(sysconfdir)
 
 uninstall:
 	for i in $(SBIN_FILES); do \
