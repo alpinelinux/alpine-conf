@@ -436,14 +436,17 @@ stop_all_raid() {
 
 # install needed programs
 init_progs() {
-	local raidpkg= fs= fstools="e2fsprogs"
+	local raidpkg= fs= fstools=
 	[ -n "$USE_RAID" ] && raidpkg="mdadm"
 	for fs in $BOOTFS $ROOTFS $VARFS; do
-		case $fs in
-		xfs) fstools="$fstools xfsprogs"; modprobe xfs;;
 		# we need load btrfs module early to avoid the error message:
 		# 'failed to open /dev/btrfs-control'
-		btrfs) fstools="$fstools btrfs-progs"; modprobe btrfs;;
+		modprobe $fs
+
+		case $fs in
+		xfs) fstools="$fstools xfsprogs";;
+		ext*) fstools="$fstools e2fsprogs";;
+		btrfs) fstools="$fstools btrfs-progs";;
 		esac
 	done
 	apk add --quiet sfdisk lvm2 $raidpkg syslinux $fstools $@
