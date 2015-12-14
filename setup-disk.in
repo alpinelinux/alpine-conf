@@ -541,7 +541,7 @@ setup_boot_dev() {
 			--metadata=0.90 --quiet --run $@ $missing || return 1
 		bootdev=/dev/md0
 	fi
-	[ "$BOOTFS" == "btrfs" ] && mkfs_args=""
+	[ "$BOOTFS" = "btrfs" ] && mkfs_args=""
 	mkfs.$BOOTFS $mkfs_args $bootdev
 	BOOT_DEV="$bootdev"
 }
@@ -733,7 +733,7 @@ data_only_disk_install() {
 # setup
 setup_root() {
 	local root_dev="$1" boot_dev="$2" mkfs_args="-q"
-	[ "$ROOTFS" == "btrfs" ] && mkfs_args=""
+	[ "$ROOTFS" = "btrfs" ] && mkfs_args=""
 	mkfs.$ROOTFS $mkfs_args "$root_dev"
 	mkdir -p "$SYSROOT"
 	mount -t $ROOTFS $root_dev "$SYSROOT" || return 1
