@@ -46,10 +46,12 @@ time_cmd() {
 find_fastest_mirror() {
 	export http_proxy=
 	local url=
+	local arch=$(apk --print-arch)
 	for url in $MIRRORS; do
-		local time=$(time_cmd apk update --quiet $apk_root_opt \
-				--repository ${url%/}/edge/main \
-				--repositories-file /dev/null)
+		# warm up the dns cache
+		nslookup $(get_hostname_from_url $url) >/dev/null 2>&1
+		local time=$(time_cmd wget -q -s -T 5 \
+			${url%/}/edge/main/$arch/APKINDEX.tar.gz)
 		if [ -n "$time" ]; then
 			echo "$time $url"
 		fi
