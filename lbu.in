@@ -2,7 +2,7 @@
 
 # lbu - utility to create local backups.
 # Copyright (c) 2006-2010 Natanael Copa <ncopa@alpinelinux.org>
-# May be distributed under GPL2
+# May be distributed under GPL2 or MIT
 
 VERSION=@VERSION@
 sysconfdir=@sysconfdir@
