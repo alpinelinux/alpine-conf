@@ -425,7 +425,8 @@ is_available_disk() {
 
 find_disks() {
 	local p=
-	for p in $(awk '$1 ~ /[0-9]+/ {print $4}' /proc/partitions); do
+	# filter out ramdisks (major=1)
+	for p in $(awk '$1 != 1 && $1 ~ /[0-9]+/ {print $4}' /proc/partitions); do
 		is_available_disk $p && echo -n " $p"
 	done
 }
