@@ -326,7 +326,9 @@ EOF
 	cp /etc/apk/keys/* "$mnt"/etc/apk/keys/
 
 	local apkflags="--initdb --quiet --progress --update-cache --clean-protected"
-	local pkgs=$(cat "$mnt"/etc/apk/world "$mnt"/var/lib/apk/world 2>/dev/null)
+	local pkgs=$(grep -h -v -w sfdisk "$mnt"/etc/apk/world \
+		"$mnt"/var/lib/apk/world 2>/dev/null)
+
 	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base"
 	if [ "$(rc --sys)" = "XEN0" ]; then
 		pkgs="$pkgs xen-hypervisor"
