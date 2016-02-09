@@ -120,7 +120,7 @@ add_mirror() {
 	echo "#${mirror%/}/${release}/community" >> $APKREPOS_PATH
 	case "$release" in
 	v[0-9]*)
-		echo "#${mirror%/}/edge/main" >> $APKREPOS_PATH;;
+		echo "#${mirror%/}/edge/main" >> $APKREPOS_PATH;
 		echo "#${mirror%/}/edge/community" >> $APKREPOS_PATH;;
 	esac
 	echo "#${mirror%/}/edge/testing" >> $APKREPOS_PATH
