@@ -147,7 +147,7 @@ fi
 rc-update --quiet add networking boot
 rc-update --quiet add urandom boot
 rc-update --quiet add acpid
-rc-update --quiet add cron
+rc-update --quiet add crond
 
 # enable new hostname
 /etc/init.d/hostname --quiet restart
