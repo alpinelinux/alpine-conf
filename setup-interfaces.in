@@ -115,6 +115,62 @@ is_bridge() {
 	test -r $1.bridge_ports
 }
 
+is_wifi() {
+	test -d /sys/class/net/$1/phy80211
+}
+
+find_essids() {
+	local iface=$1
+	export essids_list=wlans
+	# Supports only open or PSK
+	iwlist $iface scanning | awk -F: '/ESSID/ { printf "%s ",$2 } /Authentication Suites/ \
+		{ printf ":%s\n",$2 }' | grep -v 802.1x | sort -u >$essids_list
+	if [ -s $essids_list ]; then
+		cat $essids_list
+	else
+		return 1
+	fi
+}
+
+config_wpa_supp() {
+	local iface=$1
+	local essid=$2
+	local psk=$3
+	local conffile=/etc/wpa_supplicant/wpa_supplicant.conf
+	if [ "$auth_type" == "WPA-PSK" ]; then
+		cat << EOF >> $conffile
+network={
+	ssid="$essid"
+	key_mgmt=$auth_type
+	psk="$psk"
+}
+EOF
+	else
+		cat << EOF >> $conffile
+network={
+	ssid="$essid"
+	key_mgmt=$auth_type
+}
+EOF
+	fi
+
+	wpa_supplicant -B -c $conffile -i $iface 2>/dev/null
+}
+
+wlan_is_not_open() {
+	local iface=$1
+	local essid=$2
+	auth_type=$(awk -F: '/'"$essid"'/ { print $2 }' $essids_list)
+	echo $auth_type | grep -q PSK
+	if [ "$?" -eq "0" ]; then
+		export auth_type="WPA-PSK"
+		return 0
+	else
+		export auth_type="open"
+		return 1
+	fi
+}
+
 config_iface() {
 	local iface=$1
 	local prefix=$2
@@ -151,6 +207,22 @@ config_iface() {
 		raw_device=$(cat $iface.raw_device)
 		echo "raw_device=\"$raw_device\"" >> $conf
 	fi
+        if is_wifi $iface; then
+		apk add --quiet --no-progress wpa_supplicant || prompt_for_interfaces
+		echo "Available wireless networks (scanning):"
+		if find_essids $iface; then
+			ask "Type the wireless network name to connect to:"
+			local essid=$resp
+			if wlan_is_not_open $iface $essid; then
+				ask "Type the \"$essid\" network Pre-Shared Key:"
+				psk=$resp
+			fi
+			config_wpa_supp $iface $essid $psk
+		else
+			echo -e "\nNo available wireless networks\n"
+			prompt_for_interfaces
+		fi
+        fi
 	# use ipcalc to validate the address. we do accept /mask
 	# we are no interested in the result, only error code, so
 	# we send result to /dev/null
