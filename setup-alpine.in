@@ -146,8 +146,11 @@ fi
 
 rc-update --quiet add networking boot
 rc-update --quiet add urandom boot
-rc-update --quiet add acpid
-rc-update --quiet add crond
+for svc in acpid cron crond; do
+	if rc-service --exists $svc; then
+		rc-update --quiet add $svc
+	fi
+done
 
 # enable new hostname
 /etc/init.d/hostname --quiet restart
