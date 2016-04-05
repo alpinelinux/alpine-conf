@@ -448,7 +448,9 @@ init_progs() {
 	for fs in $BOOTFS $ROOTFS $VARFS; do
 		# we need load btrfs module early to avoid the error message:
 		# 'failed to open /dev/btrfs-control'
-		modprobe $fs
+		if ! grep -q -w "$fs" /proc/filesystems; then
+			modprobe $fs
+		fi
 
 		case $fs in
 		xfs) fstools="$fstools xfsprogs";;
