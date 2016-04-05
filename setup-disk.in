@@ -554,7 +554,7 @@ setup_boot_dev() {
 		bootdev=/dev/md0
 	fi
 	[ "$BOOTFS" = "btrfs" ] && mkfs_args=""
-	mkfs.$BOOTFS $mkfs_args $bootdev
+	mkfs.$BOOTFS $MKFS_OPTS_BOOT $mkfs_args $bootdev
 	BOOT_DEV="$bootdev"
 }
 
@@ -649,7 +649,7 @@ setup_var() {
 	local var_dev="$1"
 	local varfs=${VARFS}
 	echo "Creating file systems..."
-	mkfs.$varfs $var_dev >/dev/null || return 1
+	mkfs.$varfs $MKFS_OPTS_VAR $var_dev >/dev/null || return 1
 	sed -i -e '/[[:space:]]\/var[[:space:]]/d' /etc/fstab
 	echo -e "${var_dev}\t/var\t\t${varfs}\tdefaults 1 2" >> /etc/fstab
 
@@ -746,7 +746,7 @@ data_only_disk_install() {
 setup_root() {
 	local root_dev="$1" boot_dev="$2" mkfs_args="-q"
 	[ "$ROOTFS" = "btrfs" ] && mkfs_args=""
-	mkfs.$ROOTFS $mkfs_args "$root_dev"
+	mkfs.$ROOTFS $MKFS_OPTS_ROOT $mkfs_args "$root_dev"
 	mkdir -p "$SYSROOT"
 	mount -t $ROOTFS $root_dev "$SYSROOT" || return 1
 	if [ -n "$boot_dev" ]; then
