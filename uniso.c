@@ -462,7 +462,7 @@ static int uniso_read_directory(struct uniso_context *ctx,
 	struct uniso_dirent *dir = container_of(rd, struct uniso_dirent, reader);
 	struct isofs_directory_record *ide;
 	char buf[512], *name;
-	char *tmp;
+	unsigned char *tmp;
 	int r, i, offs;
 
 	if (ctx->loglevel > 1)
@@ -547,7 +547,7 @@ static int queue_dirent(struct uniso_context *ctx, void *isode, const char *name
 static int uniso_read_volume_descriptor(struct uniso_context *ctx,
 					struct uniso_reader *rd)
 {
-	char buf[ISOFS_BLOCK_SIZE];
+	unsigned char buf[ISOFS_BLOCK_SIZE];
 	struct isofs_volume_descriptor *vd = (void*) buf;
 	struct isofs_pri_sup_descriptor *pd = (void*) buf;
 	char root_dir[sizeof(pd->root_directory_record)];
@@ -631,6 +631,7 @@ int uniso(int fd)
 
 	free(ctx->tmpbuf);
 	close(ctx->null_fd);
+	return 0;
 }
 
 int main(void)
