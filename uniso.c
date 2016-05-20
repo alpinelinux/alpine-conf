@@ -24,14 +24,25 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <wchar.h>
-#include <malloc.h>
 #include <unistd.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <endian.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#if defined(__linux__)
+# include <malloc.h>
+# include <endian.h>
+#elif defined(__APPLE__)
+# include <libkern/OSByteOrder.h>
+# define be16toh(x) OSSwapBigToHostInt16(x)
+#endif
+
+#ifndef EMEDIUMTYPE
+#define EMEDIUMTYPE EILSEQ
+#endif
+
 
 /**/
 
@@ -215,6 +226,7 @@ struct uniso_context {
 	unsigned char *tmpbuf;
 };
 
+#if defined(__linux__)
 static int do_splice(struct uniso_context *ctx, int to_fd, int bytes)
 {
 	int r, left;
@@ -230,6 +242,9 @@ static int do_splice(struct uniso_context *ctx, int to_fd, int bytes)
 
 	return bytes;
 }
+#else
+#define do_splice(ctx,to_fd,bytes) (-1)
+#endif
 
 static int do_read(struct uniso_context *ctx, unsigned char *buf, int bytes)
 {
