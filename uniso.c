@@ -593,7 +593,7 @@ int uniso(int fd)
 {
 	struct uniso_context context, *ctx = &context;
 	struct uniso_reader *rd;
-	int r, skipped;
+	ssize_t r, skipped;
 
 	memset(ctx, 0, sizeof(*ctx));
 	list_init(&ctx->parser_head);
@@ -626,7 +626,7 @@ int uniso(int fd)
 			r = do_skip(ctx, ISOFS_TMPBUF_SIZE);
 			if (r > 0) skipped += r;
 		} while (r == ISOFS_TMPBUF_SIZE);
-		if (ctx->loglevel > 1) fprintf(stderr, "Skipped %d bytes at the end\n", skipped);
+		if (ctx->loglevel > 1) fprintf(stderr, "Skipped %zd bytes at the end\n", skipped);
 	}
 
 	free(ctx->tmpbuf);
