@@ -48,7 +48,7 @@ while getopts "af:c:hq" opt ; do
 done
 shift `expr $OPTIND - 1`
 
-rc_sys=$(rc --sys)
+rc_sys=$(openrc --sys)
 # mount xenfs so we can detect xen dom0
 if [ "$rc_sys" = "XENU" ] && ! grep -q '^xenfs' /proc/mounts; then
 	modprobe xenfs
@@ -156,8 +156,8 @@ done
 /etc/init.d/hostname --quiet restart
 
 # start up the services
-rc boot
-rc default
+openrc boot
+openrc default
 
 # update /etc/hosts - after we have got dhcp address
 # Get default fully qualified domain name from *first* domain
