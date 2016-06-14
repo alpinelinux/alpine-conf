@@ -123,6 +123,7 @@ find_essids() {
 	local iface=$1
 	export essids_list=wlans
 	# Supports only open or PSK
+	ip link set dev "$iface" up
 	iwlist $iface scanning | awk -F: '/ESSID/ { printf "%s ",$2 } /Authentication Suites/ \
 		{ printf ":%s\n",$2 }' | grep -v 802.1x | sort -u >$essids_list
 	if [ -s $essids_list ]; then
@@ -208,7 +209,7 @@ config_iface() {
 		echo "raw_device=\"$raw_device\"" >> $conf
 	fi
         if is_wifi $iface; then
-		apk add --quiet --no-progress wpa_supplicant || prompt_for_interfaces
+		apk add --quiet --no-progress wireless-tools wpa_supplicant || prompt_for_interfaces
 		echo "Available wireless networks (scanning):"
 		if find_essids $iface; then
 			ask "Type the wireless network name to connect to:"
