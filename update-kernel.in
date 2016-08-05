@@ -215,7 +215,7 @@ if [ "$BUILDDIR" ]; then
     make -C "$BUILDDIR" $_install firmware_install modules_install \
 	INSTALL_MOD_PATH=$ROOT \
 	INSTALL_PATH=$BOOT \
-	INSTALL_DTBS_PATH='$ROOT/usr/lib/linux-$(KERNELRELEASE)' \
+	INSTALL_DTBS_PATH='$ROOT/usr/lib/linux-$(KERNELRELEASE)'
 else
     if [ -z "$PACKAGES" ]; then
 	PACKAGES="$(extra_pkgs "dahdi-linux-$FLAVOR" dahdi-linux)
