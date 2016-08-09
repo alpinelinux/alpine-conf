@@ -205,7 +205,6 @@ extra_pkgs() {
 _apk add --initdb --update-cache
 
 if [ "$BUILDDIR" ]; then
-    local _install
     case "$ARCH" in
     arm*|aarch64*)	_install="zinstall dtbs_install" ;;
     *)			_install="install" ;;
@@ -264,8 +263,7 @@ fi
 mv $STAGING/* "$DESTDIR"
 
 if [ -d "$DTBDIR" ]; then
-    local _opwd=$PWD
-    local _dtb
+    _opwd=$PWD
     case "$FLAVOR" in
     rpi*) _dtb="$DESTDIR" ;;
     *) _dtb="$DESTDIR/dtbs" ;;
