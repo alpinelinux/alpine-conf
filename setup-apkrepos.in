@@ -46,7 +46,6 @@ time_cmd() {
 }
 
 find_fastest_mirror() {
-	export http_proxy=
 	local url=
 	local arch=$(apk --print-arch)
 	for url in $MIRRORS; do
