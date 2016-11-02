@@ -58,7 +58,7 @@ if [ "$domain" != "" ]; then
 	echo "search $domain" > $conf
 fi
 
-if [ -n "$dns" ] || [ $# -gt 0 ]; then
+if [ -n "$dns" ] || [ $# -gt 0 ] && [ -f "$conf" ]; then
 	sed -i -e '/^nameserver/d' $conf
 fi
 for i in $dns $@; do
