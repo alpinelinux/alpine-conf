@@ -44,7 +44,7 @@ endif
 
 
 DESC="Alpine configuration scripts"
-WWW="http://alpinelinux.org/alpine-conf"
+WWW="http://git.alpinelinux.org/cgit/alpine-conf/"
 
 
 SED		:= sed
