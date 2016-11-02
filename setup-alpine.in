@@ -46,7 +46,7 @@ while getopts "af:c:hq" opt ; do
 		*) usage;;
 	esac
 done
-shift `expr $OPTIND - 1`
+shift $(expr $OPTIND - 1)
 
 rc_sys=$(openrc --sys)
 # mount xenfs so we can detect xen dom0

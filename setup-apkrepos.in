@@ -176,12 +176,12 @@ fi
 
 MIRRORS_PATH=/usr/share/alpine-mirrors/MIRRORS.txt
 if [ -z "$MIRRORS" ] && [ -r "$MIRRORS_PATH" ]; then
-	MIRRORS=`cat $MIRRORS_PATH`
+	MIRRORS=$(cat $MIRRORS_PATH)
 fi
 
 APKREPOS_PATH="${ROOT}"etc/apk/repositories
 if [ -r "$APKREPOS_PATH" ]; then
-	APKREPOS=`cat "$APKREPOS_PATH"`
+	APKREPOS=$(cat "$APKREPOS_PATH")
 fi
 
 get_alpine_release

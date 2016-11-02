@@ -2,7 +2,7 @@
 
 PREFIX=@PREFIX@
 
-PROGRAM=`basename $0`
+PROGRAM=$(basename $0)
 
 : ${ROOT:=/}
 [ "${ROOT}" = "${ROOT%/}" ] && ROOT="${ROOT}/"
@@ -12,7 +12,7 @@ echon () {
 	if [ X"$ECHON" = X ]; then
 		# Determine how to "echo" without newline: "echo -n"
 		# or "echo ...\c"
-		if [ X`echo -n` = X-n ]; then
+		if [ X$(echo -n) = X-n ]; then
 			ECHON=echo
 			NNL="\c"
 			# "
@@ -46,8 +46,8 @@ die() {
 }
 
 init_tmpdir() {
-	local omask=`umask`
-	local __tmpd="/tmp/$PROGRAM-${$}-`date +%s`-$RANDOM"
+	local omask=$(umask)
+	local __tmpd="/tmp/$PROGRAM-${$}-$(date +%s)-$RANDOM"
 	umask 077 || die "umask"
 	mkdir -p "$__tmpd" || exit 1
 	trap "rm -fr \"$__tmpd\"; exit" 0

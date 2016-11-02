@@ -23,14 +23,14 @@ while getopts "ae:hl:n" opt ; do
 		*) usage;;
 	esac
 done
-shift `expr $OPTIND - 1`
+shift $(expr $OPTIND - 1)
 
 while [ $# -gt 0 ]; do
 	pkgs="$pkgs acf-$1"
 	shift
 done
 
-# install packages 
+# install packages
 apk add mini_httpd $pkgs || exit 1
 
 if [ "$create_passwd" != "no" ]; then

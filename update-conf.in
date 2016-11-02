@@ -26,7 +26,7 @@ __EOF__
 
 is_modified() {
 	[ -f "$LBUCACHE" ] || lbu status -a | awk '{print $2}' > "$LBUCACHE"
-	test -n "`( echo \"$1\" ; cat \"$LBUCACHE\" ) | sort | uniq -d`"
+	test -n "$( ( echo \"$1\" ; cat \"$LBUCACHE\" ) | sort | uniq -d)"
 }
 
 
@@ -34,7 +34,7 @@ is_initd() {
 	echo "$1" | grep etc/init.d/ > /dev/null
 }
 
-args=`getopt -o ailh --long all,initd,list,help -n "$PROGRAM" -- "$@"`
+args=$(getopt -o ailh --long all,initd,list,help -n "$PROGRAM" -- "$@")
 if [ $? -ne 0 ]; then
 	usage
 	exit 2

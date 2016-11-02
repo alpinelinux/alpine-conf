@@ -31,8 +31,8 @@ shift $(($OPTIND - 1))
 conf="${ROOT}etc/resolv.conf"
 
 if [ -f "$conf" ] ; then
-	domain=`awk '/^domain/ {print $2}' $conf`
-	dns=`awk '/^nameserver/ {print $2}' $conf`
+	domain=$(awk '/^domain/ {print $2}' $conf)
+	dns=$(awk '/^nameserver/ {print $2}' $conf)
 fi
 
 if [ -n "$DOMAINNAME" ];then

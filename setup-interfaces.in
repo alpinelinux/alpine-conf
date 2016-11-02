@@ -190,7 +190,7 @@ config_iface() {
 	done
 
 	if [ "$resp" = "yes" ]; then
-		bridge="br"`echo $iface | sed 's/[^0-9]//g'`
+		bridge="br$(echo $iface | sed 's/[^0-9]//g')"
 		ask "Name of the bridge you want add $iface to:" $bridge
 		bridge_add_port $resp $iface
 		return
@@ -261,7 +261,7 @@ config_iface() {
 	# use ipcalc -m to validate netmask. we dont accept <addr>/mask suffix
 	# so we pass on a dummy mask to ipcalc.
 	while ! ipcalc -s -m $netmask/0 >/dev/null 2>&1; do
-		netmask=`get_default_mask $address`
+		netmask=$(get_default_mask $address)
 		ask "Netmask?" $netmask
 		netmask=$resp
 		[ "$netmask" = "abort" ] && return
@@ -270,7 +270,7 @@ config_iface() {
 	# use ipcalc -m to validate netmask. we dont accept <addr>/mask suffix
 	# so we pass on a dummy mask to ipcalc.
 	while ! ipcalc -s -m $gateway/0 >/dev/null 2>&1; do
-		gateway=`get_default_gateway $iface`
+		gateway=$(get_default_gateway $iface)
 		[ -z "$gateway" ] && gateway=none
 		ask "Gateway? (or 'none')" $gateway
 		gateway=$resp
@@ -480,7 +480,7 @@ prompt_for_interfaces() {
 	hostname=$(cat $ROOT/etc/hostname 2>/dev/null)
 
 	for i in *.conf ; do
-		iface=`basename $i .conf`
+		iface=$(basename $i .conf)
 		iface=${iface#[0-9]*~}
 		bridge_ports=
 		bond_slaves=
