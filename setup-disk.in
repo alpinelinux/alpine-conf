@@ -903,7 +903,7 @@ ask_disk() {
 				if ! [ -b "/dev/$i" ]; then
 					echo "/dev/$i is not a block device" >&2
 					answer=
-				   fi
+				fi
 			done;;
 		esac
 	done
@@ -912,7 +912,7 @@ ask_disk() {
 usage() {
 	cat <<__EOF__
 usage: setup-disk [-hLqrv] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAPSIZE]
-		  [MOUNTPOINT | DISKDEV...]
+                  [MOUNTPOINT | DISKDEV...]
 
 Install alpine on harddisk.
 
@@ -946,9 +946,9 @@ __EOF__
 
 kver=$(uname -r)
 case $kver in
-        *-rc[0-9]*) KERNEL_FLAVOR=vanilla;;
-        *-[a-z]*) KERNEL_FLAVOR=${kver##*-};;
-        *) KERNEL_FLAVOR=vanilla;;
+	*-rc[0-9]*) KERNEL_FLAVOR=vanilla;;
+	*-[a-z]*) KERNEL_FLAVOR=${kver##*-};;
+	*) KERNEL_FLAVOR=vanilla;;
 esac
 
 DISK_MODE=

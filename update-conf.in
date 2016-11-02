@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 PREFIX=
 VERSION=@VERSION@
 
@@ -64,19 +63,19 @@ for apknew in $(find "$ROOT/etc" -name '*.apk-new') ; do
 	unset choice
 
 	if [ "$lflag" ] ; then
-	
+
 		# just list the file
 		if [ "$aflag" ] || is_modified "$f" ; then
 			echo "$p"
 		fi
-		
+
 	elif [ "$aflag" ] || is_modified "$f" ; then
 		if [ "$iflag" ] && is_initd "$f" ; then
 			echo "Autoupdating $p"
 			mv "$apknew" "$p"
 			continue
 		fi
-			
+
 		diff -u "$p" "$apknew"
 
 		# ask user what to do with the file
@@ -89,7 +88,7 @@ for apknew in $(find "$ROOT/etc" -name '*.apk-new') ; do
 				n) continue;;
 				s) diff -u "$p" "$apknew" | ${PAGER:-less}
 				   unset choice
-				   ;;	
+				   ;;
 				e) ${EDITOR:-vi} "$apknew" ; unset choice;;
 				v) if [ "$vflag" ]; then
 					vimdiff "$p" "$apknew"
@@ -106,4 +105,3 @@ for apknew in $(find "$ROOT/etc" -name '*.apk-new') ; do
 		mv "$apknew" "$p"
 	fi
 done
-

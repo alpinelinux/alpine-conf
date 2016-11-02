@@ -6,7 +6,7 @@ PREFIX=
 . $PREFIX/lib/libalpine.sh
 
 usage() {
-        cat <<__EOF__
+	cat <<__EOF__
 usage: setup-hostname [-h] [HOSTNAME]
 
 Sets the system hostname.
@@ -16,7 +16,7 @@ options:
 
 Sets hostname to HOSTNAME or prompt if unspecified.
 __EOF__
-        exit 1
+	exit 1
 }
 
 
@@ -40,10 +40,10 @@ valid_hostname() {
 }
 
 while getopts "hn:" opt; do
-        case $opt in
+	case $opt in
 		h) usage;;
 		n) name="$OPTARG";;
-        esac
+	esac
 done
 shift $(( $OPTIND - 1 ))
 if [ -z "$name" ] && [ $# -eq 1 ]; then
@@ -67,4 +67,3 @@ done
 
 mkdir -p "$ROOT/etc"
 echo "$HOST" > "$ROOT/etc/hostname"
-

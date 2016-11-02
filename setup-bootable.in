@@ -98,14 +98,14 @@ find_syslinux_cfg() {
 fix_syslinux_kernel() {
 	echo "Fixing $syslinux_cfg: kernel $1 -> $2"
 		sed -i -e "/^\s*[Kk][Ee][Rr][Nn][Ee][Ll]\s/s|$1|$2|" \
-                "$destdir/$syslinux_cfg"
+ 			"$destdir/$syslinux_cfg"
 }
 
 fix_syslinux_initrd() {
 	echo "Fixing $syslinux_cfg: initrd $1 -> $2"
 	sed -i -e "/^\s*[Ii][Nn][Ii][Tt][Rr][Dd]\s/s|$1|$2|" \
 		-e "/^\s*[Aa][Pp][Pp][Ee][Nn][Dd]\s/s|initrd=$1|initrd=$2|" \
-                "$destdir/$syslinux_cfg"
+			"$destdir/$syslinux_cfg"
 }
 
 check_syslinux() {
@@ -408,4 +408,3 @@ else
 	echo "Warning: Could not find the parent device for $dest"
 fi
 cleanup_installs
-

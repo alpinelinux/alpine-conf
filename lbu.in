@@ -206,7 +206,7 @@ unpack_apkovl() {
 		return
 	fi
 	check_openssl
-        while [ $count -lt 3 ]; do
+	while [ $count -lt 3 ]; do
 		$OPENSSL enc -d -$ENCRYPTION -in "$mnt/$f" | tar \
 			-C "$dest" -zx 2>/dev/null && return 0
 		count=$(( $count + 1 ))

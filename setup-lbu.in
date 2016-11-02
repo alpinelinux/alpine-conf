@@ -5,7 +5,7 @@ PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
 usage() {
-        cat <<__EOF__
+	cat <<__EOF__
 usage: setup-lbu [-hq] [MEDIA]
 
 Setup lbu media settings.
@@ -17,7 +17,7 @@ options:
  -q  Quietly pick best suggestion. Only prompts user if unsure.
 
 __EOF__
-        exit 1
+	exit 1
 }
 
 get_mnt_line() {
@@ -94,10 +94,10 @@ set_media() {
 }
 
 while getopts "hq" opt; do
-        case $opt in
+	case $opt in
 		h) usage;;
 		q) quiet=1;;
-        esac
+	esac
 done
 shift $(($OPTIND - 1))
 
@@ -146,5 +146,3 @@ if [ "$media" = "none" ]; then
 fi
 
 set_media "$media"
-
-

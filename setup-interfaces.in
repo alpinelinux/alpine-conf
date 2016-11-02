@@ -208,7 +208,7 @@ config_iface() {
 		raw_device=$(cat $iface.raw_device)
 		echo "raw_device=\"$raw_device\"" >> $conf
 	fi
-        if is_wifi $iface; then
+	if is_wifi $iface; then
 		apk add --quiet --no-progress wireless-tools wpa_supplicant || prompt_for_interfaces
 		echo "Available wireless networks (scanning):"
 		if find_essids $iface; then
@@ -223,7 +223,7 @@ config_iface() {
 			echo -e "\nNo available wireless networks\n"
 			prompt_for_interfaces
 		fi
-        fi
+	fi
 	# use ipcalc to validate the address. we do accept /mask
 	# we are no interested in the result, only error code, so
 	# we send result to /dev/null
@@ -407,7 +407,7 @@ config_vlan() {
 }
 
 usage() {
-        cat <<__EOF__
+	cat <<__EOF__
 usage: setup-interfaces [-bhi]
 
 Setup network interfaces
@@ -417,7 +417,7 @@ options:
  -h  Show this help
  -i  Read new contents of ${ROOT}etc/network/interfaces from stdin
 __EOF__
-        exit 1
+	exit 1
 }
 
 iface_help() {
@@ -553,12 +553,12 @@ ask_bridge=
 is_xen_dom0 && ask_bridge=1
 
 while getopts "bhip:" opt; do
-        case $opt in
+	case $opt in
 		b) ask_bridge=1;;
-                h) usage;;
+		h) usage;;
 		i) STDINPUT=1;;
 		p) ROOT=$OPTARG;;
-        esac
+	esac
 done
 
 mkdir -p $ROOT/etc/network

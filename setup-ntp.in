@@ -5,7 +5,7 @@ PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
 usage() {
-        cat <<__EOF__
+	cat <<__EOF__
 usage: setup-ntp [-h] [-c choice of NTP daemon]
 
 Setup NTP time synchronization
@@ -14,19 +14,19 @@ options:
  -h  Show this help
  -c  Choice of NTP daemon: busybox openntpd chrony none
 __EOF__
-        exit 1
+	exit 1
 }
 
 while getopts "hc:" opt; do
-        case $opt in
-                c) ntpchoice="$OPTARG";;
+	case $opt in
+		c) ntpchoice="$OPTARG";;
 		h) usage;;
-        esac
+	esac
 done
 
 if [ -z "$ntpchoice" ]; then
-        echo -n "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none') [chrony] "
-        default_read ntpchoice "chrony"
+	echo -n "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none') [chrony] "
+	default_read ntpchoice "chrony"
 fi
 
 pkgs="$ntpchoice"
@@ -53,4 +53,3 @@ esac
 [ -z "$pkgs" ] || apk add --quiet $pkgs
 rc-update add $svc default
 rc-service $svc start
-

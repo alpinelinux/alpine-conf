@@ -432,7 +432,7 @@ static int link_or_clone(const char *src, const char *dst, size_t bytes)
 }
 
 static int uniso_read_file(struct uniso_context *ctx,
-			   struct uniso_reader *rd)
+                           struct uniso_reader *rd)
 {
 	struct uniso_dirent *dir = container_of(rd, struct uniso_dirent, reader);
 	int fd, rc;
@@ -555,9 +555,9 @@ static int queue_dirent(struct uniso_context *ctx, void *isode, const char *name
 	strcpy(dir->name, name);
 
 	return queue_reader(ctx, &dir->reader,
-			    ide->extent.endianess * ISOFS_BLOCK_SIZE,
-			    (ide->flags & ISOFS_DR_FLAG_DIRECTORY) ?
-			    uniso_read_directory : uniso_read_file);
+	                    ide->extent.endianess * ISOFS_BLOCK_SIZE,
+	                    (ide->flags & ISOFS_DR_FLAG_DIRECTORY) ?
+	                    uniso_read_directory : uniso_read_file);
 }
 
 static int uniso_read_volume_descriptor(struct uniso_context *ctx,
@@ -619,8 +619,8 @@ int uniso(int fd)
 	ctx->loglevel = 1;
 
 	queue_reader(ctx, &ctx->volume_desc_reader,
-		     16 * ISOFS_BLOCK_SIZE,
-		     uniso_read_volume_descriptor);
+	             16 * ISOFS_BLOCK_SIZE,
+	             uniso_read_volume_descriptor);
 
 	while (list_hashed(&ctx->parser_head)) {
 		rd = list_entry(ctx->parser_head.next, struct uniso_reader, parser_list);

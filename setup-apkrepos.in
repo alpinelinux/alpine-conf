@@ -158,11 +158,11 @@ __EOF__
 }
 
 while getopts "fhr" opt; do
-        case $opt in
-                f) JUSTADDFASTEST=1;;
-                h) usage;;
-                r) JUSTADDRANDOM=1;;
-        esac
+	case $opt in
+		f) JUSTADDFASTEST=1;;
+		h) usage;;
+		r) JUSTADDRANDOM=1;;
+	esac
 done
 shift $(($OPTIND - 1))
 

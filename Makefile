@@ -1,6 +1,6 @@
 VERSION		:= 3.4.1
 
-sysconfdir      ?= /etc/lbu
+sysconfdir	?= /etc/lbu
 
 PREFIX		?=
 
@@ -36,10 +36,10 @@ ETC_LBU_FILES	:= lbu.conf
 
 GIT_REV		:= $(shell test -d .git && git describe || echo exported)
 ifneq ($(GIT_REV), exported)
-FULL_VERSION    := $(patsubst $(PACKAGE)-%,%,$(GIT_REV))
-FULL_VERSION    := $(patsubst v%,%,$(FULL_VERSION))
+FULL_VERSION	:= $(patsubst $(PACKAGE)-%,%,$(GIT_REV))
+FULL_VERSION	:= $(patsubst v%,%,$(FULL_VERSION))
 else
-FULL_VERSION    := $(VERSION)
+FULL_VERSION	:= $(VERSION)
 endif
 
 
@@ -88,4 +88,3 @@ uninstall:
 
 clean:
 	rm -rf $(SCRIPTS) $(BIN_FILES)
-

@@ -7,7 +7,7 @@ PREFIX=
 zroot=/usr/share/zoneinfo
 
 usage() {
-        cat <<__EOF__
+	cat <<__EOF__
 usage: setup-timezone [-h] [-k|-i] [-z TIMEZONE]
 
 Sets the timezone for the system.
@@ -18,7 +18,7 @@ options:
  -k  Keep previous copies of tzdata
  -z  Set given timezone. (relative $zroot)
 __EOF__
-        exit 1
+	exit 1
 }
 
 show_tz_list() {
@@ -60,12 +60,12 @@ setup_tz() {
 INSTALL_TZDATA=false
 KEEP_TZDATA=false
 while getopts "hikz:" opt; do
-        case $opt in
-                h) usage;;
+	case $opt in
+		h) usage;;
 		i) INSTALL_TZDATA=true;;
 		k) KEEP_TZDATA=true;;
 		z) ZONE="$OPTARG";;
-        esac
+	esac
 done
 
 if $INSTALL_TZDATA; then
@@ -119,4 +119,3 @@ done
 if [ -n "$apkdel" ]; then
 	apk del --quiet $apkdel
 fi
-

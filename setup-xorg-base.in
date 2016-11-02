@@ -26,4 +26,3 @@ if ! rc-service -q udev status; then
 	rc-service udev start
 	rc-service udev-postmount start
 fi
-

@@ -33,7 +33,7 @@ options:
  -h  Show this help
  -q  Quick mode. Ask fewer questions.
 __EOF__
-        exit 1
+	exit 1
 }
 
 while getopts "af:c:hq" opt ; do
@@ -211,4 +211,3 @@ if [ "$diskmode" != "sys" ]; then
 		apk cache sync
 	fi
 fi
-

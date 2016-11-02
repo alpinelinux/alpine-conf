@@ -17,7 +17,7 @@ options:
 
 If PROXYURL is not specified user will be prompted.
 __EOF__
-        exit 1
+	exit 1
 }
 
 
@@ -68,4 +68,3 @@ fi
 if [ -z "$quiet" ]; then
 	echo -e "\nTo make changes active please do login again or source $PROFILE\nwith \". $PROFILE\""
 fi
-
