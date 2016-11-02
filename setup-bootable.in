@@ -161,28 +161,28 @@ check_syslinux() {
 }
 
 usage() {
-	cat <<__EOF__
-$prog $version
-usage: $prog [-fhUusv] SOURCE [DEST]
-       $prog -c DIR
+	cat <<-__EOF__
+		$prog $version
+		usage: $prog [-fhUusv] SOURCE [DEST]
+		       $prog -c DIR
 
-Copy the contents of SOURCE to DEST and make DEST bootable.
+		Copy the contents of SOURCE to DEST and make DEST bootable.
 
-SOURCE can be a directory or a ISO image. DEST can be a mounted directory
-or a device. If DEST is ommitted /media/usb will be used.
+		SOURCE can be a directory or a ISO image. DEST can be a mounted directory
+		or a device. If DEST is ommitted /media/usb will be used.
 
-Options:
- -f  Force overwrite existing files. Will overwrite syslinux.cfg if upgrade.
- -h  Show this help.
- -k  fix kernel and initrd name in syslinux.cfg if needed.
- -U  Replace current alpine_dev in syslinux.cfg with UUID if UUID found.
- -u  Upgrade mode. Keep existing syslinux.cfg and don't run syslinux.
- -s  Force run syslinux, even if upgrade mode.
- -v  Verbose mode. Display whats going on.
+		Options:
+		 -f  Force overwrite existing files. Will overwrite syslinux.cfg if upgrade.
+		 -h  Show this help.
+		 -k  fix kernel and initrd name in syslinux.cfg if needed.
+		 -U  Replace current alpine_dev in syslinux.cfg with UUID if UUID found.
+		 -u  Upgrade mode. Keep existing syslinux.cfg and don't run syslinux.
+		 -s  Force run syslinux, even if upgrade mode.
+		 -v  Verbose mode. Display whats going on.
 
- -c  Check syslinux.cfg in destination DIR. Use with -f to fix.
+		 -c  Check syslinux.cfg in destination DIR. Use with -f to fix.
 
-__EOF__
+	__EOF__
 	exit 1
 }
 

@@ -5,15 +5,15 @@ PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
 usage() {
-	cat <<__EOF__
-usage: setup-ntp [-h] [-c choice of NTP daemon]
+	cat <<-__EOF__
+		usage: setup-ntp [-h] [-c choice of NTP daemon]
 
-Setup NTP time synchronization
+		Setup NTP time synchronization
 
-options:
- -h  Show this help
- -c  Choice of NTP daemon: busybox openntpd chrony none
-__EOF__
+		options:
+		 -h  Show this help
+		 -c  Choice of NTP daemon: busybox openntpd chrony none
+	__EOF__
 	exit 1
 }
 

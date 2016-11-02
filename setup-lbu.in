@@ -5,18 +5,18 @@ PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
 usage() {
-	cat <<__EOF__
-usage: setup-lbu [-hq] [MEDIA]
+	cat <<-__EOF__
+		usage: setup-lbu [-hq] [MEDIA]
 
-Setup lbu media settings.
+		Setup lbu media settings.
 
-MEDIA is optional mountpoint under /media
+		MEDIA is optional mountpoint under /media
 
-options:
- -h  Show this help
- -q  Quietly pick best suggestion. Only prompts user if unsure.
+		options:
+		 -h  Show this help
+		 -q  Quietly pick best suggestion. Only prompts user if unsure.
 
-__EOF__
+	__EOF__
 	exit 1
 }
 

@@ -79,20 +79,20 @@ get_default_gateway() {
 }
 
 ipaddr_help() {
-	cat <<__EOF__
+	cat <<-__EOF__
 
-Select the ip address for this interface.
+		Select the ip address for this interface.
 
-dhcp				      Dynamic/automatic ip via DHCP
-none				      Do not add any address
-n.n.n.n		(ex: 192.168.0.1)     Static ip
-n.n.n.n/m	(ex: 192.168.0.1/24)  Static ip with mask
-br[0-9]+	(ex: br0)	      Add this interface to a bridge
-bridge[0-9]	(ex: bridge0)	      Add this interface to a bridge
+		dhcp				      Dynamic/automatic ip via DHCP
+		none				      Do not add any address
+		n.n.n.n		(ex: 192.168.0.1)     Static ip
+		n.n.n.n/m	(ex: 192.168.0.1/24)  Static ip with mask
+		br[0-9]+	(ex: br0)	      Add this interface to a bridge
+		bridge[0-9]	(ex: bridge0)	      Add this interface to a bridge
 
-You will be prompted for netmask if not specified with the address.
+		You will be prompted for netmask if not specified with the address.
 
-__EOF__
+	__EOF__
 }
 
 bridge_add_port() {
@@ -407,36 +407,36 @@ config_vlan() {
 }
 
 usage() {
-	cat <<__EOF__
-usage: setup-interfaces [-bhi]
+	cat <<-__EOF__
+		usage: setup-interfaces [-bhi]
 
-Setup network interfaces
+		Setup network interfaces
 
-options:
- -b  Ask for bridging of interfaces
- -h  Show this help
- -i  Read new contents of ${ROOT}etc/network/interfaces from stdin
-__EOF__
+		options:
+		 -b  Ask for bridging of interfaces
+		 -h  Show this help
+		 -i  Read new contents of ${ROOT}etc/network/interfaces from stdin
+	__EOF__
 	exit 1
 }
 
 iface_help() {
-	cat <<__EOF__
+	cat <<-__EOF__
 
-Select the interface you wish to configure.
+		Select the interface you wish to configure.
 
-For advanced configurations, you can also enter:
-br[0-9]+	(ex: br0)	bridge interface
-bridge[0-9]+	(ex: bridge0)	bridge interface
-bond[0-9]+	(ex: bond32)	bonded interface
-vlan[0-9]+	(ex: vlan371)	vlan interface
-eth?.[0-9]+	(ex: eth0.371)	vlan interface
-bond?.[0.9]+	(ex: bond0.371)	vlan interface
+		For advanced configurations, you can also enter:
+		br[0-9]+	(ex: br0)	bridge interface
+		bridge[0-9]+	(ex: bridge0)	bridge interface
+		bond[0-9]+	(ex: bond32)	bonded interface
+		vlan[0-9]+	(ex: vlan371)	vlan interface
+		eth?.[0-9]+	(ex: eth0.371)	vlan interface
+		bond?.[0.9]+	(ex: bond0.371)	vlan interface
 
-You will be asked which physical interface(s) to
-be used for advanced configurations.
+		You will be asked which physical interface(s) to
+		be used for advanced configurations.
 
-__EOF__
+	__EOF__
 }
 prompt_for_interfaces() {
 	init_tmpdir TMP

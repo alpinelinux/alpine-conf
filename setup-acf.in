@@ -62,22 +62,22 @@ if [ -f $PEMFILE ]; then
 	echo "$PEMFILE already exist."
 else
 	mkdir -p $SSLDIR
-cat >$SSLCNF <<EOF
-[ req ]
-default_bits = 1024
-encrypt_key = yes
-distinguished_name = req_dn
-x509_extensions = cert_type
-prompt = no
+	cat >$SSLCNF <<-__EOF__
+		[ req ]
+		default_bits = 1024
+		encrypt_key = yes
+		distinguished_name = req_dn
+		x509_extensions = cert_type
+		prompt = no
 
-[ req_dn ]
-OU=HTTPS server
-CN=$(hostname -f || hostname)
-emailAddress=${EMAIL:-postmaster@example.com}
+		[ req_dn ]
+		OU=HTTPS server
+		CN=$(hostname -f || hostname)
+		emailAddress=${EMAIL:-postmaster@example.com}
 
-[ cert_type ]
-nsCertType = server
-EOF
+		[ cert_type ]
+		nsCertType = server
+	__EOF__
 	echo "Generating certificates for HTTPS..."
 	openssl genrsa 2048 > $KEYFILE
 	openssl req -new -x509 -nodes -sha1 -days 3650 -key $KEYFILE \
@@ -87,15 +87,15 @@ EOF
 	mv $CRTFILE $PEMFILE
 fi
 
-cat >/etc/mini_httpd/mini_httpd.conf <<EOF
-nochroot
-dir=/var/www/localhost/htdocs
-user=nobody
-cgipat=cgi-bin**
-certfile=$PEMFILE
-port=443
-ssl
-EOF
+cat >/etc/mini_httpd/mini_httpd.conf <<-__EOF__
+	nochroot
+	dir=/var/www/localhost/htdocs
+	user=nobody
+	cgipat=cgi-bin**
+	certfile=$PEMFILE
+	port=443
+	ssl
+__EOF__
 if [ -n "$address" ]; then
 	echo "host=$address" >> /etc/mini_httpd/mini_httpd.conf
 fi

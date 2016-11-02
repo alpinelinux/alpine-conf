@@ -33,28 +33,29 @@ fi
 UMOUNT_LIST=
 
 usage() {
-	echo "$PROGRAM $VERSION"
-	echo "usage: $PROGRAM <subcommand> [options] [args]
+	cat <<-__EOF__
+		$PROGRAM $VERSION"
+		usage: $PROGRAM <subcommand> [options] [args]
 
-Available subcommands:
-  commit (ci)
-  diff
-  exclude (ex, delete)
-  include (inc, add)
-  list (ls)
-  list-backup (lb)
-  migrate_include_exclude
-  package (pkg)
-  revert
-  status (stat, st)
+		Available subcommands:
+		  commit (ci)
+		  diff
+		  exclude (ex, delete)
+		  include (inc, add)
+		  list (ls)
+		  list-backup (lb)
+		  migrate_include_exclude
+		  package (pkg)
+		  revert
+		  status (stat, st)
 
 
 
-Common options:
- -h	Show help for subcommand.
- -q	Quiet mode.
- -v	Verbose mode.
-"
+		Common options:
+		 -h	Show help for subcommand.
+		 -q	Quiet mode.
+		 -v	Verbose mode.
+	__EOF__
 	exit 1
 }
 
@@ -219,17 +220,18 @@ unpack_apkovl() {
 # lbu_include - add/remove files to include list
 #
 usage_include() {
-	echo "$PROGRAM $VERSION
-Add filename(s) to include list ($sysconfdir/include)
+	cat <<-__EOF__
+		$PROGRAM $VERSION
+		Add filename(s) to include list ($sysconfdir/include)
 
-usage: $PROGRAM include|inc|add [-rv] <file> ...
-       $PROGRAM include|inc|add [-v] -l
+		usage: $PROGRAM include|inc|add [-rv] <file> ...
+		       $PROGRAM include|inc|add [-v] -l
 
-Options:
-  -l	List contents of include list.
-  -r	Remove specified file(s) from include list instead of adding.
-  -v	Verbose mode.
-"
+		Options:
+		  -l	List contents of include list.
+		  -r	Remove specified file(s) from include list instead of adding.
+		  -v	Verbose mode.
+	__EOF__
 	exit 1
 }
 
@@ -261,23 +263,24 @@ show_include() {
 # lbu_package - create a package
 #
 usage_package() {
-	echo "$PROGRAM $VERSION
-Create backup package.
+	cat <<-__EOF__
+		$PROGRAM $VERSION
+		Create backup package.
 
-usage: $PROGRAM package|pkg -v [<dirname>|<filename>]
+		usage: $PROGRAM package|pkg -v [<dirname>|<filename>]
 
-Options:
-  -v	Verbose mode.
+		Options:
+		  -v	Verbose mode.
 
-If <dirname> is a directory, a package named <hostname>.apkovl.tar.gz will
-be created in the specified directory.
+		If <dirname> is a directory, a package named <hostname>.apkovl.tar.gz will
+		be created in the specified directory.
 
-If <filename> is specified, and is not a direcotry, a package with the
-specified name willbe created.
+		If <filename> is specified, and is not a direcotry, a package with the
+		specified name willbe created.
 
-If <dirname> nor <filename> is not specified, a package named
-<hostname>.apkovl.tar.gz will be created in current work directory.
-"
+		If <dirname> nor <filename> is not specified, a package named
+		<hostname>.apkovl.tar.gz will be created in current work directory.
+	__EOF__
 	exit 1
 }
 
@@ -371,11 +374,12 @@ cmd_package() {
 # lbu list - list files that would go to archive
 #
 usage_list() {
-	echo "$PROGRAM $VERSION
-Lists files that would go to tar package. Same as: 'lbu package -v /dev/null'
+	cat <<-__EOF__
+		$PROGRAM $VERSION
+		Lists files that would go to tar package. Same as: 'lbu package -v /dev/null'
 
-usage: $PROGRAM list|ls
-"
+		usage: $PROGRAM list|ls
+	__EOF__
 	exit 1
 }
 
@@ -388,31 +392,32 @@ cmd_list() {
 # lbu_commit - commit config files to writeable media
 #
 usage_commit() {
-	echo "$PROGRAM $VERSION
-Create a backup of config to writeable media.
+	cat <<-__EOF__
+		$PROGRAM $VERSION
+		Create a backup of config to writeable media.
 
-usage: $PROGRAM commit|ci [-nv] [<media>]
+		usage: $PROGRAM commit|ci [-nv] [<media>]
 
-Options:
-  -d	Remove old apk overlay files.
-  -e	Protect configuration with a password.
-  -n	Don't commit, just show what would have been commited.
-  -p <password>	Give encryption password on the command-line
-  -v	Verbose mode.
+		Options:
+		  -d	Remove old apk overlay files.
+		  -e	Protect configuration with a password.
+		  -n	Don't commit, just show what would have been commited.
+		  -p <password>	Give encryption password on the command-line
+		  -v	Verbose mode.
 
-The following values for <media> is supported: floppy usb
-If <media> is not specified, the environment variable LBU_BACKUPDIR or
-LBU_MEDIA will be used. If LBU_BACKUPDIR is set, nothing will be mounted.
+		The following values for <media> is supported: floppy usb
+		If <media> is not specified, the environment variable LBU_BACKUPDIR or
+		LBU_MEDIA will be used. If LBU_BACKUPDIR is set, nothing will be mounted.
 
-Password protection will use $DEFAULT_CIPHER encryption. Other ciphers can be
-used by setting the DEFAULT_CIPHER or ENCRYPTION environment variables.
-For possible ciphers, try: openssl -v
+		Password protection will use $DEFAULT_CIPHER encryption. Other ciphers can be
+		used by setting the DEFAULT_CIPHER or ENCRYPTION environment variables.
+		For possible ciphers, try: openssl -v
 
-The password used to encrypt the file, can either be specified with the -p
-option or using the PASSWORD environment variable.
+		The password used to encrypt the file, can either be specified with the -p
+		option or using the PASSWORD environment variable.
 
-The environment variables can also be set in $LBU_CONF
-"
+		The environment variables can also be set in $LBU_CONF
+	__EOF__
 	exit 1
 }
 
@@ -505,17 +510,18 @@ cmd_commit() {
 # lbu_exclude - add remove file(s) from exclude list
 
 usage_exclude() {
-	echo "$PROGRAM $VERSION
-Add filename(s) to exclude list ($sysconfdir/exclude)
+	cat <<-__EOF__
+		$PROGRAM $VERSION
+		Add filename(s) to exclude list ($sysconfdir/exclude)
 
-usage: $PROGRAM exclude|ex|delete [-rv] <file> ...
-       $PROGRAM exclude|ex|delete [-v] -l
+		usage: $PROGRAM exclude|ex|delete [-rv] <file> ...
+		       $PROGRAM exclude|ex|delete [-v] -l
 
-Options:
-  -l	List contents of exclude list.
-  -r	Remove specified file(s) from exclude list instead of adding.
-  -v	Verbose mode.
-"
+		Options:
+		  -l	List contents of exclude list.
+		  -r	Remove specified file(s) from exclude list instead of adding.
+		  -v	Verbose mode.
+	__EOF__
 	exit 1
 }
 
@@ -546,13 +552,13 @@ show_exclude() {
 #---------------------------------------------------------------------------
 # lbu_listbackup - Show old commits
 usage_listbackup() {
-	cat <<EOF
-$PROGRAM $VERSION
-Show old commits.
+	cat <<-__EOF__
+		$PROGRAM $VERSION
+		Show old commits.
 
-usage: $PROGRAM list-backup [<media>]
+		usage: $PROGRAM list-backup [<media>]
 
-EOF
+	__EOF__
 	exit 1
 }
 
@@ -570,15 +576,15 @@ cmd_listbackup() {
 #---------------------------------------------------------------------------
 # lbu_revert - revert to old config
 usage_revert() {
-	cat <<EOF
-$PROGRAM $VERSION
-Revert to older commit.
+	cat <<-__EOF__
+		$PROGRAM $VERSION
+		Revert to older commit.
 
-usage: $PROGRAM revert <REVISION> [<media>]
+		usage: $PROGRAM revert <REVISION> [<media>]
 
-The revision should be one of the files listed by 'lbu list-backup'.
+		The revision should be one of the files listed by 'lbu list-backup'.
 
-EOF
+	__EOF__
 }
 
 cmd_revert() {
@@ -601,15 +607,16 @@ cmd_revert() {
 #---------------------------------------------------------------------------
 # lbu_status - check what files have been changed since last save
 usage_status() {
-	echo "$PROGRAM $VERSION
-Check what files have been changed since last commit.
+	cat <<-__EOF__
+		$PROGRAM $VERSION
+		Check what files have been changed since last commit.
 
-usage: $PROGRAM status|st [-av]
+		usage: $PROGRAM status|st [-av]
 
-Options:
-  -a	Compare all files, not just since last commit.
-  -v	Also show include and exclude lists.
-"
+		Options:
+		  -a	Compare all files, not just since last commit.
+		  -v	Also show include and exclude lists.
+	__EOF__
 	exit 1
 }
 
@@ -663,11 +670,12 @@ cmd_status() {
 #-----------------------------------------------------------
 # lbu_diff - run a diff against last commit
 usage_diff() {
-	echo "$PROGRAM $VERSION
-Run a diff against last commit
+	cat <<-__EOF__
+		$PROGRAM $VERSION
+		Run a diff against last commit
 
-usage: $PROGRAM diff [<media>]
-"
+		usage: $PROGRAM diff [<media>]
+	__EOF__
 	exit 1
 }
 

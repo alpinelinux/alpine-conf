@@ -6,16 +6,16 @@ PREFIX=
 . $PREFIX/lib/libalpine.sh
 
 usage() {
-	cat <<__EOF__
-usage: setup-hostname [-h] [HOSTNAME]
+	cat <<-__EOF__
+		usage: setup-hostname [-h] [HOSTNAME]
 
-Sets the system hostname.
+		Sets the system hostname.
 
-options:
- -h  Show this help
+		options:
+		 -h  Show this help
 
-Sets hostname to HOSTNAME or prompt if unspecified.
-__EOF__
+		Sets hostname to HOSTNAME or prompt if unspecified.
+	__EOF__
 	exit 1
 }
 

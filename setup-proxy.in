@@ -6,17 +6,17 @@ for i in ./libalpine.sh $PREFIX/lib/libalpine.sh; do
 done
 
 usage() {
-	cat <<__EOF__
-usage: setup-proxy [-hq] [PROXYURL]
+	cat <<-__EOF__
+		usage: setup-proxy [-hq] [PROXYURL]
 
-Setup http proxy
+		Setup http proxy
 
-options:
- -h  Show this help
- -q  Quiet mode
+		options:
+		 -h  Show this help
+		 -q  Quiet mode
 
-If PROXYURL is not specified user will be prompted.
-__EOF__
+		If PROXYURL is not specified user will be prompted.
+	__EOF__
 	exit 1
 }
 

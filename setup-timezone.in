@@ -7,17 +7,17 @@ PREFIX=
 zroot=/usr/share/zoneinfo
 
 usage() {
-	cat <<__EOF__
-usage: setup-timezone [-h] [-k|-i] [-z TIMEZONE]
+	cat <<-__EOF__
+		usage: setup-timezone [-h] [-k|-i] [-z TIMEZONE]
 
-Sets the timezone for the system.
+		Sets the timezone for the system.
 
-options:
- -h  Show this help
- -i  Install tzdata and symlink instead of making a copy
- -k  Keep previous copies of tzdata
- -z  Set given timezone. (relative $zroot)
-__EOF__
+		options:
+		 -h  Show this help
+		 -i  Install tzdata and symlink instead of making a copy
+		 -k  Keep previous copies of tzdata
+		 -z  Set given timezone. (relative $zroot)
+	__EOF__
 	exit 1
 }
 

@@ -15,10 +15,12 @@ get_hostname_from_url() {
 }
 
 prompt_setup_method() {
-	echo "r) Add random from the above list"
-	echo "f) Detect and add fastest mirror from above list"
-	echo "e) Edit "${ROOT}"etc/apk/repositores with text editor"
-	echo ""
+	cat <<-__EOF__
+		r) Add random from the above list
+		f) Detect and add fastest mirror from above list
+		e) Edit "${ROOT}"etc/apk/repositores with text editor
+
+	__EOF__
 	echo -n "Enter mirror number (1-$mirror_count) or URL to add (or r/f/e/done) [$1]: "
 }
 
@@ -143,16 +145,16 @@ edit_repositories() {
 }
 
 usage() {
-	cat <<__EOF__
-usage: setup-apkrepos [-fhr] [REPO...]
+	cat <<-__EOF__
+		usage: setup-apkrepos [-fhr] [REPO...]
 
-Setup apk repositories
+		Setup apk repositories
 
-options:
- -f  Detect and add fastest mirror
- -h  Show this help
- -r  Add a random mirror and do not prompt
-__EOF__
+		options:
+		 -f  Detect and add fastest mirror
+		 -h  Show this help
+		 -r  Add a random mirror and do not prompt
+	__EOF__
 	exit 1
 
 }

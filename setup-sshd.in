@@ -5,15 +5,15 @@ PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
 usage() {
-	cat <<__EOF__
-usage: setup-sshd [-h] [-c choice of SSH daemon]
+	cat <<-__EOF__
+		usage: setup-sshd [-h] [-c choice of SSH daemon]
 
-Setup sshd daemon
+		Setup sshd daemon
 
-options:
- -h  Show this help
- -c  Choice of SSH daemon: openssh dropbear none
-__EOF__
+		options:
+		 -h  Show this help
+		 -c  Choice of SSH daemon: openssh dropbear none
+	__EOF__
 	exit 1
 }
 

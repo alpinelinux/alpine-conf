@@ -34,22 +34,22 @@ usage() {
 	[ "$2" ] && error "$2"
 	local opts="[-F <feature>]... [-p <package>]..."
 	local dest_args="[-a <arch>] <dest_dir>"
-	cat >&2 <<EOF
+	cat >&2 <<-__EOF__
 
-Syntax: $SCRIPT $opts [$dest_args]
-        $SCRIPT -f <flavor> $opts $dest_args
-        $SCRIPT -b <build_dir> $opts [$dest_args]
+		Syntax: $SCRIPT $opts [$dest_args]
+		        $SCRIPT -f <flavor> $opts $dest_args
+		        $SCRIPT -b <build_dir> $opts [$dest_args]
 
-Options: -a|--arch <arch>        Install kernel for specified architecture
-         -b|--build <build_dir>  Install custom-built kernel
-         -f|--flavor <flavor>    Install kernel of specified flavor
-         -F|--feature <feature>  Enable initfs feature
-         -p|--package <package>  Additional module or firmware package
-         -v|--verbose            Verbose output
-         -K|--hostkeys           Include host keys in initramfs
-         --repositories-file <f> apk repositories file
+		Options: -a|--arch <arch>        Install kernel for specified architecture
+		         -b|--build <build_dir>  Install custom-built kernel
+		         -f|--flavor <flavor>    Install kernel of specified flavor
+		         -F|--feature <feature>  Enable initfs feature
+		         -p|--package <package>  Additional module or firmware package
+		         -v|--verbose            Verbose output
+		         -K|--hostkeys           Include host keys in initramfs
+		         --repositories-file <f> apk repositories file
 
-EOF
+	__EOF__
 	exit $1
 }
 

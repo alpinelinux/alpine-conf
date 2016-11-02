@@ -4,17 +4,17 @@ PREFIX=
 . "$PREFIX/lib/libalpine.sh"
 
 usage() {
-	cat <<__EOF__
-usage: setup-dns [-h] [-d domain name] [IPADDR...]
+	cat <<-__EOF__
+		usage: setup-dns [-h] [-d domain name] [IPADDR...]
 
-Setup ${ROOT}etc/resolv.conf DNS settings
+		Setup ${ROOT}etc/resolv.conf DNS settings
 
-options:
- -h  Show this help
- -d  specify search domain name
+		options:
+		 -h  Show this help
+		 -d  specify search domain name
 
-The optional IPADDR are a list of DNS servers to use.
-__EOF__
+		The optional IPADDR are a list of DNS servers to use.
+	__EOF__
 	exit 1
 }
 

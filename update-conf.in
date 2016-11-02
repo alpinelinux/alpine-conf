@@ -11,16 +11,16 @@ init_tmpdir TMPD
 LBUCACHE="$TMPD/lbucache"
 
 usage() {
-	cat >&2 << __EOF__
-$PROGRAM $VERSION
-Usage: $PROGRAM [-a|--all] [-i|--initd] [-l|--list] [-h|--help]
-Options:
-  -a, --all    Select all updated files
-  -i, --initd  Use all new init.d scripts
-  -l, --list   List updated files
-  -h, --help   Show this help
+	cat >&2 <<-__EOF__
+		$PROGRAM $VERSION
+		Usage: $PROGRAM [-a|--all] [-i|--initd] [-l|--list] [-h|--help]
+		Options:
+		  -a, --all    Select all updated files
+		  -i, --initd  Use all new init.d scripts
+		  -l, --list   List updated files
+		  -h, --help   Show this help
 
-__EOF__
+	__EOF__
 }
 
 

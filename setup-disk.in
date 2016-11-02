@@ -311,11 +311,11 @@ install_mounted_root() {
 		echo -e "${SWAP_DEVICE}\tswap\tswap\tdefaults\t0 0" \
 			>> "$mnt"/etc/fstab
 	fi
-	cat >>"$mnt"/etc/fstab <<EOF
-/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
-/dev/fd0	/media/floppy	vfat	noauto	0 0
-/dev/usbdisk	/media/usb	vfat	noauto	0 0
-EOF
+	cat >>"$mnt"/etc/fstab <<-__EOF__
+		/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
+		/dev/fd0	/media/floppy	vfat	noauto	0 0
+		/dev/usbdisk	/media/usb	vfat	noauto	0 0
+	__EOF__
 	# remove the installed db in case its there so we force re-install
 	rm -f "$mnt"/var/lib/apk/installed "$mnt"/lib/apk/db/installed
 	echo "Installing system on $rootdev:"
@@ -838,46 +838,46 @@ native_disk_install() {
 }
 
 diskselect_help() {
-	cat <<__EOF__
+	cat <<-__EOF__
 
-The disk you select can be used for a traditional disk install or for a
-data-only install.
+		The disk you select can be used for a traditional disk install or for a
+		data-only install.
 
-The disk will be erased.
+		The disk will be erased.
 
-Enter 'none' if you want to run diskless.
+		Enter 'none' if you want to run diskless.
 
-__EOF__
+	__EOF__
 }
 
 diskmode_help() {
-	cat <<__EOF__
+	cat <<-__EOF__
 
-You can select between 'sys', 'data', 'lvm', 'lvmsys' or 'lvmdata'.
+		You can select between 'sys', 'data', 'lvm', 'lvmsys' or 'lvmdata'.
 
-sys:
-  This mode is a traditional disk install. The following partitions will be
-  created on the disk: /boot, / (filesystem root) and swap.
+		sys:
+		  This mode is a traditional disk install. The following partitions will be
+		  created on the disk: /boot, / (filesystem root) and swap.
 
-  This mode may be used for development boxes, desktops, virtual servers, etc.
+		  This mode may be used for development boxes, desktops, virtual servers, etc.
 
-data:
-  This mode uses your disk(s) for data storage, not for the operating system.
-  The system itself will run from tmpfs (RAM).
+		data:
+		  This mode uses your disk(s) for data storage, not for the operating system.
+		  The system itself will run from tmpfs (RAM).
 
-  Use this mode if you only want to use the disk(s) for a mailspool, databases,
-  logs, etc.
+		  Use this mode if you only want to use the disk(s) for a mailspool, databases,
+		  logs, etc.
 
-lvm:
-  Enable logical volume manager and ask again for 'sys' or 'data'.
+		lvm:
+		  Enable logical volume manager and ask again for 'sys' or 'data'.
 
-lvmsys:
-  Same as 'sys' but use logical volume manager for partitioning.
+		lvmsys:
+		  Same as 'sys' but use logical volume manager for partitioning.
 
-lvmdata:
-  Same as 'data' but use logical volume manager for partitioning.
+		lvmdata:
+		  Same as 'data' but use logical volume manager for partitioning.
 
-__EOF__
+	__EOF__
 }
 
 # ask for a root or data disk
@@ -910,37 +910,37 @@ ask_disk() {
 }
 
 usage() {
-	cat <<__EOF__
-usage: setup-disk [-hLqrv] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAPSIZE]
-                  [MOUNTPOINT | DISKDEV...]
+	cat <<-__EOF__
+		usage: setup-disk [-hLqrv] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAPSIZE]
+		                  [MOUNTPOINT | DISKDEV...]
 
-Install alpine on harddisk.
+		Install alpine on harddisk.
 
-If MOUNTPOINT is specified, then do a traditional disk install with MOUNTPOINT
-as root.
+		If MOUNTPOINT is specified, then do a traditional disk install with MOUNTPOINT
+		as root.
 
-If DISKDEV is specified, then use the specified disk(s) without asking. If
-multiple disks are specified then set them up in a RAID array. If there are
-mode than 2 disks, then use raid level 5 instead of raid level 1.
+		If DISKDEV is specified, then use the specified disk(s) without asking. If
+		multiple disks are specified then set them up in a RAID array. If there are
+		mode than 2 disks, then use raid level 5 instead of raid level 1.
 
-options:
- -h  Show this help
- -m  Use disk for MODE without asking, where MODE is either 'data' or 'sys'
- -o  Restore system from given apkovl file
- -k  Use kernelflavor instead of $KERNEL_FLAVOR
- -L  Use LVM to manage partitions
- -q  Exit quietly if no disks are found
- -r  Enable software raid1 with single disk
- -s  Use SWAPSIZE MB instead of autodetecting swap size (Use 0 to disable swap)
- -v  Be more verbose about what is happening
+		options:
+		 -h  Show this help
+		 -m  Use disk for MODE without asking, where MODE is either 'data' or 'sys'
+		 -o  Restore system from given apkovl file
+		 -k  Use kernelflavor instead of $KERNEL_FLAVOR
+		 -L  Use LVM to manage partitions
+		 -q  Exit quietly if no disks are found
+		 -r  Enable software raid1 with single disk
+		 -s  Use SWAPSIZE MB instead of autodetecting swap size (Use 0 to disable swap)
+		 -v  Be more verbose about what is happening
 
-If BOOTFS, ROOTFS, VARFS are specified, then format a partition with specified
-filesystem. If not specified, the default filesystem is ext4.
-Supported filesystems for
-  boot: ext2, ext3, ext4, btrfs
-  root: ext2, ext3, ext4, btrfs, xfs
-   var: ext2, ext3, ext4, btrfs, xfs
-__EOF__
+		If BOOTFS, ROOTFS, VARFS are specified, then format a partition with specified
+		filesystem. If not specified, the default filesystem is ext4.
+		Supported filesystems for
+		  boot: ext2, ext3, ext4, btrfs
+		  root: ext2, ext3, ext4, btrfs, xfs
+		   var: ext2, ext3, ext4, btrfs, xfs
+	__EOF__
 	exit 1
 }
 
