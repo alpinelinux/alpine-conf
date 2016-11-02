@@ -54,13 +54,13 @@ if [ -z "$proxyurl" ]; then
 	rm -f "$PROFILE"
 else
 	mkdir -p "${PROFILE%/*}"
-	cat >"$PROFILE" <<__EOF__
-# this file was generated with and might get overwritten by setup-proxy
+	cat >"$PROFILE" <<-__EOF__
+		# this file was generated with and might get overwritten by setup-proxy
 
-export http_proxy=$proxyurl
-export https_proxy=$proxyurl
-export ftp_proxy=$proxyurl
-__EOF__
+		export http_proxy=$proxyurl
+		export https_proxy=$proxyurl
+		export ftp_proxy=$proxyurl
+	__EOF__
 fi
 
 [ -e "$PROFILE" ] || exit 1
