@@ -47,6 +47,7 @@ usage() {
 		         -F|--feature <feature>  Enable initfs feature
 		         -p|--package <package>  Additional module or firmware package
 		         -v|--verbose            Verbose output
+			 -k|--apk-pubkey <key>   Include given key in initramfs
 		         -K|--hostkeys           Include host keys in initramfs
 		         -M|--media              Boot media directory layout
 		         --repositories-file <f> apk repositories file
