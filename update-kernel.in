@@ -56,8 +56,8 @@ usage() {
 }
 
 QUIET_OPT="--quiet"
-OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,verbose,hostkeys,media,repositories-file: \
-	-n $SCRIPT -o a:b:f:F:hp:vKM -- "$@") || usage 1
+OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,verbose,apk-pubkey:,hostkeys,media,repositories-file: \
+	-n $SCRIPT -o a:b:f:F:hp:vk:KM -- "$@") || usage 1
 
 eval set -- "$OPTS"
 while :; do
@@ -88,6 +88,10 @@ while :; do
 		;;
 	-v|--verbose)
 		QUIET_OPT=
+		;;
+	-k|--apk-pubkey)
+		shift
+		APK_PUBKEY="$1"
 		;;
 	-K|--hostkeys)
 		MKINITFS_ARGS="$MKINITFS_ARGS -K"
@@ -230,6 +234,10 @@ else
 fi
 _apk add --no-scripts alpine-base $PACKAGES
 
+if [ -n "$APK_PUBKEY" ]; then
+	mkdir -p "$ROOT"/etc/apk/keys
+	cp "$APK_PUBKEY" "$ROOT"/etc/apk/keys/
+fi
 
 KVER_FLAVOR=
 [ "$FLAVOR" = vanilla ] || KVER_FLAVOR=-$FLAVOR
