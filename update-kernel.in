@@ -18,6 +18,7 @@ SUPERUSER=
 ARCH=
 BUILDDIR=
 FLAVOR=
+MEDIA=
 MNTDIR=
 PACKAGES=
 MKINITFS_ARGS=
@@ -47,6 +48,7 @@ usage() {
 		         -p|--package <package>  Additional module or firmware package
 		         -v|--verbose            Verbose output
 		         -K|--hostkeys           Include host keys in initramfs
+		         -M|--media              Boot media directory layout
 		         --repositories-file <f> apk repositories file
 
 	__EOF__
@@ -54,8 +56,9 @@ usage() {
 }
 
 QUIET_OPT="--quiet"
-OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,verbose,hostkeys,repositories-file: \
-	-n $SCRIPT -o a:b:f:F:hp:vK -- "$@") || usage 1
+OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,verbose,hostkeys,media,repositories-file: \
+	-n $SCRIPT -o a:b:f:F:hp:vKM -- "$@") || usage 1
+
 eval set -- "$OPTS"
 while :; do
 	case "$1" in
@@ -88,6 +91,9 @@ while :; do
 		;;
 	-K|--hostkeys)
 		MKINITFS_ARGS="$MKINITFS_ARGS -K"
+		;;
+	-M|--media)
+		MEDIA=yes
 		;;
 	--repositories-file)
 		shift
@@ -235,9 +241,8 @@ depmod -b $ROOT "$KVER"
 STAGING=$TMPDIR/boot
 MODLOOP=$TMPDIR/modloop
 MODIMG=modloop-$FLAVOR
-DTB_STAGING=$TMPDIR/dtbs
 
-mkdir $DTB_STAGING $MODLOOP $STAGING
+mkdir $MODLOOP $STAGING
 cp -a $ROOT/lib/modules $MODLOOP
 mkdir -p $MODLOOP/modules/firmware
 find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -u | while read FW; do
@@ -260,13 +265,15 @@ if [ "$MNTDIR" ]; then
 	remount -w
 fi
 
-mv $STAGING/* "$DESTDIR"
+mkdir -p "$DESTDIR"/${MEDIA:+boot/}
+mv $STAGING/* "$DESTDIR"/${MEDIA:+boot/}
 
 if [ -d "$DTBDIR" ]; then
 	_opwd=$PWD
-	case "$FLAVOR" in
-		rpi*) _dtb="$DESTDIR" ;;
-		*) _dtb="$DESTDIR/dtbs" ;;
+	case "$MEDIA,$FLAVOR" in
+	yes,rpi*) _dtb="$DESTDIR/" ;;
+	yes,*)    _dtb="$DESTDIR/boot/dtbs" ;;
+	*,*)      _dtb="$DESTDIR/dtbs" ;;
 	esac
 	mkdir -p "$_dtb"
 	_dtb=$(realpath "$_dtb")
