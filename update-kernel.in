@@ -259,7 +259,7 @@ find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -
 		install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
 	fi
 done
-_exec mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz
+_exec mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error
 
 _exec mkinitfs $MKINITFS_ARGS -q -b $ROOT -F "$features base squashfs" \
 	-o "$STAGING/initramfs-$FLAVOR" "$KVER"
