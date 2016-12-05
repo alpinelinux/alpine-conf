@@ -154,14 +154,16 @@ clean_up() {
 	set +e
 	ignore_sigs
 
-	[ "$SUPERUSER" ] && apk del $QUIET_OPT $VIRTUAL
+	if [ "$SUPERUSER" ] && [ -z "$FAKEROOTKEY" ]; then
+		apk del $QUIET_OPT $VIRTUAL
+	fi
 	rm -fr $TMPDIR
 }
 
 trap clean_up EXIT $SIGNALS
 
 
-if [ "$SUPERUSER" ]; then
+if [ "$SUPERUSER" ] && [ -z "$FAKEROOTKEY" ]; then
 	apk add $QUIET_OPT --update-cache -t $VIRTUAL mkinitfs squashfs-tools kmod
 fi
 
