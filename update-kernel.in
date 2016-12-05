@@ -14,6 +14,9 @@ VIRTUAL=.tmp-$SCRIPT
 
 SUPERUSER=
 [ $(id -u) -eq 0 ] && SUPERUSER=Y
+if [ -z "$SUPERUSER" ] && [ -z "$FAKEROOTKEY" ]; then
+	exec fakeroot "$0" "$@"
+fi
 
 ARCH=
 BUILDDIR=
@@ -181,28 +184,12 @@ fi
 TMPDIR=$(mktemp -d /tmp/$SCRIPT.XXXXXX)
 ROOT=$TMPDIR/root
 BOOT=$ROOT/boot
-WRAPPER=
-
-_exec() {
-	$WRAPPER "$@"
-}
 
 _apk() {
 	local cmd=$1
 	shift
 
-	local wrapper=
-	if [ -z "$SUPERUSER" ]; then
-		local opt=
-		local fake_env=$TMPDIR/fake-env
-		if [ -f $fake_env ]; then
-			opt="-i $fake_env"
-			WRAPPER="fakeroot $opt --"
-		fi
-		wrapper="fakeroot $opt -s $fake_env --"
-	fi
-
-	$wrapper apk $cmd $QUIET_OPT -p $ROOT --arch "$ARCH" \
+	apk $cmd $QUIET_OPT -p $ROOT --arch "$ARCH" \
 		--keys-dir /etc/apk/keys \
 		--repositories-file "$REPOSITORIES_FILE" $*
 }
@@ -261,9 +248,9 @@ find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -
 		install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
 	fi
 done
-_exec mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error
+mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error
 
-_exec mkinitfs $MKINITFS_ARGS -q -b $ROOT -F "$features base squashfs" \
+mkinitfs $MKINITFS_ARGS -q -b $ROOT -F "$features base squashfs" \
 	-o "$STAGING/initramfs-$FLAVOR" "$KVER"
 
 for file in System.map config vmlinuz; do
