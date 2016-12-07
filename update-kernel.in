@@ -133,7 +133,7 @@ if [ -z "$DESTDIR" ]; then
 	while read MOUNT; do
 		set -- $MOUNT
 		[ $2 = /.modloop ] || continue
-		DESTDIR=$(dirname $(losetup $1 | cut -d " " -f 3))
+		DESTDIR=$(dirname $(busybox losetup $1 | cut -d " " -f 3))
 		MNTDIR=$(dirname "$DESTDIR")
 		break
 	done < /proc/mounts
