@@ -482,7 +482,7 @@ cmd_commit() {
 
 	# delete old backups if needed
 	# poor mans 'head -n -N' done with awk.
-	ls "$mnt"/$(hostname).[0-9][0-9][0-9][0-9]*[0-9].tar.gz 2>/dev/null \
+	ls "$mnt"/$(hostname).[0-9][0-9][0-9][0-9]*[0-9].tar.gz* 2>/dev/null \
 		| awk '{ a[++i] = $0; } END {
 			print a[0];
 			while (i-- > '"${BACKUP_LIMIT:-0}"') {
