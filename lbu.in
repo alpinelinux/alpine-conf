@@ -635,10 +635,7 @@ cmd_status() {
 	unpack_apkovl "$tmp/a"
 
 	# generate new apkovl and extract to tmpdir/b
-	local save_encryption="$ENCRYPTION"
-	ENCRYPTION=
 	cmd_package - | tar -C "$tmp/b" -zx
-	ENCRYPTION="$save_encryption"
 
 	# show files that exists in a but not in b as deleted
 	local f
@@ -687,7 +684,6 @@ cmd_diff() {
 	init_tmpdir tmp
 	mkdir -p "$tmpdir/a" "$tmp/b"
 	unpack_apkovl "$tmp/a"
-	ENCRYPTION=
 	cmd_package - | tar -C "$tmp/b" -zx
 	if diff --help 2>&1 | grep -q -- --no-dereference; then
 		diff_opts="--no-dereference"
