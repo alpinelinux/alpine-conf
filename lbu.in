@@ -303,7 +303,7 @@ cmd_package() {
 		run-parts "$LBU_PREPACKAGE" >&2 || return 1
 	fi
 
-	[ -n "$ENCRYPTION" ] && suff="$suff.$ENCRYPTION"
+	[ -n "$ENCRYPTION" ] && [ "x$pkg" != "x-" ] && suff="$suff.$ENCRYPTION"
 
 	# find filename
 	if [ -d "$pkg" ] ; then
@@ -332,7 +332,7 @@ cmd_package() {
 		rc=$?
 	fi
 	if [ $rc -eq 0 ]; then
-		if [ -z "$ENCRYPTION" ]; then
+		if [ -z "$ENCRYPTION" ] || [ "x$pkg" = "x-" ]; then
 			_gen_filelist | $tar_create -z >"$tmppkg"
 			rc=$?
 		else
