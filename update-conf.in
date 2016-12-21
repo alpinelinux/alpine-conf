@@ -26,7 +26,7 @@ usage() {
 
 is_modified() {
 	[ -f "$LBUCACHE" ] || lbu status -a | awk '{print $2}' > "$LBUCACHE"
-	test -n "$( ( echo \"$1\" ; cat \"$LBUCACHE\" ) | sort | uniq -d)"
+	test -n "$( ( echo "$1" ; cat "$LBUCACHE" ) | sort | uniq -d)"
 }
 
 
