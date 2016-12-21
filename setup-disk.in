@@ -1031,7 +1031,7 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 	while true; do
 		echo "The following $disk_is_or_disks_are selected${USE_LVM:+ (with LVM)}:"
 		show_disk_info $diskdevs
-		local _lvm=${USE_LVM:-", 'lvm'"}
+		_lvm=${USE_LVM:-", 'lvm'"}
 		echon "How would you like to use $it_them? ('sys', 'data'${_lvm#_lvm} or '?' for help) [?] "
 		default_read answer '?'
 		case "$answer" in
