@@ -141,7 +141,7 @@ find_mount_dev() {
 }
 
 supported_boot_fs() {
-	local supported="ext2 ext3 ext4 btrfs"
+	local supported="ext2 ext3 ext4 btrfs xfs"
 	local fs=
 	for fs in $supported; do
 		[ "$fs" = "$1" ] && return 0
@@ -941,7 +941,7 @@ usage() {
 		If BOOTFS, ROOTFS, VARFS are specified, then format a partition with specified
 		filesystem. If not specified, the default filesystem is ext4.
 		Supported filesystems for
-		  boot: ext2, ext3, ext4, btrfs
+		  boot: ext2, ext3, ext4, btrfs, xfs
 		  root: ext2, ext3, ext4, btrfs, xfs
 		   var: ext2, ext3, ext4, btrfs, xfs
 	__EOF__
