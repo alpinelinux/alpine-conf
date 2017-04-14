@@ -555,7 +555,10 @@ setup_boot_dev() {
 			--metadata=0.90 --quiet --run $@ $missing || return 1
 		bootdev=/dev/md0
 	fi
-	[ "$BOOTFS" = "btrfs" ] && mkfs_args=""
+	case "$BOOTFS" in
+	btrfs) mkfs_args="";;
+	ext4) mkfs_args="$mkfs_args -O ^64bit";; # pv-grub does not support 64bit
+	esac
 	mkfs.$BOOTFS $MKFS_OPTS_BOOT $mkfs_args $bootdev
 	BOOT_DEV="$bootdev"
 }
