@@ -130,7 +130,7 @@ else
 	$PREFIX/sbin/setup-interfaces
 fi
 # start the networking in background
-/etc/init.d/networking --quiet start &
+/etc/init.d/networking --quiet start >/dev/null &
 
 # setup up dns if no dhcp was configured
 grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
