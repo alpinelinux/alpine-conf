@@ -17,12 +17,4 @@ grep -q -w psmouse /etc/modules || echo "psmouse" >> /etc/modules
 # install packages
 apk add $base_pkgs $@
 
-# setup and start udev
-rc-update -q del mdev sysinit
-rc-update -q add udev sysinit
-rc-update -q add udev-postmount default
-
-if ! rc-service -q udev status; then
-	rc-service udev start
-	rc-service udev-postmount start
-fi
+setup-udev
