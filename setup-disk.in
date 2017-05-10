@@ -286,6 +286,7 @@ install_mounted_root() {
 
 	# generate update-extlinux.conf
 	root=$(uuid_or_device $rootdev)
+	kernel_opts="$kernel_opts rootfstype=$root_fs"
 	if is_vmware; then
 		kernel_opts="pax_nouderef $kernel_opts"
 	fi
