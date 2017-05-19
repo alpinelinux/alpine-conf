@@ -38,7 +38,13 @@ select_layout() {
 		default_read layout "$layout"
 		if [ "$layout" = "abort" ] || [ "$layout" = "none" ] ; then
 			goodbye 0
-		elif [ -d "$MAPDIR/$layout" ] ; then
+		fi
+		set -- $layout
+		if [ $# -eq 2 ]; then
+			layout="$1"
+			variant="$2"
+		fi
+		if [ -d "$MAPDIR/$layout" ] ; then
 			return 0
 		fi
 	done
