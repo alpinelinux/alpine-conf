@@ -42,7 +42,7 @@ while getopts "af:c:hq" opt ; do
 		f) USEANSWERFILE="$OPTARG";;
 		c) CREATEANSWERFILE="$OPTARG";;
 		h) usage;;
-		q) quick=1;;
+		q) quick=1; APKREPOSOPTS="-1"; HOSTNAMEOPTS="alpine";;
 		*) usage;;
 	esac
 done
@@ -172,11 +172,14 @@ _hn=${_hn%%.*}
 
 sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn)} ${_hn} localhost.localdomain localhost/" /etc/hosts
 
-$PREFIX/sbin/setup-proxy -q ${PROXYOPTS}
+if [ -z "$quick" ]; then
+	$PREFIX/sbin/setup-proxy -q ${PROXYOPTS}
+fi
 # activate the proxy if configured
 if [ -r "$ROOT/etc/profile" ]; then
 	. "$ROOT/etc/profile"
 fi
+
 $PREFIX/sbin/setup-apkrepos ${APKREPOSOPTS}
 
 # lets stop here if in "quick mode"
