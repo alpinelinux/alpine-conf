@@ -153,16 +153,21 @@ usage() {
 		 -f  Detect and add fastest mirror
 		 -h  Show this help
 		 -r  Add a random mirror and do not prompt
+		 -1  Add first mirror on the list (normally a CDN)
 	__EOF__
 	exit 1
 
 }
 
-while getopts "fhr" opt; do
+add_fastest=false
+add_first=false
+add_random=false
+while getopts "1fhr" opt; do
 	case $opt in
-		f) JUSTADDFASTEST=1;;
+		f) add_fastest=true;;
+		1) add_first=true;;
 		h) usage;;
-		r) JUSTADDRANDOM=1;;
+		r) add_random=true;;
 	esac
 done
 shift $(($OPTIND - 1))
@@ -193,17 +198,21 @@ if [ $# -gt 0 ]; then
 	# replace the apk repos with the specified ones
 	rm -f "$APKREPOS_PATH"
 	for i; do
-		echo "$i" >> "$APKREPOS_PATH"
+		echo "$i" >> "$APKREPOS_PATH" && changed=true
 	done
-	changed=true
 fi
 
-if [ -n "$JUSTADDRANDOM" ]; then
+if $add_first; then
+	set -- $MIRRORS
+	add_mirror "$1" && changed=true
+fi
+
+if $add_random; then
 	show_mirror_list > /dev/null
 	add_random_mirror && changed=true
 fi
 
-if [ -n "$JUSTADDFASTEST" ]; then
+if $add_fastest; then
 	show_mirror_list > /dev/null
 	add_fastest_mirror && changed=true
 fi
