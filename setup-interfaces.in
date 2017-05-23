@@ -214,11 +214,11 @@ config_iface() {
 		if find_essids $iface; then
 			ask "Type the wireless network name to connect to:"
 			local essid=$resp
-			if wlan_is_not_open $iface $essid; then
+			if wlan_is_not_open $iface "$essid"; then
 				ask "Type the \"$essid\" network Pre-Shared Key:"
 				psk=$resp
 			fi
-			config_wpa_supp $iface $essid $psk
+			config_wpa_supp $iface "$essid" "$psk"
 		else
 			echo -e "\nNo available wireless networks\n"
 			prompt_for_interfaces
