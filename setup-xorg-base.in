@@ -13,6 +13,7 @@ case "$vgaline" in
 *AMD*) videodrv="xf86-video-amdgpu";;
 *NVIDIA*) videodrv="xf86-video-nouveau";;
 *VMware*) videodrv="xf86-video-vmware";;
+*QXL*) videodrv="xf86-video-qxl";;
 esac
 
 # fallback driver
