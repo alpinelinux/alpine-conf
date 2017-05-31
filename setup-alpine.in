@@ -29,6 +29,7 @@ usage() {
 		options:
 		 -a  Create Alpine Linux overlay file
 		 -c  Create answer file (do not install anything)
+		 -e  Empty root password
 		 -f  Answer file to use installation
 		 -h  Show this help
 		 -q  Quick mode. Ask fewer questions.
@@ -36,11 +37,12 @@ usage() {
 	exit 1
 }
 
-while getopts "af:c:hq" opt ; do
+while getopts "aef:c:hq" opt ; do
 	case $opt in
 		a) ARCHIVE=yes;;
 		f) USEANSWERFILE="$OPTARG";;
 		c) CREATEANSWERFILE="$OPTARG";;
+		e) empty_root_password=1;;
 		h) usage;;
 		q) quick=1; APKREPOSOPTS="-1"; HOSTNAMEOPTS="alpine";;
 		*) usage;;
@@ -137,7 +139,11 @@ grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
 	$PREFIX/sbin/setup-dns ${DNSOPTS}
 
 # set root password
-[ -z "$NOCOMMIT" ] && while ! passwd ; do echo "Please retry." ; done
+if [ -z "$NOCOMMIT" ] && [ -z "$empty_root_password" ]; then
+	while ! passwd ; do
+		echo "Please retry."
+	done
+fi
 
 if [ -z "$quick" ]; then
 	# pick timezone
