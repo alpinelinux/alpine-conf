@@ -11,6 +11,9 @@ VARFS=${VARFS:-ext4}
 # default location for mounted root
 SYSROOT=${SYSROOT:-/mnt}
 
+# machine arch
+ARCH=$(apk --print-arch)
+
 in_list() {
 	local i="$1"
 	shift
@@ -194,8 +197,49 @@ has_bootopt() {
 	return 1
 }
 
+# setup grub bootloader
+setup_grub() {
+	local mnt="$1" root="$2" modules="$3"
+	shift 3
+	local disks="${@}"
+
+	for disk in $disks; do
+		# install grub
+		prep=$(find_prep_partition $disk)
+		echo "Installing grub on $prep"
+		grub-install --boot-directory="$mnt"/boot/ $prep
+	done
+	# create grub config
+	cat > "$mnt"/boot/grub/grub.cfg  <<- EOF
+	set timeout=2
+	menuentry "Alpine Linux" {
+		linux   /boot/vmlinuz $modules root=$root
+		initrd  /boot/initramfs-$KERNEL_FLAVOR
+	}
+	EOF
+}
+
+# setup syslinux bootloader
+setup_syslinux() {
+	local mnt="$1" root="$2" modules="$3" extlinux_raidopt="$4"
+	shift 4
+	local kernel_opts="$@"
+
+	sed -e "s:^root=.*:root=$root:" \
+		-e "s:^default_kernel_opts=.*:default_kernel_opts=\"$kernel_opts\":" \
+		-e "s:^modules=.*:modules=$modules:" \
+		/etc/update-extlinux.conf > "$mnt"/etc/update-extlinux.conf
+	if [ "$(rc --sys)" = "XEN0" ]; then
+		sed -i -e "s:^default=.*:default=xen-grsec:" \
+			"$mnt"/etc/update-extlinux.conf
+	fi
+	extlinux $extlinux_raidopt --install "$mnt"/boot
+}
+
 install_mounted_root() {
-	local mnt="$1" mnt_boot= boot_fs= root_fs=
+	local mnt="$1"
+	shift 1
+	local disks="${@}" mnt_boot= boot_fs= root_fs=
 	local initfs_features="ata base ide scsi usb virtio"
 	local pvs= dev= rootdev= bootdev= extlinux_raidopt= root= modules=
 	local kernel_opts="quiet"
@@ -232,7 +276,7 @@ install_mounted_root() {
 	fi
 
 	# check if our root is on raid so we can feed mkinitfs and
-	# update-exlinux.conf with the proper kernel module params
+	# bootloader conf with the proper kernel module params
 	for dev in $rootdev $pvs; do
 
 		# check if we need hardware raid drivers
@@ -294,14 +338,6 @@ install_mounted_root() {
 		kernel_opts="nomodeset $kernel_opts"
 	fi
 	modules="sd-mod,usb-storage,${root_fs}${raidmod}"
-	sed -e "s:^root=.*:root=$root:" \
-		-e "s:^default_kernel_opts=.*:default_kernel_opts=\"$kernel_opts\":" \
-		-e "s:^modules=.*:modules=$modules:" \
-		/etc/update-extlinux.conf > "$mnt"/etc/update-extlinux.conf
-	if [ "$(rc --sys)" = "XEN0" ]; then
-		sed -i -e "s:^default=.*:default=xen-grsec:" \
-			"$mnt"/etc/update-extlinux.conf
-	fi
 
 	# generate the fstab
 	if [ -f "$mnt"/etc/fstab ]; then
@@ -320,7 +356,10 @@ install_mounted_root() {
 	# remove the installed db in case its there so we force re-install
 	rm -f "$mnt"/var/lib/apk/installed "$mnt"/lib/apk/db/installed
 	echo "Installing system on $rootdev:"
-	extlinux $extlinux_raidopt --install "$mnt"/boot
+	case "$ARCH" in
+                ppc64le) setup_grub $mnt $root $modules $disks;;
+                *) setup_syslinux $mnt $root $modules $extlinux_raidopt $kernel_opts;;
+        esac
 
 	# apk reads config from target root so we need to copy the config
 	mkdir -p "$mnt"/etc/apk/keys/
@@ -529,6 +568,11 @@ find_boot_partition() {
 	sfdisk -d $1 | awk '/bootable/ {print $1}'
 }
 
+# find partition from PReP type on given disk
+find_prep_partition() {
+	sfdisk -d $1 | awk '/type=41/ {print $1}'
+}
+
 # find the partition(s) for LVM
 # this is not marked as bootable and is type 8e
 find_lvm_partition() {
@@ -538,11 +582,21 @@ find_lvm_partition() {
 
 # set up optional raid and create filesystem on boot device.
 setup_boot_dev() {
-	local disk= bootdev= mkfs_args="-q"
-	local part=$(for disk in $@; do find_boot_partition $disk; done)
+	local disks="$@" disk= bootdev= mkfs_args="-q"
+	local part=$(for disk in $disks; do find_boot_partition $disk; done)
 	set -- $part
 	bootdev=$1
 	[ -z "$bootdev" ] && return 1
+
+	if [ "$ARCH" = "ppc64le" ]; then
+		# Change bootable partition to PReP partition
+		for disk in $disks; do
+			echo ',,,*' | sfdisk --quiet $disk -N1
+			echo ',,,-' | sfdisk --quiet $disk -N2
+			mdev -s
+		done
+	fi
+
 	echo "Creating file systems..."
 	if [ -n "$USE_RAID" ]; then
 		local missing=
@@ -582,6 +636,11 @@ find_nth_non_boot_parts() {
 setup_non_boot_raid_dev() {
 	local md_dev=$1
 	local idx=${md_dev#/dev/md}
+	if [ "$ARCH" = "ppc64le" ]; then
+		# increment idx as PReP partition is
+		# the bootable partition in ppc64le
+		idx=$((idx+1))
+	fi
 	shift
 	local level=1
 	local missing=
@@ -594,7 +653,7 @@ setup_non_boot_raid_dev() {
 		2) level=1; missing=  ; num=2;;
 		*) level=5; missing=  ; num=$#;;
 	esac
-	mdadm --create /dev/md$idx --level=$level --raid-devices=$num \
+	mdadm --create $md_dev --level=$level --raid-devices=$num \
 		--quiet --run $@ $missing || return 1
 }
 
@@ -750,7 +809,9 @@ data_only_disk_install() {
 
 # setup
 setup_root() {
-	local root_dev="$1" boot_dev="$2" mkfs_args="-q"
+	local root_dev="$1" boot_dev="$2"
+	shift 2
+	local disks="$@" mkfs_args="-q"
 	[ "$ROOTFS" = "btrfs" ] && mkfs_args=""
 	mkfs.$ROOTFS $MKFS_OPTS_ROOT $mkfs_args "$root_dev"
 	mkdir -p "$SYSROOT"
@@ -761,7 +822,7 @@ setup_root() {
 	fi
 
 	setup_mdadm_conf
-	install_mounted_root "$SYSROOT" || return 1
+	install_mounted_root "$SYSROOT" "$disks" || return 1
 	unmount_partitions "$SYSROOT"
 	swapoff -a
 
@@ -802,13 +863,19 @@ native_disk_install_lvm() {
 }
 
 native_disk_install() {
-	local root_part_type="83" swap_part_type="82" boot_part_type="83"
+	local prep_part_type="41" root_part_type="83" swap_part_type="82" boot_part_type="83"
+	local prep_size=8
 	local boot_size=${BOOT_SIZE:-100}
 	local swap_size=${SWAP_SIZE}
 	local root_size=
 	local root_dev= boot_dev= swap_dev=
+	local bootloader=
 
-	init_progs syslinux || return 1
+	case "$ARCH" in
+		ppc64le) bootloader=grub-ieee1275;;
+		*) bootloader=syslinux;;
+	esac
+	init_progs $bootloader || return 1
 	confirm_erase $@ || return 1
 
 	if [ -n "$USE_RAID" ]; then
@@ -818,11 +885,21 @@ native_disk_install() {
 		stop_all_raid
 	fi
 	for diskdev in "$@"; do
-		setup_partitions $diskdev \
-			"${boot_size}M,$boot_part_type,*" \
-			"${swap_size}M,$swap_part_type" \
-			"${root_size}${root_size:+M},$root_part_type" \
-			|| return 1
+		if [ "$ARCH" = "ppc64le" ]; then
+			setup_partitions $diskdev \
+				"${prep_size}M,$prep_part_type" \
+				"${boot_size}M,$boot_part_type,*" \
+				"${swap_size}M,$swap_part_type" \
+				"${root_size}${root_size:+M},$root_part_type" \
+				|| return 1
+
+		else
+			setup_partitions $diskdev \
+				"${boot_size}M,$boot_part_type,*" \
+				"${swap_size}M,$swap_part_type" \
+				"${root_size}${root_size:+M},$root_part_type" \
+				|| return 1
+		fi
 	done
 
 	# will find BOOT_DEV for us
@@ -835,10 +912,18 @@ native_disk_install() {
 		root_dev=/dev/md2
 	else
 		swap_dev=$(find_nth_non_boot_parts 1 82 $@)
-		root_dev=$(find_nth_non_boot_parts 1 83 $@)
+		local index=
+		case "$ARCH" in
+			# use the second non botable partition on ppc64le,
+			# as PReP partition is the bootable partition
+			ppc64le) index=2;;
+			*) index=1;;
+		esac
+		root_dev=$(find_nth_non_boot_parts $index 83 $@)
 	fi
+
 	[ $SWAP_SIZE -gt 0 ] && setup_swap_dev $swap_dev
-	setup_root $root_dev $BOOT_DEV
+	setup_root $root_dev $BOOT_DEV $@
 }
 
 diskselect_help() {
