@@ -67,6 +67,11 @@ enumerate_fstab() {
 	awk "\$2 ~ /^$escaped_mnt(\/|\$)/ {print \$0}" /proc/mounts | \
 		sed "s:$mnt:/:g; s: :\t:g" | sed -E 's:/+:/:g' | \
 		while read fs_spec fs_file fs_vfstype fs_mntops fs_freq fs_passno; do
+			if [ "$fs_file" = / ]; then
+				fs_passno=1
+			else
+				fs_passno=2
+			fi
 			echo -e "$(uuid_or_device $fs_spec)\t${fs_file}\t${fs_vfstype}\t${fs_mntops} ${fs_freq} ${fs_passno}"
 		done
 }
