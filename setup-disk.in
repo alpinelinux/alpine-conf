@@ -251,7 +251,7 @@ install_mounted_root() {
 	local mnt="$1"
 	shift 1
 	local disks="${@}" mnt_boot= boot_fs= root_fs=
-	local initfs_features="ata base ide scsi usb virtio"
+	local initfs_features="ata base cdrom ext2 ext3 ext4 keymap kms mmc raid scsi usb virtio nvme"
 	local pvs= dev= rootdev= bootdev= extlinux_raidopt= root= modules=
 	local kernel_opts="quiet"
 
