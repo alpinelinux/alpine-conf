@@ -50,6 +50,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(__linux__)
 # include <malloc.h>
 # include <endian.h>
+# include <sys/vfs.h>
 #elif defined(__APPLE__)
 # include <libkern/OSByteOrder.h>
 # define be16toh(x) OSSwapBigToHostInt16(x)
@@ -221,13 +222,13 @@ typedef int (*uniso_handler_f)(struct uniso_context *, struct uniso_reader *);
 
 struct uniso_reader {
 	struct list_head parser_list;
-	size_t offset;
+	off_t offset;
 	uniso_handler_f handler;
 };
 
 struct uniso_dirent {
 	struct uniso_reader reader;
-	u_int32_t size;
+	size_t size;
 	u_int32_t flags;
 	char name[0];
 };
@@ -235,15 +236,16 @@ struct uniso_dirent {
 struct uniso_context {
 	int stream_fd, null_fd;
 	int skip_method, copy_method;
-	int joliet_level, loglevel;
-	size_t pos, last_queued_read;
+	int joliet_level;
+	int loglevel, block_size;
+	off_t pos, last_queued_read, disk_free, disk_needed;
 	struct list_head parser_head;
 	struct uniso_reader volume_desc_reader;
 	unsigned char *tmpbuf;
 };
 
 #if defined(__linux__)
-static int do_splice(struct uniso_context *ctx, int to_fd, int bytes)
+static int do_splice(struct uniso_context *ctx, int to_fd, size_t bytes)
 {
 	int r, left;
 
@@ -262,7 +264,7 @@ static int do_splice(struct uniso_context *ctx, int to_fd, int bytes)
 #define do_splice(ctx,to_fd,bytes) (-1)
 #endif
 
-static int do_read(struct uniso_context *ctx, unsigned char *buf, int bytes)
+static int do_read(struct uniso_context *ctx, unsigned char *buf, size_t bytes)
 {
 	int r, left;
 
@@ -281,7 +283,7 @@ static int do_read(struct uniso_context *ctx, unsigned char *buf, int bytes)
 	return bytes;
 }
 
-static int do_write(int tofd, const unsigned char *buf, int bytes)
+static int do_write(int tofd, const unsigned char *buf, size_t bytes)
 {
 	int r, left;
 
@@ -298,7 +300,7 @@ static int do_write(int tofd, const unsigned char *buf, int bytes)
 	return bytes;
 }
 
-static int do_skip(struct uniso_context *ctx, unsigned int bytes)
+static int do_skip(struct uniso_context *ctx, size_t bytes)
 {
 	int r, left, now;
 
@@ -328,7 +330,7 @@ static int do_skip(struct uniso_context *ctx, unsigned int bytes)
 	return 0;
 }
 
-static int do_copy(struct uniso_context *ctx, int tofd, int bytes)
+static int do_copy(struct uniso_context *ctx, int tofd, size_t bytes)
 {
 	int r, now, left;
 
@@ -336,10 +338,10 @@ static int do_copy(struct uniso_context *ctx, int tofd, int bytes)
 	case 0:
 		r = do_splice(ctx, tofd, bytes);
 		if (r >= 0) return r;
-		ctx->skip_method = 1;
+		ctx->copy_method = 1;
 	case 1:
 		/* FIXME: Use mmaped IO */
-		ctx->skip_method = 2;
+		ctx->copy_method = 2;
 	case 2:
 		for (left = bytes; left; ) {
 			now = left;
@@ -362,7 +364,7 @@ static int do_copy(struct uniso_context *ctx, int tofd, int bytes)
 
 static int queue_reader(
 		struct uniso_context *ctx, struct uniso_reader *reader,
-		size_t offset, uniso_handler_f handler)
+		off_t offset, uniso_handler_f handler)
 {
 	struct list_head *n;
 	struct uniso_reader *r;
@@ -436,9 +438,17 @@ static int uniso_read_file(struct uniso_context *ctx,
 {
 	struct uniso_dirent *dir = container_of(rd, struct uniso_dirent, reader);
 	int fd, rc;
-	static size_t prev_offset = 0;
+	static off_t prev_offset = 0;
 	static char prev_name[512];
 	static size_t prev_size = 0;
+
+	if (ctx->disk_free && ctx->disk_needed > ctx->disk_free) {
+		if (ctx->loglevel > 0)
+			fprintf(stderr, "ERROR: Disk needed %zd MiB (free %zd MiB)\n",
+				(size_t)(ctx->disk_needed * ctx->block_size / (1024*1024)),
+				(size_t)(ctx->disk_free * ctx->block_size / (1024*1024)));
+		return -ENOSPC;
+	}
 
 	// FIXME: seems that hardlinked files get the same file extent
 	// shared. need to fix extraction of such files.
@@ -462,11 +472,17 @@ static int uniso_read_file(struct uniso_context *ctx,
 		return -errno;
 
 	if (ctx->loglevel > 1)
-		fprintf(stderr, "%s : %d bytes, flags 0x%08x\n",
+		fprintf(stderr, "%s : %zd bytes, flags 0x%08x\n",
 			dir->name, dir->size, dir->flags);
-	rc = do_copy(ctx, fd, dir->size);
-	close(fd);
 
+	if (dir->size) {
+		rc = -posix_fallocate(fd, 0, dir->size);
+		if (rc) goto err;
+	}
+	rc = do_copy(ctx, fd, dir->size);
+	if (rc == dir->size) fdatasync(fd);
+err:
+	close(fd);
 	if (rc < 0) return rc;
 	if (rc != dir->size) return -EIO;
 	return 0;
@@ -554,6 +570,9 @@ static int queue_dirent(struct uniso_context *ctx, void *isode, const char *name
 	dir->flags = ide->flags;
 	strcpy(dir->name, name);
 
+	if (!(ide->flags & ISOFS_DR_FLAG_DIRECTORY))
+		ctx->disk_needed += (dir->size + ctx->block_size - 1) / ctx->block_size;
+
 	return queue_reader(ctx, &dir->reader,
 	                    ide->extent.endianess * ISOFS_BLOCK_SIZE,
 	                    (ide->flags & ISOFS_DR_FLAG_DIRECTORY) ?
@@ -605,6 +624,18 @@ static int uniso_read_volume_descriptor(struct uniso_context *ctx,
 	return queue_dirent(ctx, root_dir, ".");
 }
 
+static void get_disk_info(struct uniso_context *ctx)
+{
+#if defined(__linux__)
+	struct statfs sfs;
+
+	if (statfs(".", &sfs) == 0) {
+		if (sfs.f_bsize) ctx->block_size = sfs.f_bsize;
+		ctx->disk_free = (off_t)sfs.f_bavail;
+	}
+#endif
+}
+
 int uniso(int fd)
 {
 	struct uniso_context context, *ctx = &context;
@@ -617,6 +648,8 @@ int uniso(int fd)
 	ctx->null_fd = open("/dev/null", O_RDWR);
 	ctx->tmpbuf = malloc(ISOFS_TMPBUF_SIZE);
 	ctx->loglevel = 1;
+	ctx->block_size = 4*1024;
+	get_disk_info(ctx);
 
 	queue_reader(ctx, &ctx->volume_desc_reader,
 	             16 * ISOFS_BLOCK_SIZE,
