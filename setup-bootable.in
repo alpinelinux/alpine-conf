@@ -2,6 +2,7 @@
 
 prog=${0##*/}
 version=@VERSION@
+files_to_move="boot efi apks syslinux.cfg .alpine-release"
 
 cleanup_mounts() {
 	local i=
@@ -268,7 +269,7 @@ parent_dev=$(find_disk_dev $dev)
 
 # check if this files exist and not in upgrade mode
 if [ -z "$upgrade" ] && [ -z "$force" ]; then
-	for i in boot apks syslinux.cfg .alpine-release; do
+	for i in $files_to_move; do
 		[ -e "$destdir"/$i ] && die "$destdir/$i already exists. Use -u to upgrade."
 	done
 fi
@@ -302,13 +303,13 @@ available_space=$(( $free_blocks / $blocks_per_mb ))
 vecho "Available space: $available_space MiB"
 
 if [ -n "$srcdir" ]; then
-	needed_space=$(cd "$srcdir" && du -m -s -c boot apks .alpine-release | awk '$2 == "total" {print $1}')
+	needed_space=$(cd "$srcdir" && du -m -s -c $files_to_move 2>/dev/null | awk '$2 == "total" {print $1}')
 	vecho "Needed space:    $needed_space MiB"
 	[ $available_space -lt $needed_space ] \
 		&& die "Not enough space on $destdir. Aborting."
 
 	# copy the files to .new
-	for i in boot apks syslinux.cfg .alpine-release; do
+	for i in $files_to_move; do
 		if [ -e "$srcdir"/$i ]; then
 			vecho "Copying $srcdir/$i to $destdir/.new/"
 			cp -a "$srcdir"/$i "$destdir"/.new/
@@ -336,10 +337,8 @@ sync
 vecho "Replacing existing files..."
 mkdir -p "$destdir"/.old || die "Failed to create $destdir/.old"
 
-tomove="boot apks syslinux.cfg .alpine-release"
-
 # move current files to .old
-for i in $tomove; do
+for i in $files_to_move; do
 	if [ -e "$destdir"/$i ]; then
 		mv "$destdir"/$i "$destdir"/.old/ || die "Failed to move $destdir/$i to $destdir/.old/"
 	fi
@@ -358,7 +357,7 @@ elif [ -e "$destdir"/.old/syslinux.cfg ] \
 fi
 
 # move .new to current
-for i in $tomove; do
+for i in $files_to_move; do
 	if [ -e "$destdir"/.new/$i ]; then
 		mv "$destdir"/.new/$i "$destdir"/ \
 			|| die "Failed to move $destdir/.new/ to $destdir"
