@@ -3,6 +3,9 @@
 prog=${0##*/}
 version=@VERSION@
 files_to_move="boot efi apks syslinux.cfg .alpine-release"
+read_only_mounts=
+umounts=
+uninstalls=
 
 cleanup_mounts() {
 	local i=
@@ -12,23 +15,33 @@ cleanup_mounts() {
 	for i in $read_only_mounts; do
 		mount -o remount,ro "$i" || echo "Warning: Failed to remount as read-only. Is modloop mounted?"
 	done
+	read_only_mounts=""
 	if [ -n "$umounts" ]; then
 		umount $umounts
+		umounts=""
 	fi
 }
 
 cleanup_installs() {
 	if [ -n "$uninstalls" ]; then
-		apk del --quiet syslinux
+		apk del --quiet $uninstalls
+		uninstalls=""
 	fi
 }
 
-die() {
-	echo "$@" >&2
+cleanup() {
 	cleanup_mounts
 	cleanup_installs
+}
+
+trap cleanup EXIT
+trap "exit 2" INT TERM QUIT
+
+die() {
+	echo "$@" >&2
 	exit 1
 }
+
 
 # find device for mountpoint
 find_dev() {
@@ -377,8 +390,6 @@ check_syslinux
 
 # If we only copy then we are done.
 if [ -n "$upgrade" ] && [ -z "$syslinux" ]; then
-	cleanup_installs
-	cleanup_mounts
 	exit 0
 fi
 
@@ -406,4 +417,3 @@ if [ -b $parent_dev ]; then
 else
 	echo "Warning: Could not find the parent device for $dest"
 fi
-cleanup_installs
