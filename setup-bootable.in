@@ -47,7 +47,7 @@ on_usb_bus() {
 # mount source as loopback and set srcdir
 mount_srcdir() {
 	local srcmnt=${MNT:-/mnt}
-	mount -o loop -t iso9660 "$src" $srcmnt \
+	mount -o loop,ro -t iso9660 "$src" $srcmnt \
 		|| die "Failed to mount loopback $src"
 	umounts="$srcmnt"
 	srcdir="$srcmnt"
