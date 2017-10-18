@@ -6,6 +6,13 @@ files_to_move="boot efi apks syslinux.cfg .alpine-release"
 read_only_mounts=
 umounts=
 uninstalls=
+destdir=
+
+cleanup_tmpdata() {
+	if [ -d "$destdir" -a -d "$destdir/.new" ]; then
+		rm -rf "$destdir"/.new
+	fi
+}
 
 cleanup_mounts() {
 	local i=
@@ -30,6 +37,7 @@ cleanup_installs() {
 }
 
 cleanup() {
+	cleanup_tmpdata
 	cleanup_mounts
 	cleanup_installs
 }
@@ -55,18 +63,6 @@ on_usb_bus() {
 	[ -e /sys/block/$dev ] || return 1
 	local sysdev=$(readlink -f /sys/block/$dev/device)
 	test "${sysdev##*/usb[0-9]}" != "$sysdev"
-}
-
-# mount source as loopback and set srcdir
-mount_srcdir() {
-	local srcmnt=${MNT:-/mnt}
-	mount -o loop,ro -t iso9660 "$src" $srcmnt \
-		|| die "Failed to mount loopback $src"
-	umounts="$srcmnt"
-	srcdir="$srcmnt"
-	if ! [ -f "$srcdir"/.alpine-release ]; then
-		die "No .alpine-release found on image $src"
-	fi
 }
 
 vecho() {
@@ -174,6 +170,21 @@ check_syslinux() {
 	done
 }
 
+version_check() {
+	local new_dir="$1" old_dir="$2"
+	# check if its same version
+	local to_version=$(cat "$new_dir"/.alpine-release)
+	if [ -n "$upgrade" ] && [ -e "$old_dir"/.alpine-release ]; then
+		local from_version=$(cat "$old_dir"/.alpine-release)
+		if [ -z "$force" ] && [ -n "$to_version" ] && [ "$from_version" = "$to_version" ]; then
+			die "Source and target seems to have same version ($from_version). Aborting."
+		fi
+		echo "Upgrading $dest from $from_version to $to_version"
+	else
+		echo "Installing $dest to $to_version"
+	fi
+}
+
 usage() {
 	cat <<-__EOF__
 		$prog $version
@@ -226,21 +237,6 @@ fi
 
 [ -z "$src" ] && usage
 
-srcdir=
-# Find the srcdir or srcurl. mount loopback if needed
-if [ -f "$src"/.alpine-release ]; then
-	srcdir="$(echo $src | sed -r 's,/$,,')"
-else
-	case "$src" in
-	http://*|ftp://*) srcurl="$src";;
-	*) mount_srcdir;;
-	esac
-fi
-
-if [ -n "$srcdir" ]; then
-	to_version=$(cat "$srcdir"/.alpine-release)
-fi
-
 # find target device
 if [ -d "$dest" ]; then
 	dest=${dest%/} # strip trailing /
@@ -287,52 +283,34 @@ if [ -z "$upgrade" ] && [ -z "$force" ]; then
 	done
 fi
 
-# check if its same version
-if [ -n "$upgrade" ] && [ -e "$destdir"/.alpine-release ]; then
-	from_version=$(cat "$destdir"/.alpine-release)
-	if [ -z "$force" ] && [ -n "$to_version" ] && [ "$from_version" = "$to_version" ]; then
-		die "Source and target seems to have same version ($from_version). Aborting."
-	fi
-fi
-
-# Display what versions we are installing/upgrading
-if [ -n "$from_version" ]; then
-	echo "Upgrading $dest from $from_version to $to_version"
-else
-	echo "Copying $to_version to $dest (mounted on $destdir)"
-fi
-
-# remove partial upgrades if any.
+# remove partial upgrades if any
 rm -rf "$destdir"/.new "$destdir"/.old
 mkdir -p "$destdir"/.new || die "Failed to create $destdir/.new"
 
-# check that we have the space we need
-# we calculate on MB since shell arthimetic gets problems with big disks
-# and bytes.
-free_blocks=$(stat -f -c "%f" "$destdir")
-block_size=$(stat -f -c "%s" "$destdir")
-blocks_per_mb=$(( 1024 * 1024 / $block_size))
-available_space=$(( $free_blocks / $blocks_per_mb ))
-vecho "Available space: $available_space MiB"
-
-if [ -n "$srcdir" ]; then
-	needed_space=$(cd "$srcdir" && du -m -s -c $files_to_move 2>/dev/null | awk '$2 == "total" {print $1}')
-	vecho "Needed space:    $needed_space MiB"
-	[ $available_space -lt $needed_space ] \
-		&& die "Not enough space on $destdir. Aborting."
-
-	# copy the files to .new
+# copy data from source to .new
+if [ -f "$src"/.alpine-release ]; then
+	srcdir="$(echo $src | sed -r 's,/$,,')"
+	version_check "$srcdir" "$destdir"
 	for i in $files_to_move; do
 		if [ -e "$srcdir"/$i ]; then
 			vecho "Copying $srcdir/$i to $destdir/.new/"
 			cp -dR "$srcdir"/$i "$destdir"/.new/
 		fi
 	done
-elif [ -n "$srcurl" ]; then
-	cd "$destdir"/.new
-	${WGET:-wget} -O - "$srcurl" | uniso \
-		|| die "Failed to download or extract $srcurl"
-	echo ""
+else
+	vecho "Extracting $src to $destdir/.new/"
+	case "$src" in
+	http://*|ftp://*)
+		${WGET:-wget} -O - "$src" | (cd "$destdir"/.new; exec ${UNISO:-uniso}) \
+			|| die "Failed to download or extract $src"
+		echo ""
+		;;
+	*)
+		(cd "$destdir"/.new; exec ${UNISO:-uniso}) < "$src" \
+			|| die "Failed to download or extract $src"
+		;;
+	esac
+	version_check "$destdir/.new" "$destdir"
 fi
 
 # find where new syslinux.cfg is
