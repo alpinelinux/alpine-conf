@@ -312,7 +312,7 @@ if [ -n "$srcdir" ]; then
 	for i in $files_to_move; do
 		if [ -e "$srcdir"/$i ]; then
 			vecho "Copying $srcdir/$i to $destdir/.new/"
-			cp -a "$srcdir"/$i "$destdir"/.new/
+			cp -dR "$srcdir"/$i "$destdir"/.new/
 		fi
 	done
 elif [ -n "$srcurl" ]; then
@@ -402,7 +402,7 @@ fsync $dest
 syslinux $dest
 
 if [ -b $parent_dev ]; then
-	dd if=/usr/share/syslinux/mbr.bin of=$parent_dev
+	dd if=/usr/share/syslinux/mbr.bin of=$parent_dev status=none
 else
 	echo "Warning: Could not find the parent device for $dest"
 fi
