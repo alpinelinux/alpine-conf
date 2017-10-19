@@ -604,6 +604,7 @@ init_progs() {
 		xfs) fstools="$fstools xfsprogs";;
 		ext*) fstools="$fstools e2fsprogs";;
 		btrfs) fstools="$fstools btrfs-progs";;
+		vfat) fstools="$fstools dosfstools";;
 		esac
 	done
 	apk add --quiet sfdisk $lvmpkg $raidpkg $fstools $@
