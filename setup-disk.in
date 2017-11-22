@@ -448,7 +448,6 @@ install_mounted_root() {
 	fi
 	cat >>"$mnt"/etc/fstab <<-__EOF__
 		/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
-		/dev/fd0	/media/floppy	vfat	noauto	0 0
 		/dev/usbdisk	/media/usb	vfat	noauto	0 0
 	__EOF__
 	# remove the installed db in case its there so we force re-install
