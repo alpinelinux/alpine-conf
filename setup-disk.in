@@ -801,7 +801,7 @@ setup_var() {
 	echo "Creating file systems..."
 	mkfs.$varfs $MKFS_OPTS_VAR $var_dev >/dev/null || return 1
 	sed -i -e '/[[:space:]]\/var[[:space:]]/d' /etc/fstab
-	echo -e "${var_dev}\t/var\t\t${varfs}\tdefaults 1 2" >> /etc/fstab
+	echo -e "$(uuid_or_device ${var_dev})\t/var\t\t${varfs}\tdefaults 1 2" >> /etc/fstab
 
 	mv /var /.var
 	mkdir /var
