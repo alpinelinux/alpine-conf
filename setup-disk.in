@@ -439,9 +439,12 @@ install_mounted_root() {
 		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
 	fi
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
-	if [ -n "$SWAP_DEVICE" ]; then
-		echo -e "${SWAP_DEVICE}\tswap\tswap\tdefaults\t0 0" \
-			>> "$mnt"/etc/fstab
+	if [ -n "$SWAP_DEVICES" ]; then
+		local swap_dev
+		for swap_dev in $SWAP_DEVICES; do
+			echo -e "$(uuid_or_device ${swap_dev})\tswap\tswap\tdefaults\t0 0" \
+				>> "$mnt"/etc/fstab
+		done
 	fi
 	cat >>"$mnt"/etc/fstab <<-__EOF__
 		/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
@@ -766,11 +769,12 @@ setup_lvm_volume_group() {
 setup_swap_dev() {
 	local swap_dev=
 	sed -i -e '/swap/d' /etc/fstab
+	SWAP_DEVICES=
 	for swap_dev in "$@"; do
 		mkswap $swap_dev >/dev/null
-		echo -e "$swap_dev\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
+		echo -e "$(uuid_or_device $swap_dev)\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
+		SWAP_DEVICES="$SWAP_DEVICES $swap_dev"
 	done
-	SWAP_DEVICE="$(uuid_or_device $swap_dev)"
 	swapon -a
 	rc-update --quiet add swap boot
 }
