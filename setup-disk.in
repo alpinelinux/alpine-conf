@@ -649,7 +649,6 @@ setup_partitions() {
 	supported_part_label "$DISKLABEL" || return 1
 
 	# initialize MBR for syslinux only
-	# FIXME: this should only by run by native install
 	if [ "$BOOTLOADER" = "syslinux" ] && [ -f "$MBR" ]; then
 		cat "$MBR" > $diskdev
 	fi
@@ -836,6 +835,7 @@ data_only_disk_install_lvm() {
 	local var_dev=/dev/$vgname/lv_var
 	local lvm_part_type=$(partition_id lvm)
 	local size=
+	unset BOOTLOADER
 
 	init_progs || return 1
 	confirm_erase $@ || return 1
@@ -864,6 +864,7 @@ data_only_disk_install() {
 	local swap_part_type=$(partition_id swap)
 	local size=
 	local swap_dev= var_dev=
+	unset BOOTLOADER
 
 	init_progs || return 1
 	confirm_erase $@ || return 1
