@@ -942,7 +942,6 @@ native_disk_install_lvm() {
 	fi
 
 	if [ -n "$USE_EFI" ]; then
-		[ -n "$USE_RAID" ] && die "EFI boot is not supported on RAID disks"
 		boot_part_type=$(partition_id esp)
 	fi
 
@@ -983,7 +982,6 @@ native_disk_install() {
 	fi
 
 	if [ -n "$USE_EFI" ]; then
-		[ -n "$USE_RAID" ] && die "EFI boot is not supported on RAID disks"
 		boot_part_type=$(partition_id esp)
 	fi
 
