@@ -376,6 +376,12 @@ install_mounted_root() {
 		/dev/cciss/*)
 			initfs_features="${initfs_features% raid} raid"
 			;;
+		/dev/nvme*)
+			initfs_features="${initfs_features% nvme} nvme"
+			;;
+		/dev/mmc*)
+			initfs_features="${initfs_features% mmc} mmc"
+			;;
 		esac
 
 		[ -e "/sys/block/${dev#/dev/}/md" ] || continue
