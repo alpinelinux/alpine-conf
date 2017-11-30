@@ -74,6 +74,10 @@ find_fastest_mirror() {
 add_fastest_mirror() {
 	echo "Finding fastest mirror... "
 	local fastest=$(find_fastest_mirror)
+	if [ -z "$fastest" ]; then
+		echo "Warning! No mirror found"
+		return 1
+	fi
 	add_mirror "$fastest"
 }
 
