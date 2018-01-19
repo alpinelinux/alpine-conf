@@ -259,7 +259,11 @@ mkinitfs $MKINITFS_ARGS -q -b $ROOT -F "$features base squashfs" \
 	-o "$STAGING/initramfs-$FLAVOR" "$KVER"
 
 for file in System.map config vmlinuz; do
-	cp "$BOOT/$file$KVER_FLAVOR" $STAGING
+	if [ -f "$BOOT/$file-$FLAVOR" ]; then
+		cp "$BOOT/$file-$FLAVOR" $STAGING
+	else
+		cp "$BOOT/$file" $STAGING
+	fi
 done
 
 if [ "$MNTDIR" ]; then
