@@ -50,8 +50,9 @@ usage() {
 		         -F|--feature <feature>  Enable initfs feature
 		         -p|--package <package>  Additional module or firmware package
 		         -v|--verbose            Verbose output
-			 -k|--apk-pubkey <key>   Include given key in initramfs
+		         -k|--apk-pubkey <key>   Include given key in initramfs
 		         -K|--hostkeys           Include host keys in initramfs
+		         -C|--compression        Initramfs compression (see mkinitfs for options)
 		         -M|--media              Boot media directory layout
 		         --repositories-file <f> apk repositories file
 
@@ -60,8 +61,8 @@ usage() {
 }
 
 QUIET_OPT="--quiet"
-OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,verbose,apk-pubkey:,hostkeys,media,repositories-file: \
-	-n $SCRIPT -o a:b:f:F:hp:vk:KM -- "$@") || usage 1
+OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file: \
+	-n $SCRIPT -o a:b:f:F:hp:vk:KC:M -- "$@") || usage 1
 
 eval set -- "$OPTS"
 while :; do
@@ -99,6 +100,10 @@ while :; do
 		;;
 	-K|--hostkeys)
 		MKINITFS_ARGS="$MKINITFS_ARGS -K"
+		;;
+	-C|--compression)
+		shift
+		MKINITFS_ARGS="$MKINITFS_ARGS -C $1"
 		;;
 	-M|--media)
 		MEDIA=yes
