@@ -5,8 +5,8 @@ PREFIX=
 
 MAPDIR="$ROOT/usr/share/bkeymaps"
 
-if [ -f "$ROOT/etc/conf.d/keymaps" ]; then
-	. "$ROOT/etc/conf.d/keymaps"
+if [ -f "$ROOT/etc/conf.d/loadkmap" ]; then
+	. "$ROOT/etc/conf.d/loadkmap"
 	variant=$(basename "KEYMAP")
 	variant="${variant%%.*}"
 fi
@@ -52,15 +52,15 @@ select_layout() {
 
 setup_mapfile() {
 	local name=$(basename "$1")
-	local conf="$ROOT/etc/conf.d/keymaps"
+	local conf="$ROOT/etc/conf.d/loadkmap"
 	mkdir -p "$ROOT/etc/keymap"
 	mkdir -p "$ROOT/etc/conf.d/"
 	if cp "$1" "$ROOT/etc/keymap/$name" ; then
 		[ -f "$conf" ] && sed -i '/^KEYMAP=/d' "$conf"
 		echo "KEYMAP=/etc/keymap/$name" >> "$conf"
 		# we actually load the keymap now
-		rc-service keymaps restart
-		rc-update -q add keymaps boot
+		rc-service loadkmap restart
+		rc-update -q add loadkmap boot
 		goodbye 0
 	fi
 }
