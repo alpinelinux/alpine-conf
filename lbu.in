@@ -285,7 +285,7 @@ usage_package() {
 }
 
 _gen_filelist() {
-	apk audit --backup --quiet --recursive --check-permissions
+	apk audit --root ${ROOT:-/} --backup --quiet --recursive --check-permissions
 }
 
 cmd_package() {
