@@ -682,7 +682,7 @@ cmd_diff() {
 	[ -z "$LBU_MEDIA" ] && [ -z "$LBU_BACKUPDIR" ] && usage_diff
 	local tmp
 	init_tmpdir tmp
-	mkdir -p "$tmpdir/a" "$tmp/b"
+	mkdir -p "$tmp/a" "$tmp/b"
 	unpack_apkovl "$tmp/a"
 	cmd_package - | tar -C "$tmp/b" -zx
 	if diff --help 2>&1 | grep -q -- --no-dereference; then
