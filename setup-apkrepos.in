@@ -2,6 +2,7 @@
 
 PROGRAM=setup-apkrepos
 PREFIX=
+MIRRORS_URL=https://mirrors.alpinelinux.org/mirrors.txt
 
 . $PREFIX/lib/libalpine.sh
 
@@ -176,17 +177,8 @@ while getopts "1fhr" opt; do
 done
 shift $(($OPTIND - 1))
 
-# main
-# install alpine-mirrors if its not already there
-to_uninstall=
-if ! apk info --quiet --installed alpine-mirrors; then
-	apk add --force --quiet --virtual .setup-apkrepos alpine-mirrors
-	to_uninstall=.setup-apkrepos
-fi
-
-MIRRORS_PATH=/usr/share/alpine-mirrors/MIRRORS.txt
-if [ -z "$MIRRORS" ] && [ -r "$MIRRORS_PATH" ]; then
-	MIRRORS=$(cat $MIRRORS_PATH)
+if [ -z "$MIRRORS" ]; then
+	MIRRORS=$(wget -qO- $MIRRORS_URL)
 fi
 
 APKREPOS_PATH="${ROOT}"etc/apk/repositories
@@ -242,7 +234,3 @@ if $changed; then
 	apk update --quiet $apk_root_opt && echo "done."
 fi
 
-# clean up
-if [ -n "$to_uninstall" ]; then
-	apk del --quiet $to_uninstall
-fi
