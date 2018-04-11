@@ -18,7 +18,7 @@ prompt_setup_method() {
 	cat <<-__EOF__
 		r) Add random from the above list
 		f) Detect and add fastest mirror from above list
-		e) Edit "${ROOT}"etc/apk/repositores with text editor
+		e) Edit ${ROOT}etc/apk/repositories with text editor
 
 	__EOF__
 	echo -n "Enter mirror number (1-$mirror_count) or URL to add (or r/f/e/done) [$1]: "
