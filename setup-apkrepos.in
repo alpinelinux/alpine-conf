@@ -57,19 +57,7 @@ find_fastest_mirror() {
 		if [ -n "$time" ]; then
 			echo "$time $url"
 		fi
-	done | awk ' {
-		if (!current) {
-			current=$1
-			url=$2
-		} else {
-			if ($1 < current) {
-				current=$1
-				url=$2
-			}
-		}
-		printf("%6.2f %s\n", $1, $2) > "/dev/stderr"
-	}
-	END { print url }'
+	done | tee /dev/stderr | sort -nk1,1 | head -n1 | cut -d' ' -f2
 }
 
 add_fastest_mirror() {
