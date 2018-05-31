@@ -2,6 +2,7 @@
 
 PREFIX=
 . "$PREFIX/lib/libalpine.sh"
+. "$PREFIX/lib/dasd-functions.sh"
 
 MBR=${MBR:-"/usr/share/syslinux/mbr.bin"}
 ROOTFS=${ROOTFS:-ext4}
@@ -124,6 +125,10 @@ partition_id() {
 			esp)	id=EF ;;
 			*)	die "Partition id \"$1\" is not supported!" ;;
 		esac
+	elif [ "$DISKLABEL" = "eckd" ]; then
+		case "$1" in
+			native|lvm|swap|raid|gpfs)	id="$1" ;;
+		esac
 	else
 		die "Partition label \"$DISKLABEL\" is not supported!"
 	fi
@@ -134,6 +139,13 @@ partition_id() {
 # type can be any type from partition_id or the literal string "boot"
 find_partitions() {
 	local dev="$1" type="$2" search=
+	if is_dasd "$dev" eckd; then
+		case "$type" in
+			boot) echo "$dev"1 ;;
+			*) fdasd -p "$dev" | grep "Linux $(partition_id "$type")" | awk '{print $1}' | tail -n 1 ;;
+		esac
+		return 0
+	fi
 	case "$type" in
 		boot)
 			search=bootable
@@ -206,7 +218,7 @@ supported_boot_fs() {
 
 supported_part_label() {
 	case "$1" in
-		dos|gpt) return 0 ;;
+		dos|gpt|eckd) return 0 ;;
 		*) die "Partition label \"$DISKLABEL\" is not supported!" ;;
 	esac
 }
@@ -246,13 +258,14 @@ cleanup_chroot_mounts() {
 	done
 }
 
-has_bootopt() {
+get_bootopt() {
 	local opt="$1"
 	set -- $(cat /proc/cmdline)
 	for i; do
-		[ "$i" = "$opt" ] && return 0
+		case "$i" in
+			"$opt"|"$opt"=*) echo "${i#*=}"; break;;
+		esac
 	done
-	return 1
 }
 
 # setup GRUB bootloader
@@ -341,6 +354,7 @@ install_mounted_root() {
 	local initfs_features="ata base ide scsi usb virtio"
 	local pvs= dev= rootdev= bootdev= extlinux_raidopt= root= modules=
 	local kernel_opts="quiet"
+	[ "$ARCH" = "s390x" ] && initfs_features="$initfs_features qeth dasd_mod"
 
 	rootdev=$(find_mount_dev "$mnt")
 	if [ -z "$rootdev" ]; then
@@ -432,7 +446,7 @@ install_mounted_root() {
 	if is_vmware; then
 		kernel_opts="pax_nouderef $kernel_opts"
 	fi
-	if has_bootopt nomodeset; then
+	if [ -n "$(get_bootopt nomodeset)" ]; then
 		kernel_opts="nomodeset $kernel_opts"
 	fi
 	modules="sd-mod,usb-storage,${root_fs}${raidmod}"
@@ -459,6 +473,7 @@ install_mounted_root() {
 	case "$BOOTLOADER" in
 		grub) setup_grub "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" $disks ;;
 		syslinux) setup_syslinux "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" ;;
+		zipl) setup_zipl "$mnt" "$root" "$modules" "$kernel_opts" ;;
 		*) die "Bootloader \"$BOOTLOADER\" not supported!" ;;
 	esac
 
@@ -585,6 +600,8 @@ select_bootloader() {
 	local bootloader=syslinux
 	if [ "$ARCH" = "ppc64le" ]; then
 		bootloader=grub-ieee1275
+	elif [ "$ARCH" = "s390x" ]; then
+		bootloader=s390-tools
 	elif [ -n "$USE_EFI" ]; then
 		bootloader=grub-efi
 	elif [ "$BOOTLOADER" = "grub" ]; then
@@ -616,14 +633,19 @@ init_progs() {
 }
 
 show_disk_info() {
-	local disk= vendor= model= d= size=
+	local disk= vendor= model= d= size= busid=
 	for disk in $@; do
 		local dev=${disk#/dev/}
 		d=$(echo $dev | sed 's:/:!:g')
 		vendor=$(cat /sys/block/$d/device/vendor 2>/dev/null)
 		model=$(cat /sys/block/$d/device/model 2>/dev/null)
+		busid=$(readlink -f /sys/block/$d/device 2>/dev/null)
 		size=$(awk '{gb = ($1 * 512)/1000000000; printf "%.1f GB\n", gb}' /sys/block/$d/size 2>/dev/null)
-		echo "  $dev	($size $vendor $model)"
+		if is_dasd $dev eckd; then
+			echo "  $dev	($size $vendor ${busid##*/})"
+		else
+			echo "  $dev	($size $vendor $model)"
+		fi
 	done
 }
 
@@ -716,8 +738,12 @@ find_nth_non_boot_parts() {
 	local disks="$@"
 	[ -n "$USE_EFI" ] && type=$(partition_id esp)
 	for disk in $disks; do
-		sfdisk -d $disk | grep -v $type \
-			| awk "/(Id|type)=$id/ { i++; if (i==$idx) print \$1 }"
+		if is_dasd $disk eckd; then
+			fdasd -p $disk | grep "Linux $id" | awk '{print $1}' | tail -n 1
+		else
+			sfdisk -d $disk | grep -v $type \
+				| awk "/(Id|type)=$id/ { i++; if (i==$idx) print \$1 }"
+		fi
 	done
 }
 
@@ -946,9 +972,15 @@ native_disk_install_lvm() {
 	fi
 
 	for diskdev in "$@"; do
-		setup_partitions $diskdev \
-			"${boot_size}M,$boot_part_type,*" \
-			"${lvm_size}${lvm_size:+M},$lvm_part_type" || return 1
+		if is_dasd $diskdev eckd; then
+			root_part_type="lvm"
+			setup_partitions_eckd $diskdev \
+				$boot_size 0 $root_part_type || return 1
+		else
+			setup_partitions $diskdev \
+				"${boot_size}M,$boot_part_type,*" \
+				"${lvm_size}${lvm_size:+M},$lvm_part_type" || return 1
+		fi
 	done
 
 	# will find BOOT_DEV for us
@@ -993,7 +1025,11 @@ native_disk_install() {
 				"${swap_size}M,$swap_part_type" \
 				"${root_size}${root_size:+M},$root_part_type" \
 				|| return 1
-
+		elif is_dasd $diskdev eckd; then
+			swap_part_type="swap"
+			root_part_type="native"
+			setup_partitions_eckd $diskdev \
+				$boot_size $swap_size $root_part_type || return 1
 		else
 			setup_partitions $diskdev \
 				"${boot_size}M,$boot_part_type,*" \
@@ -1187,6 +1223,8 @@ if [ -n "$USE_RAID" ]; then
 	stop_all_raid
 fi
 
+check_dasd
+
 disks=$(find_disks)
 diskdevs=
 
@@ -1253,6 +1291,9 @@ if [ -z "$SWAP_SIZE" ]; then
 fi
 
 set -- $diskdevs
+if is_dasd $1 eckd; then
+	DISKLABEL=eckd
+fi
 if [ $# -gt 1 ]; then
 	USE_RAID=1
 fi
@@ -1265,7 +1306,10 @@ if is_efi || [ -n "$USE_EFI" ]; then
 	BOOTFS=vfat
 fi
 
-[ "$ARCH" = "ppc64le" ] && BOOTLOADER=grub
+case "$ARCH" in
+	ppc64le) BOOTLOADER=grub;;
+	s390x) BOOTLOADER=zipl;;
+esac
 
 dmesg -n1
 

@@ -4,7 +4,7 @@ sysconfdir	?= /etc/lbu
 
 PREFIX		?=
 
-LIB_FILES	:= libalpine.sh
+LIB_FILES	:= libalpine.sh dasd-functions.sh
 SBIN_FILES	:= lbu\
 		setup-acf\
 		setup-alpine\
