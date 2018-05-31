@@ -415,8 +415,8 @@ install_mounted_root() {
 		unpack_apkovl "$APKOVL" "$mnt" || return 1
 	fi
 
-	# we should not try start modloop on sys install
-	rm -f "$mnt"/etc/runlevels/*/modloop
+	# we should not try start modloop and firstboot on sys install
+	rm -f "$mnt"/etc/runlevels/*/modloop "$mnt"/etc/runlevels/*/firstboot
 
 	# generate mkinitfs.conf
 	mkdir -p "$mnt"/etc/mkinitfs/features.d
