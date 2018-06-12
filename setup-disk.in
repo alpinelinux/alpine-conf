@@ -307,11 +307,7 @@ setup_grub() {
 	fi
 
 	# setup GRUB config
-	local kernel
-	case $KERNEL_FLAVOR in
-		vanilla) kernel=vmlinuz ;;
-		*) kernel=vmlinuz-$KERNEL_FLAVOR ;;
-	esac
+	local kernel=vmlinuz-$KERNEL_FLAVOR
 
 	# all_video is needed to remove the video error on boot
 	cat > "$mnt"/boot/grub/grub.cfg <<- EOF
