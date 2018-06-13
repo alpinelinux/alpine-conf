@@ -307,14 +307,13 @@ setup_grub() {
 	fi
 
 	# setup GRUB config
-	local kernel=vmlinuz-$KERNEL_FLAVOR
 
 	# all_video is needed to remove the video error on boot
 	cat > "$mnt"/boot/grub/grub.cfg <<- EOF
 	set timeout=2
 	insmod all_video
 	menuentry "Alpine Linux" {
-	    linux   /boot/$kernel modules=$modules root=$root $kernel_opts
+	    linux   /boot/vmlinuz-$KERNEL_FLAVOR modules=$modules root=$root $kernel_opts
 	    initrd  /boot/initramfs-$KERNEL_FLAVOR
 	}
 	EOF
