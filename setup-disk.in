@@ -676,8 +676,10 @@ setup_partitions() {
 	# create new partitions
 	(
 		for line in "$@"; do
-			echo "$start,$line"
-			start=
+			if case $line in 0M*) false;; *) true;; esac; then
+				echo "$start,$line"
+				start=
+			fi
 		done
 	) | sfdisk --quiet --label $DISKLABEL $diskdev
 
