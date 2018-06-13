@@ -549,11 +549,33 @@ prompt_for_interfaces() {
 	cp interfaces $ROOT/etc/network/
 }
 
+auto_setup() {
+	local iface
+	local hostname=$(cat $ROOT/etc/hostname 2>/dev/null)
+	for iface in $(available_ifaces); do
+		if [ "$(cat /sys/class/net/$iface/operstate)" = "up" ]; then
+			break
+		fi
+	done
+	[ -z "$iface" ] && return 0
+	cat >$ROOT/etc/network/interfaces <<-EOF
+	auto lo
+	iface lo inet loopback
+
+	auto $iface
+	iface $iface inet dhcp
+	EOF
+	if [ -n "$hostname" ]; then
+		echo -e "\thostname $hostname" >> $ROOT/etc/network/interfaces
+	fi
+}
+
 ask_bridge=
 is_xen_dom0 && ask_bridge=1
 
-while getopts "bhip:" opt; do
+while getopts "abhip:" opt; do
 	case $opt in
+		a) auto=1;;
 		b) ask_bridge=1;;
 		h) usage;;
 		i) STDINPUT=1;;
@@ -564,6 +586,8 @@ done
 mkdir -p $ROOT/etc/network
 if [ "$STDINPUT" = "1" ]; then
 	cat > $ROOT/etc/network/interfaces
+elif [ -n "$auto" ]; then
+	auto_setup
 else
 	prompt_for_interfaces
 fi
