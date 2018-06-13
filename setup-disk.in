@@ -676,8 +676,10 @@ setup_partitions() {
 	# create new partitions
 	(
 		for line in "$@"; do
-			echo "$start,$line"
-			start=
+			case "$line" in
+			0M*) ;;
+			*) echo "$start,$line"; start= ;;
+			esac
 		done
 	) | sfdisk --quiet --label $DISKLABEL $diskdev
 
@@ -745,6 +747,7 @@ find_nth_non_boot_parts() {
 setup_non_boot_raid_dev() {
 	local md_dev=$1
 	local idx=${md_dev#/dev/md}
+	[ -z "$md_dev" ] && return 0
 	if [ "$ARCH" = "ppc64le" ]; then
 		# increment idx as PReP partition is
 		# the bootable partition in ppc64le
@@ -906,10 +909,15 @@ data_only_disk_install() {
 	done
 
 	if [ "$USE_RAID" ]; then
-		[ $SWAP_SIZE -gt 0 ] && setup_non_boot_raid_dev /dev/md1 $@
-		setup_non_boot_raid_dev /dev/md2 $@ || return 1
-		swap_dev=/dev/md1
-		var_dev=/dev/md2
+		if [ $SWAP_SIZE -gt 0 ]; then
+			swap_dev=/dev/md1
+			var_dev=/dev/md2
+		else
+			swap_dev=
+			var_dev=/dev/md1
+		fi
+		setup_non_boot_raid_dev "$swap_dev" $@ || return 1
+		setup_non_boot_raid_dev "$var_dev" $@ || return 1
 	else
 		swap_dev=$(find_nth_non_boot_parts 1 "$swap_part_type" $@)
 		var_dev=$(find_nth_non_boot_parts 1 "$var_part_type" $@)
@@ -1038,10 +1046,15 @@ native_disk_install() {
 	setup_boot_dev $@
 
 	if [ "$USE_RAID" ]; then
-		[ $SWAP_SIZE -gt 0 ] && setup_non_boot_raid_dev /dev/md1 $@
-		setup_non_boot_raid_dev /dev/md2 $@ || return 1
-		swap_dev=/dev/md1
-		root_dev=/dev/md2
+		if [ $SWAP_SIZE -gt 0 ]; then
+			swap_dev=/dev/md1
+			root_dev=/dev/md2
+		else
+			swap_dev=
+			root_dev=/dev/md1
+		fi
+		setup_non_boot_raid_dev "$swap_dev" $@ || return 1
+		setup_non_boot_raid_dev "$root_dev" $@ || return 1
 	else
 		swap_dev=$(find_nth_non_boot_parts 1 "$swap_part_type" $@)
 		local index=
