@@ -251,8 +251,20 @@ mkdir -p $MODLOOP/modules/firmware
 find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -u | while read FW; do
 	if [ -e "$ROOT/lib/firmware/$FW" ]; then
 		install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
+		# include nvram files if firmware is needed.
+		[ -e "$ROOT/lib/firmware/${FW%.*}.txt" ] && install -pD \
+		    $ROOT/lib/firmware/${FW%.*}.txt $MODLOOP/modules/firmware/${FW%.*}.txt
 	fi
 done
+
+# include bluetooth firmware in modloop
+if [ -d "$MODLOOP/modules/firmware/brcm" ]; then
+	for _btfw in "$ROOT"/lib/firmware/brcm/*.hcd; do
+		install -pD "$_btfw" \
+			"$MODLOOP"/modules/firmware/brcm/"${_btfw##*/}"
+	done
+fi
+
 mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error
 
 mkinitfs $MKINITFS_ARGS -q -b $ROOT -F "$features base squashfs" \
