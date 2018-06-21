@@ -252,8 +252,9 @@ find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -
 	if [ -e "$ROOT/lib/firmware/$FW" ]; then
 		install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
 		# include nvram files if firmware is needed.
-		[ -e "$ROOT/lib/firmware/${FW%.*}.txt" ] && install -pD \
-		    $ROOT/lib/firmware/${FW%.*}.txt $MODLOOP/modules/firmware/${FW%.*}.txt
+		if [ -e "$ROOT/lib/firmware/${FW%.*}.txt" ]; then
+			install -pD $ROOT/lib/firmware/${FW%.*}.txt $MODLOOP/modules/firmware/${FW%.*}.txt
+		fi
 	fi
 done
 
