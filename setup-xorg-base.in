@@ -5,7 +5,7 @@
 
 base_pkgs="xorg-server xf86-input-libinput eudev"
 
-apk add pciutils
+apk add pciutils eudev
 vgaline=$(lspci | grep -w VGA)
 
 case "$vgaline" in
