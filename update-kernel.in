@@ -49,6 +49,7 @@ usage() {
 		         -f|--flavor <flavor>    Install kernel of specified flavor
 		         -F|--feature <feature>  Enable initfs feature
 		         -p|--package <package>  Additional module or firmware package
+		         -s|--modloopsign        Sign modloop with abuild key
 		         -v|--verbose            Verbose output
 		         -k|--apk-pubkey <key>   Include given key in initramfs
 		         -K|--hostkeys           Include host keys in initramfs
@@ -61,8 +62,8 @@ usage() {
 }
 
 QUIET_OPT="--quiet"
-OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file: \
-	-n $SCRIPT -o a:b:f:F:hp:vk:KC:M -- "$@") || usage 1
+OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,modloopsign,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file: \
+	-n $SCRIPT -o a:b:f:F:hp:svk:KC:M -- "$@") || usage 1
 
 eval set -- "$OPTS"
 while :; do
@@ -90,6 +91,9 @@ while :; do
 	-p|--package)
 		shift
 		PACKAGES="$PACKAGES $1"
+		;;
+	-s|--modloopsign)
+		MODLOOPSIGN=1
 		;;
 	-v|--verbose)
 		QUIET_OPT=
@@ -166,6 +170,21 @@ clean_up() {
 		apk del $QUIET_OPT $VIRTUAL
 	fi
 	rm -fr $TMPDIR
+}
+
+sign_modloop() {
+	local in="$1"
+	local abuild_conf=${ABUILD_CONF:-"/etc/abuild.conf"}
+	local abuild_home=${ABUILD_USERDIR:-"$HOME/.abuild"}
+	local abuild_userconf=${ABUILD_USERCONF:-"$abuild_home/abuild.conf"}
+	[ -f "$abuild_userconf" ] && . "$abuild_userconf"
+	local privkey="$PACKAGER_PRIVKEY"
+	local pubkey=${PACKAGER_PUBKEY:-"${privkey}.pub"}
+	MODLOOPSIG=${in##*/}.SIGN.RSA.${pubkey##*/}
+	echo "Signing: $in"
+	openssl dgst -sha1 -sign "$privkey" \
+		-out "$TMPDIR/$MODLOOPSIG" \
+		"$in"
 }
 
 trap clean_up EXIT $SIGNALS
@@ -267,6 +286,11 @@ if [ -d "$MODLOOP/modules/firmware/brcm" ]; then
 fi
 
 mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error
+
+if [ -n "$MODLOOPSIGN" ]; then
+	sign_modloop "$STAGING/$MODIMG"
+	MKINITFS_ARGS="$MKINITFS_ARGS -s $TMPDIR/$MODLOOPSIG"
+fi
 
 mkinitfs $MKINITFS_ARGS -q -b $ROOT -F "$features base squashfs" \
 	-o "$STAGING/initramfs-$FLAVOR" "$KVER"
