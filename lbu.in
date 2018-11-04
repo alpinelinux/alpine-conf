@@ -34,7 +34,7 @@ UMOUNT_LIST=
 
 usage() {
 	cat <<-__EOF__
-		$PROGRAM $VERSION"
+		$PROGRAM $VERSION
 		usage: $PROGRAM <subcommand> [options] [args]
 
 		Available subcommands:
