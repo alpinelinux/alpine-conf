@@ -1,6 +1,6 @@
 *.tar.gz
 lbu
-libalpine.sh
+*.sh
 setup-acf
 setup-ads
 setup-alpine
