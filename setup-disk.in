@@ -294,6 +294,7 @@ setup_grub() {
 		for disk in $disks; do
 			prep=$(find_partitions "$disk" "prep")
 			echo "Installing grub on $prep"
+			dd if=/dev/zero of=$prep
 			grub-install --boot-directory="$mnt"/boot $prep
 		done
 	# install GRUB in bios mode
