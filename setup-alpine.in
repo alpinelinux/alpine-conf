@@ -186,6 +186,10 @@ if [ -r "$ROOT/etc/profile" ]; then
 	. "$ROOT/etc/profile"
 fi
 
+if ! is_qemu && [ "$rc_sys" != "LXC" ] && [ "$quick" != 1 ]; then
+	$PREFIX/sbin/setup-ntp ${NTPOPTS}
+fi
+
 $PREFIX/sbin/setup-apkrepos ${APKREPOSOPTS}
 
 # lets stop here if in "quick mode"
@@ -194,10 +198,6 @@ if [ "$quick" = 1 ]; then
 fi
 
 $PREFIX/sbin/setup-sshd ${SSHDOPTS}
-
-if ! is_qemu && [ "$rc_sys" != "LXC" ]; then
-	$PREFIX/sbin/setup-ntp ${NTPOPTS}
-fi
 
 if is_xen_dom0; then
 	setup-xen-dom0
