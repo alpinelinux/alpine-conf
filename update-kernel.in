@@ -8,6 +8,8 @@
 # Copyright (c) 2014 Timo Teräs
 # Copyright (c) 2014-2015 Kaarle Ritvanen
 
+PREFIX=
+. $PREFIX/lib/libalpine.sh
 
 SCRIPT=update-kernel
 VIRTUAL=.tmp-$SCRIPT
@@ -29,6 +31,7 @@ REPOSITORIES_FILE=/etc/apk/repositories
 SIGNALS="HUP INT TERM"
 TMPDIR=
 features=
+modloopfw=
 
 error() {
 	echo "$SCRIPT: $1" >&2
@@ -44,25 +47,26 @@ usage() {
 		        $SCRIPT -f <flavor> $opts $dest_args
 		        $SCRIPT -b <build_dir> $opts [$dest_args]
 
-		Options: -a|--arch <arch>        Install kernel for specified architecture
-		         -b|--build <build_dir>  Install custom-built kernel
-		         -f|--flavor <flavor>    Install kernel of specified flavor
-		         -F|--feature <feature>  Enable initfs feature
-		         -p|--package <package>  Additional module or firmware package
-		         -s|--modloopsign        Sign modloop with abuild key
-		         -v|--verbose            Verbose output
-		         -k|--apk-pubkey <key>   Include given key in initramfs
-		         -K|--hostkeys           Include host keys in initramfs
-		         -C|--compression        Initramfs compression (see mkinitfs for options)
-		         -M|--media              Boot media directory layout
-		         --repositories-file <f> apk repositories file
+		Options: -a|--arch <arch>          Install kernel for specified architecture
+		         -b|--build <build_dir>    Install custom-built kernel
+		         -e|--modloopfw <firmware> Install extra firmware in modloop
+		         -f|--flavor <flavor>      Install kernel of specified flavor
+		         -F|--feature <feature>    Enable initfs feature
+		         -p|--package <package>    Additional module or firmware package
+		         -s|--modloopsign          Sign modloop with abuild key
+		         -v|--verbose              Verbose output
+		         -k|--apk-pubkey <key>     Include given key in initramfs
+		         -K|--hostkeys             Include host keys in initramfs
+		         -C|--compression          Initramfs compression (see mkinitfs for options)
+		         -M|--media                Boot media directory layout
+		         --repositories-file <f>   apk repositories file
 
 	__EOF__
 	exit $1
 }
 
 QUIET_OPT="--quiet"
-OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,help,package:,modloopsign,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file: \
+OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,modloopfw:,help,package:,modloopsign,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file: \
 	-n $SCRIPT -o a:b:f:F:hp:svk:KC:M -- "$@") || usage 1
 
 eval set -- "$OPTS"
@@ -83,6 +87,10 @@ while :; do
 	-F|--feature)
 		shift
 		features="$features $1"
+		;;
+	-e|--modloopfw)
+		shift
+		modloopfw="$modloopfw $1"
 		;;
 	-h|--help)
 		echo "$SCRIPT @VERSION@" >&2
@@ -274,6 +282,16 @@ find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -
 		if [ -e "$ROOT/lib/firmware/${FW%.*}.txt" ]; then
 			install -pD $ROOT/lib/firmware/${FW%.*}.txt $MODLOOP/modules/firmware/${FW%.*}.txt
 		fi
+	fi
+done
+
+# install extra firmware files in modloop (i.e. not detected by modinfo)
+for _xfw in "$modloopfw"; do
+	if [ -f "$ROOT/lib/firmware/$_xfw" ]; then
+		install -pD "$ROOT/lib/firmware/$_xfw" \
+			"$MODLOOP"/modules/firmware/"$_xfw"
+	else
+		echo "Warning: extra firmware \"$_xfw\" not found!"
 	fi
 done
 
