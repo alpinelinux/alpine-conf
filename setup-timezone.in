@@ -40,21 +40,17 @@ show_tz_list() {
 }
 
 setup_tz() {
-	local zonepath="$1"
-	mkdir -p "${ROOT}"etc/zoneinfo
-	if ! $INSTALL_TZDATA; then
-		local zone="${zonepath#*/zoneinfo/}"
-		local zdir="${zonepath%/*}"/
-		zdir="${zdir#*/zoneinfo/}"
-		if ! $KEEP_TZDATA; then
-			rm -r "${ROOT}"/etc/zoneinfo
+	local zone="$1"
+
+	if ! $KEEP_TZDATA; then
+		cp "$zroot"/"$zone" /etc/localtime
+		rm /etc/profile.d/timezone.sh
+	else
+		if ! $INSTALL_TZDATA; then
+			install -Dm644 "$zroot"/"$zone" /etc/zoneinfo/"$zone"
 		fi
-		mkdir -p "${ROOT}"etc/zoneinfo/$zdir
-		cp "$zonepath" "${ROOT}"etc/zoneinfo/$zdir/
-		zonepath=/etc/zoneinfo/$zone
+		echo "export TZ='$zone'" > /etc/profile.d/timezone.sh
 	fi
-	rm -f "${ROOT}"etc/localtime
-	ln -s "$zonepath" "${ROOT}"etc/localtime
 }
 
 INSTALL_TZDATA=false
@@ -88,7 +84,7 @@ fi
 
 while true; do
 	if [ -n "$ZONE" ]; then
-		setup_tz "$zroot"/"$ZONE"
+		setup_tz "$ZONE"
 		break
 	fi
 
@@ -110,7 +106,7 @@ while true; do
 	done
 
 	if [ -f "$zroot/$timezone" ]; then
-		setup_tz "$zroot/$timezone"
+		setup_tz "$timezone"
 		break
 	fi
 	echo "'$timezone' is not a valid timezone on this system"
