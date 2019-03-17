@@ -54,7 +54,7 @@ setup_tz() {
 }
 
 INSTALL_TZDATA=false
-KEEP_TZDATA=false
+KEEP_TZDATA=true
 while getopts "hikIKz:" opt; do
 	case $opt in
 		h) usage;;
