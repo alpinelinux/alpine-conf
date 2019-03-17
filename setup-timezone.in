@@ -55,11 +55,13 @@ setup_tz() {
 
 INSTALL_TZDATA=false
 KEEP_TZDATA=false
-while getopts "hikz:" opt; do
+while getopts "hikIKz:" opt; do
 	case $opt in
 		h) usage;;
 		i) INSTALL_TZDATA=true;;
+		I) INSTALL_TZDATA=false;;
 		k) KEEP_TZDATA=true;;
+		K) KEEP_TZDATA=false;;
 		z) ZONE="$OPTARG";;
 	esac
 done
