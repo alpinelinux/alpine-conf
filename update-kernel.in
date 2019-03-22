@@ -278,10 +278,10 @@ mkdir -p $MODLOOP/modules/firmware
 find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -u | while read FW; do
 	if [ -e "$ROOT/lib/firmware/$FW" ]; then
 		install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
-		# include nvram files if firmware is needed.
-		if [ -e "$ROOT/lib/firmware/${FW%.*}.txt" ]; then
-			install -pD $ROOT/lib/firmware/${FW%.*}.txt $MODLOOP/modules/firmware/${FW%.*}.txt
-		fi
+		# copy also all potentially associated files
+		for _file in "$ROOT"/lib/firmware/"${FW%.*}".*; do
+			install -pD "$_file" "$MODLOOP/modules/firmware/${_file#*/lib/firmware/}"
+		done
 	fi
 done
 
