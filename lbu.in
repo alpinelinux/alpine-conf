@@ -126,7 +126,7 @@ check_openssl() {
 	[ -z "$ENCRYPTION" ] && return 0
 	OPENSSL=$(which openssl 2>/dev/null) || die "openssl was not found"
 
-	$OPENSSL list-cipher-commands | grep "^$ENCRYPTION$" > /dev/null \
+	$OPENSSL enc -ciphers | grep "^$ENCRYPTION$" > /dev/null \
 		|| die "Cipher $ENCRYPTION is not supported"
 }
 
