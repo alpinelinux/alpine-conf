@@ -1,4 +1,4 @@
-# `alpine-conf`
+# alpine-conf
 
 This repo contains a set of utilities for making backup of config files and for setting up a new Alpine Linux computer.
 
