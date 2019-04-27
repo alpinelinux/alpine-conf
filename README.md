@@ -1,8 +1,10 @@
-Alpine Conf are a set of utilities for making backup of config files and for setting up a new Alpine Linux computer.
+# `alpine-conf`
+
+This repo contains a set of utilities for making backup of config files and for setting up a new Alpine Linux computer.
 
 # LBU
 
-## Basic usage:
+## Basic usage
 
   * To add a file or folder to be backed up, `lbu include /path/to/foo`
   * To remove a file from being backed up, `lbu exclude /path/to/foo`
@@ -10,7 +12,7 @@ Alpine Conf are a set of utilities for making backup of config files and for set
   * To create a package as specified in lbu.conf, `lbu commit`
   * To override destination of the backup package, `lbu package /path/to/bar.apkovl.tar.gz`
 
-# Setup scripts:
+# Setup scripts
 
 The main script is called `setup-alpine`, and it will perform basic system setup. Each script can be called independently, for example:
 
