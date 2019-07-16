@@ -202,6 +202,10 @@ if $add_fastest; then
 fi
 
 while ! $changed; do
+	if [ -z "$MIRRORS" ]; then
+		MIRRORS=$(wget -qO- $MIRRORS_URL)
+	fi
+
 	show_mirror_list
 	prompt_setup_method $default_answer
 
