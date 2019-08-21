@@ -213,7 +213,7 @@ config_iface() {
 				return
 			fi
 
-			local essid= auth_type="open"
+			local essid= auth_type="NONE"
 			ask "Type the wireless network name to connect to:"
 			if ! essid_is_valid "$resp"; then
 				case "$resp" in
