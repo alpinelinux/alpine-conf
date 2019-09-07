@@ -22,9 +22,6 @@ case "$vgaline" in
 *QXL*) videodrv="xf86-video-qxl";;
 esac
 
-# fallback driver
-videodrv="$videodrv xf86-video-modesetting"
-
 # install packages
 apk add $base_pkgs $videodrv $@
 
