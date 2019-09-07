@@ -5,7 +5,13 @@
 
 base_pkgs="xorg-server xf86-input-libinput eudev"
 
+# check if pciutils is installed
+if ! apk info --installed pciutils; then
+	PCIUTILS_INSTALLED="false"
+fi
+
 apk add pciutils eudev
+
 vgaline=$(lspci | grep -w VGA)
 
 case "$vgaline" in
@@ -21,5 +27,10 @@ videodrv="$videodrv xf86-video-modesetting"
 
 # install packages
 apk add $base_pkgs $videodrv $@
+
+# remove pciutils if it wasn't originally installed
+if [ "$PCIUTILS_INSTALLED" = "false" ]; then
+	apk del pciutils
+fi
 
 setup-udev
