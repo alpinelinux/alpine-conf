@@ -50,7 +50,7 @@ init_tmpdir() {
 	local __tmpd="/tmp/$PROGRAM-${$}-$(date +%s)-$RANDOM"
 	umask 077 || die "umask"
 	mkdir -p "$__tmpd" || exit 1
-	trap "rm -fr \"$__tmpd\"; exit" 0
+	trap "rc=\$?; rm -fr \"$__tmpd\"; exit \$rc" 0
 	umask $omask
 	eval "$1=\"$__tmpd\""
 }
