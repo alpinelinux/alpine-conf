@@ -28,6 +28,7 @@ MNTDIR=
 PACKAGES=
 MKINITFS_ARGS=
 REPOSITORIES_FILE=/etc/apk/repositories
+KEYS_DIR=/etc/apk/keys
 SIGNALS="HUP INT TERM"
 TMPDIR=
 features=
@@ -59,6 +60,7 @@ usage() {
 		         -K|--hostkeys             Include host keys in initramfs
 		         -C|--compression          Initramfs compression (see mkinitfs for options)
 		         -M|--media                Boot media directory layout
+		         -d|--keys-dir             Override directory of trusted keys for apk
 		         --repositories-file <f>   apk repositories file
 
 	__EOF__
@@ -66,8 +68,8 @@ usage() {
 }
 
 QUIET_OPT="--quiet"
-OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,modloopfw:,help,package:,modloopsign,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file: \
-	-n $SCRIPT -o a:b:f:F:hp:svk:KC:M -- "$@") || usage 1
+OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,modloopfw:,help,package:,modloopsign,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file:,keys-dir: \
+	-n $SCRIPT -o a:b:f:F:hp:svk:KC:Md: -- "$@") || usage 1
 
 eval set -- "$OPTS"
 while :; do
@@ -119,6 +121,9 @@ while :; do
 		;;
 	-M|--media)
 		MEDIA=yes
+		;;
+	-d|--keys-dir)
+		KEYS_DIR="$1"
 		;;
 	--repositories-file)
 		shift
@@ -222,7 +227,7 @@ _apk() {
 	shift
 
 	apk $cmd $QUIET_OPT -p $ROOT --arch "$ARCH" \
-		--keys-dir /etc/apk/keys \
+		--keys-dir $KEYS_DIR \
 		--repositories-file "$REPOSITORIES_FILE" $*
 }
 
