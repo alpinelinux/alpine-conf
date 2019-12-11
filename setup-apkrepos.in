@@ -175,7 +175,7 @@ if [ -r "$APKREPOS_PATH" ]; then
 fi
 
 get_alpine_release
-default_answer=f
+default_answer=1
 changed=false
 
 if [ $# -gt 0 ]; then
