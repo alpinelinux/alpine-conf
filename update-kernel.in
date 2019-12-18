@@ -264,7 +264,7 @@ fi
 KVER_FLAVOR=
 [ "$FLAVOR" = vanilla ] || KVER_FLAVOR=-$FLAVOR
 KVER=$(basename $(ls -d $ROOT/lib/modules/*"$KVER_FLAVOR"))
-DTBDIR=$ROOT/usr/lib/linux-$KVER
+DTBDIR=$ROOT/boot/dtbs-$FLAVOR
 depmod -b $ROOT "$KVER"
 
 
@@ -341,8 +341,8 @@ if [ -d "$DTBDIR" ]; then
 	_opwd=$PWD
 	case "$MEDIA,$FLAVOR" in
 	yes,rpi*) _dtb="$DESTDIR/" ;;
-	yes,*)    _dtb="$DESTDIR/boot/dtbs" ;;
-	*,*)      _dtb="$DESTDIR/dtbs" ;;
+	yes,*)    _dtb="$DESTDIR/boot/dtbs-$FLAVOR" ;;
+	*,*)      _dtb="$DESTDIR/dtbs/dtbs-$FLAVOR" ;;
 	esac
 	mkdir -p "$_dtb"
 	_dtb=$(realpath "$_dtb")
