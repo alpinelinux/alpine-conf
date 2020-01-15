@@ -309,7 +309,6 @@ setup_grub() {
 	# setup GRUB config. trigger will generate final grub.cfg
 	install -d "$mnt"/etc/default/
 	cat > "$mnt"/etc/default/grub <<- EOF
-	GRUB_DISTRIBUTOR="Alpine"
 	GRUB_TIMEOUT=2
 	GRUB_DISABLE_SUBMENU=y
 	GRUB_DISABLE_RECOVERY=true
