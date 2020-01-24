@@ -26,12 +26,16 @@ echon () {
 
 # echo if in verbose mode
 vecho() {
-	[ -n "$VERBOSE" ] && echo "$@"
+	if [ -n "$VERBOSE" ]; then
+		echo "$@"
+	fi
 }
 
 # echo unless quiet mode
 qecho() {
-	[ -z "$QUIET" ] && echo "$@"
+	if [ -z "$QUIET" ]; then
+		echo "$@"
+	fi
 }
 
 # echo to stderr
