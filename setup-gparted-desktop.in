@@ -15,9 +15,9 @@ cat >~/.config/openbox/menu.xml<<-__EOF__
 	      <command>gparted</command>
 	    </action>
 	  </item>
-	  <item label="aterm">
+	  <item label="simple terminal">
 	    <action name="Execute">
-	      <command>aterm</command>
+	      <command>st</command>
 	    </action>
 	  </item>
 	  <separator />
