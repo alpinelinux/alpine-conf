@@ -1212,7 +1212,7 @@ shift $(( $OPTIND - 1))
 
 if [ -d "$1" ]; then
 	# install to given mounted root
-	apk add --quiet syslinux
+	[ "$BOOTLOADER" = "syslinux" ] && apk add --quiet syslinux
 	install_mounted_root "${1%/}" \
 		&& echo "You might need fix the MBR to be able to boot" >&2
 	exit $?
