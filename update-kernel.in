@@ -317,7 +317,13 @@ if [ -e "$ROOT"/lib/modules/*/kernel/drivers/bluetooth/btbcm.ko ]; then
 	done
 fi
 
-mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error
+case $ARCH in
+	armhf) mksfs="-Xbcj arm" ;;
+	armv7|aarch64) mksfs="-Xbcj arm,armthumb" ;;
+	x86|x86_64) mksfs="-Xbcj x86" ;;
+	*) mksfs=
+esac
+mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error -nopad $mksfs
 
 if [ -n "$MODLOOPSIGN" ]; then
 	sign_modloop "$STAGING/$MODIMG"
