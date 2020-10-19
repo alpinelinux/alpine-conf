@@ -291,7 +291,7 @@ for _xfw in "$modloopfw"; do
 	if [ -f "$ROOT/lib/firmware/$_xfw" ]; then
 		install -pD "$ROOT/lib/firmware/$_xfw" \
 			"$MODLOOP"/modules/firmware/"$_xfw"
-	else
+	elif [ -n "$_xfw" ]; then
 		echo "Warning: extra firmware \"$_xfw\" not found!"
 	fi
 done
