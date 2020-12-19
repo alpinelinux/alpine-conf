@@ -10,6 +10,7 @@ BOOTFS=${BOOTFS:-ext4}
 VARFS=${VARFS:-ext4}
 BOOTLOADER=${BOOTLOADER:-syslinux}
 DISKLABEL=${DISKLABEL:-dos}
+KERNELOPTS=${KERNELOPTS:-quiet}
 
 # default location for mounted root
 SYSROOT=${SYSROOT:-/mnt}
@@ -345,7 +346,7 @@ install_mounted_root() {
 	local disks="${@}" mnt_boot= boot_fs= root_fs=
 	local initfs_features="ata base ide scsi usb virtio"
 	local pvs= dev= rootdev= bootdev= extlinux_raidopt= root= modules=
-	local kernel_opts="quiet"
+	local kernel_opts="$KERNELOPTS"
 	[ "$ARCH" = "s390x" ] && initfs_features="$initfs_features qeth dasd_mod"
 
 	rootdev=$(find_mount_dev "$mnt")
@@ -1169,6 +1170,9 @@ usage() {
 		If no bootloader is specified, the default bootloader is syslinux(extlinux)
 		except when EFI is detected or explicitly set by USE_EFI which will select grub.
 		Supported bootloaders are: grub, syslinux
+
+		If KERNELOPTS is specified, it will be appended to the kernel boot parameters.
+		Default is: quiet
 
 		If DISKLABEL is specified, the specified partition label will be used.
 		if no partition label is specified, the default label will be dos
