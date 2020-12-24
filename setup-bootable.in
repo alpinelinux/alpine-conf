@@ -139,7 +139,7 @@ check_syslinux() {
 			fix_syslinux_kernel "$i" "${i%/*}"/vmlinuz-$f
 		elif ! [ -e "$k" ]; then
 			echo "Warning: $syslinux_cfg: kernel $k  was not found"
-			echo "         Run $0 -c -f "$destdir" to fix"
+			echo "         Run $0 -f -c "$destdir" to fix"
 		fi
 	done
 
