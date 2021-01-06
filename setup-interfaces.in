@@ -126,29 +126,21 @@ find_essids() {
 	ip link set dev "$iface" up
 	iwlist $iface scanning | awk -F: '
 		/ESSID/ { gsub(/"/, "", $2); essid=$2 }
-		/Authentication Suites/ { gsub(/^ +/, "", $2); printf "%s/%s\n",$2 }
-		'  | grep -v 802.1x | sort -u >$essids_list
-	if [ -s $essids_list ]; then
+		/Authentication Suites/ { gsub(/^ +/, "", $2); printf "%s/%s\n", essid, $2 }
+		'  | grep -v 802.1x | sort -u >"$essids_list"
+	if [ -s "$essids_list" ]; then
 		# we use / as separator since it is an illegal char in ssids
-		awk -F/ '{print $1}' $essids_list
+		awk -F/ '{print $1}' "$essids_list"
 	else
 		return 1
 	fi
 }
 
 config_wpa_supp() {
-	local iface=$1
-	local essid=$2
-	local psk=$3
+	local iface="$1" essid="$2" auth_type="$3" psk="$4"
 	local conffile=/etc/wpa_supplicant/wpa_supplicant.conf
 	if [ "$auth_type" = "WPA-PSK" ]; then
-		cat << EOF >> $conffile
-network={
-	ssid="$essid"
-	key_mgmt=$auth_type
-	psk="$psk"
-}
-EOF
+		wpa_passphrase "$essid" "$psk" >> "$conffile"
 	else
 		cat << EOF >> $conffile
 network={
@@ -157,27 +149,22 @@ network={
 }
 EOF
 	fi
-	if grep -q ^wpa_supplicant_args= /etc/conf.d/wpa_supplicant.conf; then
-		sed -i -e "s/^wpa_supplicant_args=/wpa_supplicant_args=\"-i $iface\"/" /etc/conf.d/wpa_supplicant.conf
+	if grep -q ^wpa_supplicant_args= /etc/conf.d/wpa_supplicant; then
+		sed -i -e "s/^wpa_supplicant_args=.*/wpa_supplicant_args=\"-i $iface\"/" /etc/conf.d/wpa_supplicant
 	else
-		echo "wpa_supplicant_args=\"-i $iface\"/" >> /etc/conf.d/wpa_supplicant.conf
+		printf 'wpa_supplicant_args="-i%s"\n' "$iface" >> /etc/conf.d/wpa_supplicant
 	fi
 	rc-update --quiet add wpa_supplicant boot
 	rc-service wpa_supplicant start
 }
 
-wlan_is_not_open() {
-	local iface=$1
-	local essid=$2
-	auth_type=$(awk -F/ '/'"$essid"'/ { print $2 }' $essids_list)
-	echo $auth_type | grep -q PSK
-	if [ "$?" -eq "0" ]; then
-		export auth_type="WPA-PSK"
-		return 0
-	else
-		export auth_type="open"
-		return 1
-	fi
+essid_is_valid()  {
+	[ -n "$1" ] && cut -d/ -f1 "$essids_list" | grep -q -w -F "$1"
+}
+
+wlan_is_psk() {
+	local essid="$1"
+	grep -q -x -F "$essid/PSK" "$essids_list"
 }
 
 config_iface() {
@@ -218,19 +205,32 @@ config_iface() {
 	fi
 	if is_wifi $iface; then
 		apk add --quiet --no-progress wireless-tools wpa_supplicant || return
-		echo "Available wireless networks (scanning):"
-		if find_essids $iface; then
-			ask "Type the wireless network name to connect to:"
-			local essid=$resp
-			if wlan_is_not_open $iface "$essid"; then
-				ask "Type the \"$essid\" network Pre-Shared Key:"
-				psk=$resp
+		local wifi_configured=false
+		while ! $wifi_configured; do
+			echo "Available wireless networks (scanning):"
+			if ! find_essids $iface; then
+				printf "\nNo available wireless networks\n"
+				return
 			fi
-			config_wpa_supp $iface "$essid" "$psk"
-		else
-			echo -e "\nNo available wireless networks\n"
-			return
-		fi
+
+			local essid= auth_type="open"
+			ask "Type the wireless network name to connect to:"
+			if ! essid_is_valid "$resp"; then
+				case "$resp" in
+					""|done|abort) echo "Aborting $iface setup"; return;;
+				esac
+				echo "Invalid SSID: $resp"
+				continue
+			fi
+			essid="$resp"
+
+			if wlan_is_psk "$essid"; then
+				auth_type="WPA-PSK"
+				askpass "Type the \"$essid\" network Pre-Shared Key (will not echo):"
+				psk="$resp"
+			fi
+			config_wpa_supp "$iface" "$essid" "$auth_type" "$psk" && wifi_configured=true
+		done
 	fi
 	# use ipcalc to validate the address. we do accept /mask
 	# we are no interested in the result, only error code, so
