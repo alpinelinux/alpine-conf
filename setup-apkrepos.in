@@ -91,7 +91,7 @@ add_from_list() {
 		return 1
 	fi
 	set $MIRRORS
-	eval "mirror=\$$mirror_index"
+	eval "mirror=\${$mirror_index}"
 	add_mirror "$mirror"
 }
 
