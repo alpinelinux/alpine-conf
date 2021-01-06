@@ -124,10 +124,13 @@ find_essids() {
 	export essids_list=wlans
 	# Supports only open or PSK
 	ip link set dev "$iface" up
-	iwlist $iface scanning | awk -F: '/ESSID/ { printf "%s ",$2 } /Authentication Suites/ \
-		{ printf ":%s\n",$2 }' | grep -v 802.1x | sort -u >$essids_list
+	iwlist $iface scanning | awk -F: '
+		/ESSID/ { gsub(/"/, "", $2); essid=$2 }
+		/Authentication Suites/ { gsub(/^ +/, "", $2); printf "%s/%s\n",$2 }
+		'  | grep -v 802.1x | sort -u >$essids_list
 	if [ -s $essids_list ]; then
-		cat $essids_list
+		# we use / as separator since it is an illegal char in ssids
+		awk -F/ '{print $1}' $essids_list
 	else
 		return 1
 	fi
@@ -138,7 +141,7 @@ config_wpa_supp() {
 	local essid=$2
 	local psk=$3
 	local conffile=/etc/wpa_supplicant/wpa_supplicant.conf
-	if [ "$auth_type" == "WPA-PSK" ]; then
+	if [ "$auth_type" = "WPA-PSK" ]; then
 		cat << EOF >> $conffile
 network={
 	ssid="$essid"
@@ -161,7 +164,7 @@ EOF
 wlan_is_not_open() {
 	local iface=$1
 	local essid=$2
-	auth_type=$(awk -F: '/'"$essid"'/ { print $2 }' $essids_list)
+	auth_type=$(awk -F/ '/'"$essid"'/ { print $2 }' $essids_list)
 	echo $auth_type | grep -q PSK
 	if [ "$?" -eq "0" ]; then
 		export auth_type="WPA-PSK"
