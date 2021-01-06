@@ -217,7 +217,7 @@ config_iface() {
 		echo "raw_device=\"$raw_device\"" >> $conf
 	fi
 	if is_wifi $iface; then
-		apk add --quiet --no-progress wireless-tools wpa_supplicant || prompt_for_interfaces
+		apk add --quiet --no-progress wireless-tools wpa_supplicant || return
 		echo "Available wireless networks (scanning):"
 		if find_essids $iface; then
 			ask "Type the wireless network name to connect to:"
@@ -229,7 +229,7 @@ config_iface() {
 			config_wpa_supp $iface "$essid" "$psk"
 		else
 			echo -e "\nNo available wireless networks\n"
-			prompt_for_interfaces
+			return
 		fi
 	fi
 	# use ipcalc to validate the address. we do accept /mask
