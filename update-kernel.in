@@ -49,7 +49,7 @@ usage() {
 		        $SCRIPT -b <build_dir> $opts [$dest_args]
 
 		Options: -a|--arch <arch>          Install kernel for specified architecture
-		         -b|--build <build_dir>    Install custom-built kernel
+		         -b|--build-dir <dir>      Install custom-built kernel
 		         -e|--modloopfw <firmware> Install extra firmware in modloop
 		         -f|--flavor <flavor>      Install kernel of specified flavor
 		         -F|--feature <feature>    Enable initfs feature
