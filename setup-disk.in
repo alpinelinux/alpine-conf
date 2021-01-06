@@ -1191,9 +1191,9 @@ usage() {
 
 kver=$(uname -r)
 case $kver in
-	*-rc[0-9]*) KERNEL_FLAVOR=vanilla;;
+	*-rc[0-9]*) KERNEL_FLAVOR=lts;;
 	*-[a-z]*) KERNEL_FLAVOR=${kver##*-};;
-	*) KERNEL_FLAVOR=vanilla;;
+	*) KERNEL_FLAVOR=lts;;
 esac
 
 DISK_MODE=
