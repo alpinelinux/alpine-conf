@@ -157,8 +157,13 @@ network={
 }
 EOF
 	fi
-
-	wpa_supplicant -B -c $conffile -i $iface 2>/dev/null
+	if grep -q ^wpa_supplicant_args= /etc/conf.d/wpa_supplicant.conf; then
+		sed -i -e "s/^wpa_supplicant_args=/wpa_supplicant_args=\"-i $iface\"/" /etc/conf.d/wpa_supplicant.conf
+	else
+		echo "wpa_supplicant_args=\"-i $iface\"/" >> /etc/conf.d/wpa_supplicant.conf
+	fi
+	rc-update --quiet add wpa_supplicant boot
+	rc-service wpa_supplicant start
 }
 
 wlan_is_not_open() {
