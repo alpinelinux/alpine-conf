@@ -1,5 +1,16 @@
 #!/bin/sh
 
+# enable community repo
+if ! grep -q '^[^#].*/community$' /etc/apk/repositories; then
+	repo=$(grep '^[^#].*/main$' /etc/apk/repositories | sed 's:/main$:/community:')
+	escaped_repo=$(echo $repo | sed -e 's:/:\\/:g' -e 's:\.:\\.:g')
+	sed -i -e "/^[^#].*\/main$/a $repo" \
+		-e "/^#${escaped_repo}$/d" \
+		/etc/apk/repositories \
+		&& echo ">> Enabling community repository"
+	apk update
+fi
+
 apk add xorg-server xf86-input-libinput eudev "$@"
 
 setup-udev
