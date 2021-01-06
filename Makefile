@@ -13,7 +13,6 @@ SBIN_FILES	:= lbu\
 		setup-bootable\
 		setup-disk\
 		setup-dns\
-		setup-gparted-desktop\
 		setup-hostname\
 		setup-interfaces\
 		setup-keymap\
