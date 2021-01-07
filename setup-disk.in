@@ -594,7 +594,7 @@ stop_all_raid() {
 	done
 }
 
-select_bootloader() {
+select_bootloader_pkg() {
 	local bootloader=syslinux
 	if [ "$ARCH" = "ppc64le" ]; then
 		bootloader=grub-ieee1275
@@ -964,7 +964,7 @@ native_disk_install_lvm() {
 	local lvm_size=
 	local root_dev=/dev/$vgname/lv_root
 
-	init_progs $(select_bootloader) || return 1
+	init_progs $(select_bootloader_pkg) || return 1
 	confirm_erase $@ || return 1
 
 	if [ -n "$USE_RAID" ]; then
@@ -1009,7 +1009,7 @@ native_disk_install() {
 	local swap_size=${SWAP_SIZE}
 	local root_size=${ROOT_SIZE}
 	local root_dev= boot_dev= swap_dev=
-	init_progs $(select_bootloader) || return 1
+	init_progs $(select_bootloader_pkg) || return 1
 	confirm_erase $@ || return 1
 
 	if [ -n "$USE_RAID" ]; then
