@@ -271,6 +271,7 @@ KVER_FLAVOR=
 KVER=$(basename $(ls -d $ROOT/lib/modules/*"$KVER_FLAVOR"))
 DTBDIR=$ROOT/boot/dtbs-$FLAVOR
 [ -d "$DTBDIR" ] || DTBDIR=$ROOT/usr/lib/linux-$KVER
+[ -d "$DTBDIR" ] || DTBDIR=$ROOT/boot
 depmod -b $ROOT "$KVER"
 
 
