@@ -17,7 +17,8 @@ get_fqdn() {
 }
 
 is_qemu() {
-	grep -q "QEMU" /proc/cpuinfo
+	grep -q "QEMU" /proc/cpuinfo \
+		|| strings /sys/firmware/dmi/tables/DMI 2>/dev/null | grep -q QEMU
 }
 
 usage() {
