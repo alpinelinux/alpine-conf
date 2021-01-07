@@ -30,7 +30,7 @@ MKINITFS_ARGS=
 REPOSITORIES_FILE=/etc/apk/repositories
 KEYS_DIR=/etc/apk/keys
 SIGNALS="HUP INT TERM"
-TMPDIR=
+tmpdir=
 features=
 modloopfw=
 
@@ -182,7 +182,7 @@ clean_up() {
 	if [ "$SUPERUSER" ] && [ -z "$FAKEROOTKEY" ]; then
 		apk del $QUIET_OPT $VIRTUAL
 	fi
-	rm -fr $TMPDIR
+	rm -fr $tmpdir
 }
 
 sign_modloop() {
@@ -196,7 +196,7 @@ sign_modloop() {
 	MODLOOPSIG=${in##*/}.SIGN.RSA.${pubkey##*/}
 	echo "Signing: $in"
 	openssl dgst -sha1 -sign "$privkey" \
-		-out "$TMPDIR/$MODLOOPSIG" \
+		-out "$tmpdir/$MODLOOPSIG" \
 		"$in"
 }
 
@@ -218,8 +218,8 @@ fi
 
 [ "$ARCH" ] || ARCH=$(apk --print-arch)
 
-TMPDIR=$(mktemp -d /tmp/$SCRIPT.XXXXXX)
-ROOT=$TMPDIR/root
+tmpdir=$(mktemp -d /tmp/$SCRIPT.XXXXXX)
+ROOT=$tmpdir/root
 BOOT=$ROOT/boot
 
 _apk() {
@@ -276,8 +276,8 @@ DTBDIR=$ROOT/boot/dtbs-$FLAVOR
 depmod -b $ROOT "$KVER"
 
 
-STAGING=$TMPDIR/boot
-MODLOOP=$TMPDIR/modloop
+STAGING=$tmpdir/boot
+MODLOOP=$tmpdir/modloop
 MODIMG=modloop-$FLAVOR
 
 mkdir $MODLOOP $STAGING
@@ -330,7 +330,7 @@ mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error $mksfs
 
 if [ -n "$MODLOOPSIGN" ]; then
 	sign_modloop "$STAGING/$MODIMG"
-	MKINITFS_ARGS="$MKINITFS_ARGS -s $TMPDIR/$MODLOOPSIG"
+	MKINITFS_ARGS="$MKINITFS_ARGS -s $tmpdir/$MODLOOPSIG"
 fi
 
 mkinitfs $MKINITFS_ARGS -q -b $ROOT -F "$features base squashfs" \
