@@ -372,7 +372,10 @@ install_mounted_root() {
 		mnt_boot="$mnt"/boot
 	fi
 	boot_fs=$(find_mount_fs "$mnt_boot")
-	supported_boot_fs "$boot_fs" || return 1
+	if ! supported_boot_fs "$boot_fs"; then
+		[ -z "$FORCE_BOOTFS" ] && return 1
+		echo "Continuing at your own risk."
+	fi
 
 	# check if our root is on raid so we can feed mkinitfs and
 	# bootloader conf with the proper kernel module params
