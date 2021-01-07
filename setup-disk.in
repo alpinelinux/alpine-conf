@@ -8,7 +8,6 @@ MBR=${MBR:-"/usr/share/syslinux/mbr.bin"}
 ROOTFS=${ROOTFS:-ext4}
 BOOTFS=${BOOTFS:-ext4}
 VARFS=${VARFS:-ext4}
-BOOTLOADER=${BOOTLOADER:-syslinux}
 DISKLABEL=${DISKLABEL:-dos}
 KERNELOPTS=${KERNELOPTS:-quiet}
 
@@ -17,6 +16,9 @@ SYSROOT=${SYSROOT:-/mnt}
 
 # machine arch
 ARCH=$(apk --print-arch)
+case "$ARCH" in
+	x86*) BOOTLOADER=${BOOTLOADER:-syslinux};;
+esac
 
 in_list() {
 	local i="$1"
