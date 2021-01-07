@@ -97,6 +97,10 @@ is_efi() {
 	return 1
 }
 
+is_rpi() {
+	grep -q "Raspberry Pi" /proc/device-tree/model 2>/dev/null
+}
+
 # Find the disk device from given partition
 disk_from_part() {
 	local path=${1%/*}
@@ -126,6 +130,7 @@ partition_id() {
 			lvm)	id=8e ;;
 			prep)	id=41 ;;
 			esp)	id=EF ;;
+			vfat)	id=0c ;;
 			*)	die "Partition id \"$1\" is not supported!" ;;
 		esac
 	elif [ "$DISKLABEL" = "eckd" ]; then
@@ -212,6 +217,9 @@ find_mount_dev() {
 supported_boot_fs() {
 	local supported="ext2 ext3 ext4 btrfs xfs vfat"
 	local fs=
+	if is_rpi; then
+		supported=vfat
+	fi
 	for fs in $supported; do
 		[ "$fs" = "$1" ] && return 0
 	done
@@ -342,6 +350,82 @@ setup_syslinux() {
 	extlinux $extlinux_raidopt --install "$mnt"/boot
 }
 
+rpi_gen_config() {
+	cat <<-EOF
+	# do not modify this file as it will be overwritten on upgrade.
+	# create and/or modify usercfg.txt instead.
+	# https://www.raspberrypi.org/documentation/configuration/config-txt
+	EOF
+	case "$ARCH" in
+	armhf)
+		cat <<-EOF
+		[pi0]
+		kernel=vmlinuz-rpi
+		initramfs boot/initramfs-rpi
+		[pi0w]
+		kernel=vmlinuz-rpi
+		initramfs boot/initramfs-rpi
+		[pi1]
+		kernel=vmlinuz-rpi
+		initramfs initramfs-rpi
+		[pi2]
+		kernel=vmlinuz-rpi2
+		initramfs initramfs-rpi2
+		[pi3]
+		kernel=vmlinuz-rpi2
+		initramfs initramfs-rpi2
+		[pi3+]
+		kernel=vmlinuz-rpi2
+		initramfs initramfs-rpi2
+		[all]
+		include usercfg.txt
+		EOF
+	;;
+	armv7)
+		cat <<-EOF
+		[pi2]
+		kernel=vmlinuz-rpi2
+		initramfs initramfs-rpi2
+		[pi3]
+		kernel=vmlinuz-rpi2
+		initramfs initramfs-rpi2
+		[pi3+]
+		kernel=vmlinuz-rpi2
+		initramfs initramfs-rpi2
+		[pi4]
+		kernel=vmlinuz-rpi4
+		initramfs initramfs-rpi4
+		[all]
+		include usercfg.txt
+		EOF
+	;;
+	aarch64)
+		cat <<-EOF
+		[pi3]
+		kernel=vmlinuz-rpi
+		initramfs initramfs-rpi
+		[pi3+]
+		kernel=vmlinuz-rpi
+		initramfs initramfs-rpi
+		[pi4]
+		enable_gic=1
+		kernel=vmlinuz-rpi4
+		initramfs initramfs-rpi4
+		[all]
+		arm_64bit=1
+		include usercfg.txt
+		EOF
+	;;
+	esac
+}
+
+# setup rpi bootloader
+setup_raspberrypi_bootloader() {
+	local mnt="$1" root="$2" modules="$3" kernel_opts="$4"
+	rpi_gen_config > "$mnt"/boot/config.txt
+	echo "root=$root modules=$modules $kernel_opts" > "$mnt"/boot/cmdline.txt
+}
+
 install_mounted_root() {
 	local mnt="$1"
 	shift 1
@@ -350,6 +434,7 @@ install_mounted_root() {
 	local pvs= dev= rootdev= bootdev= extlinux_raidopt= root= modules=
 	local kernel_opts="$KERNELOPTS"
 	[ "$ARCH" = "s390x" ] && initfs_features="$initfs_features qeth dasd_mod"
+	is_rpi && initfs_features="base mmc usb"
 
 	rootdev=$(find_mount_dev "$mnt")
 	if [ -z "$rootdev" ]; then
@@ -472,6 +557,7 @@ install_mounted_root() {
 		grub) setup_grub "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" $disks ;;
 		syslinux) setup_syslinux "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" ;;
 		zipl) setup_zipl "$mnt" "$root" "$modules" "$kernel_opts" ;;
+		raspberrypi-bootloader) setup_raspberrypi_bootloader "$mnt" "$root" "$modules" "$kernel_opts" ;;
 		*) die "Bootloader \"$BOOTLOADER\" not supported!" ;;
 	esac
 
@@ -483,9 +569,12 @@ install_mounted_root() {
 	local pkgs=$(grep -h -v -w sfdisk "$mnt"/etc/apk/world \
 		"$mnt"/var/lib/apk/world 2>/dev/null)
 
-	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base"
+	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base $(select_bootloader_pkg)"
 	if [ "$(rc --sys)" = "XEN0" ]; then
 		pkgs="$pkgs xen-hypervisor"
+	fi
+	if is_rpi; then
+		pkgs="$pkgs dosfstools"
 	fi
 	local repos=$(sed -e 's/\#.*//' /etc/apk/repositories)
 	local repoflags=
@@ -595,7 +684,7 @@ stop_all_raid() {
 }
 
 select_bootloader_pkg() {
-	local bootloader=syslinux
+	local bootloader="$BOOTLOADER"
 	if [ "$ARCH" = "ppc64le" ]; then
 		bootloader=grub-ieee1275
 	elif [ "$ARCH" = "s390x" ]; then
@@ -967,6 +1056,9 @@ native_disk_install_lvm() {
 	init_progs $(select_bootloader_pkg) || return 1
 	confirm_erase $@ || return 1
 
+	if [ "$BOOTFS" = "vfat" ]; then
+		boot_part_type=$(partition_id vfat)
+	fi
 	if [ -n "$USE_RAID" ]; then
 		boot_part_type=$(partition_id raid)
 		lvm_part_type=$(partition_id raid)
@@ -1012,6 +1104,9 @@ native_disk_install() {
 	init_progs $(select_bootloader_pkg) || return 1
 	confirm_erase $@ || return 1
 
+	if [ "$BOOTFS" = "vfat" ]; then
+		boot_part_type=$(partition_id vfat)
+	fi
 	if [ -n "$USE_RAID" ]; then
 		boot_part_type=$(partition_id raid)
 		root_part_type=$(partition_id raid)
@@ -1219,6 +1314,10 @@ while getopts "hk:Lm:o:qrs:v" opt; do
 done
 shift $(( $OPTIND - 1))
 
+if is_rpi; then
+	: ${BOOTLOADER:=raspberrypi-bootloader}
+fi
+
 if [ -d "$1" ]; then
 	# install to given mounted root
 	[ "$BOOTLOADER" = "syslinux" ] && apk add --quiet syslinux
@@ -1318,6 +1417,11 @@ if is_efi || [ -n "$USE_EFI" ]; then
 	BOOTLOADER=grub
 	BOOT_SIZE=512
 	BOOTFS=vfat
+fi
+
+if is_rpi; then
+	BOOTFS=vfat
+	SWAP_SIZE=0
 fi
 
 case "$ARCH" in
