@@ -24,10 +24,10 @@ while getopts "hc:" opt; do
 	esac
 done
 
-if [ "$sshdchoice" = "" ]; then
-	echo -n "Which SSH server? ('openssh', 'dropbear' or 'none') [openssh] "
-	default_read sshdchoice "openssh"
-fi
+while ! isin "$sshdchoice" openssh dropbear none; do
+	ask "Which SSH server? ('openssh', 'dropbear' or 'none')" openssh
+	sshdchoice="$resp"
+done
 
 if [ "$sshdchoice" = "none" ]; then
 	exit 0
