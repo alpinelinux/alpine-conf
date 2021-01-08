@@ -4,15 +4,13 @@ eckd_dasd=
 fba_dasd=
 
 _dasdfmt() {
-	local block="$(ls /sys/bus/ccw/devices/"$1"/block 2>/dev/null)" answer=
+	local block="$(ls /sys/bus/ccw/devices/"$1"/block 2>/dev/null)"
 	if ! [ -b "/dev/$block" ]; then
 		echo "/dev/$block is not a block device" >&2
 	else
-		echo -n "WARNING: Erase ECKD DASD $1? [y/N]: "
-		read answer
-		case "$answer" in
-			y*|Y*) dasdfmt -b 4096 -d cdl -yp "/dev/$block" ;;
-		esac
+		if ask_yesno "WARNING: Erase ECKD DASD $1? (y/n)" "n"; then
+			dasdfmt -b 4096 -d cdl -yp "/dev/$block"
+		fi
 	fi
 }
 
@@ -46,21 +44,20 @@ ask_eckd(){
 	local prompt="$1"
 	local help_func="$2"
 	shift 2
-	local answer=
 	local default_dasd="all"
 	apk add --quiet s390-tools
 
-	while ! all_in_list "$answer" $@ "$default_dasd" "abort" "done" "none"; do
+	resp=
+	while ! all_in_list "$resp" $@ "$default_dasd" "abort" "done" "none"; do
 		echo "Available ECKD DASD(s) are:"
 		show_dasd_info "$@"
-		echon "$prompt [$default_dasd] "
-		default_read answer $default_dasd
-		case "$answer" in
+		ask "$prompt" "$default_dasd"
+		case "$resp" in
 			'abort') exit 0;;
 			'done'|'none') return 0;;
 			'?') $help_func;;
 			'all') for busid in $@; do _dasdfmt $busid; done;;
-			*) for busid in $answer; do _dasdfmt $busid; done;;
+			*) for busid in $resp; do _dasdfmt $busid; done;;
 		esac
 	done
 }
