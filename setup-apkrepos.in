@@ -15,14 +15,14 @@ get_hostname_from_url() {
 	echo ${n%%/*}
 }
 
-prompt_setup_method() {
+ask_setup_method() {
 	cat <<-__EOF__
 		r) Add random from the above list
 		f) Detect and add fastest mirror from above list
 		e) Edit ${ROOT}etc/apk/repositories with text editor
 
 	__EOF__
-	echo -n "Enter mirror number (1-$mirror_count) or URL to add (or r/f/e/done) [$1]: "
+	ask "Enter mirror number (1-$mirror_count) or URL to add (or r/f/e/done)" "$1"
 }
 
 add_random_mirror() {
@@ -175,7 +175,6 @@ if [ -r "$APKREPOS_PATH" ]; then
 fi
 
 get_alpine_release
-default_answer=1
 changed=false
 
 if [ $# -gt 0 ]; then
@@ -207,13 +206,12 @@ while ! $changed; do
 	fi
 
 	show_mirror_list
-	prompt_setup_method $default_answer
+	ask_setup_method ${APKREPO_DEFAULT_ANSWER:-1}
 
-	default_read answer $default_answer
-	case "$answer" in
+	case "$resp" in
 		"done") break;;
-		[0-9]*) add_from_list $answer && changed=true;;
-		/*|http://*|ftp://*|https://*) add_from_url "$answer" \
+		[0-9]*) add_from_list "$resp" && changed=true;;
+		/*|http://*|ftp://*|https://*) add_from_url "$resp" \
 			&& changed=true;;
 		r) add_random_mirror && changed=true;;
 		f) add_fastest_mirror && changed=true;;
