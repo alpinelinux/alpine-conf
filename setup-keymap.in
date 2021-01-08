@@ -29,21 +29,18 @@ show_variants() {
 
 select_layout() {
 	while true; do
-		if [ -z "$layout" ]; then
+		if [ -z "$layout" ] || ! [ -d "$MAPDIR/$layout" ]; then
 			layout=none
 		fi
 		echo "Available keyboard layouts:"
 		show_layouts
-		echon "Select keyboard layout [$layout]: "
-		default_read layout "$layout"
-		if [ "$layout" = "abort" ] || [ "$layout" = "none" ] ; then
+		ask "Select keyboard layout:" "$layout"
+		if [ "$resp" = "abort" ] || [ "$resp" = "none" ] ; then
 			goodbye 0
 		fi
-		set -- $layout
-		if [ $# -eq 2 ]; then
-			layout="$1"
-			variant="$2"
-		fi
+		set -- $resp
+		layout="$1"
+		variant="$2"
 		if [ -d "$MAPDIR/$layout" ] ; then
 			return 0
 		fi
@@ -72,8 +69,8 @@ select_variant() {
 		if [ ! -f "$MAPDIR/$layout/$variant.bmap" ] ; then
 			variant=""
 		fi
-		echon "Select variant [$variant]: "
-		default_read variant "$variant"
+		ask "Select variant (or 'abort'):" "$variant"
+		variant="$resp"
 		if [ "$variant" = "abort" ] || [ "$variant" = "none" ]; then
 			break;
 		fi
