@@ -229,6 +229,22 @@ ask_until() {
 	done
 }
 
+# Ask for user for y/n until y, yes, n or no is responded
+#
+#    $1    = the question to ask the user
+#    $2    = the default answer
+#
+#  Returns true/sucess if y/yes was responded. false othewise
+ask_yesno() {
+	while true; do
+		ask "$1" "$2"
+		case "$resp" in
+			y|yes|n|no) break;;
+		esac
+	done
+	yesno "$resp"
+}
+
 # Ask for the user to select one value from a list, or 'done'.
 #
 # $1 = name of the list items (disk, cd, etc.)
