@@ -60,7 +60,6 @@ fi
 for apknew in $(find "$ROOT/etc" -name '*.apk-new') ; do
 	p="${apknew%.apk-new}"
 	f="${p#${ROOT}/}"
-	unset choice
 
 	if [ "$lflag" ] ; then
 
@@ -79,24 +78,24 @@ for apknew in $(find "$ROOT/etc" -name '*.apk-new') ; do
 		diff -u "$p" "$apknew"
 
 		# ask user what to do with the file
-		while [ -z "$choice" ] ; do
+		unset resp
+		while [ -z "$resp" ] ; do
 			echo "New $p available:"
-			echon "Quit, Next, Show diff, Edit new${vflag}, Zap new, Use new (q/n/s/e${vflag2}/z/u) [s]: "
-			default_read choice "s" </dev/tty
-			case "$choice" in
+			ask "Quit, Next, Show diff, Edit new${vflag}, Zap new, Use new (q/n/s/e${vflag2}/z/u)" s
+			case "$resp" in
 				q) exit;;
 				n) continue;;
 				s) diff -u "$p" "$apknew" | ${PAGER:-less}
-				   unset choice
+				   unset resp
 				   ;;
-				e) ${EDITOR:-vi} "$apknew" ; unset choice;;
+				e) ${EDITOR:-vi} "$apknew" ; unset resp;;
 				v) if [ "$vflag" ]; then
 					vimdiff "$p" "$apknew"
 				   fi
-				   unset choice;;
+				   unset resp;;
 				z) rm "$apknew";;
 				u) mv "$apknew" "$p";;
-				*) unset choice;;
+				*) unset resp;;
 			esac
 		done
 	else
