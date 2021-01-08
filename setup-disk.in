@@ -1420,6 +1420,10 @@ esac
 
 dmesg -n1
 
+if [ -n "$USE_LVM" ] && ! grep -w -q device-mapper /proc/misc; then
+	modprobe dm-mod
+fi
+
 # native disk install
 case "$DISK_MODE" in
 sys) native_disk_install$USE_LVM $diskdevs;;
