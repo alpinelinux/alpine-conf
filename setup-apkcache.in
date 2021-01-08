@@ -130,8 +130,8 @@ fi
 cachedir=$1
 
 while [ -z "$cachedir" ]; do
-	echo -n "Enter apk cache directory (or '?' or 'none') [$suggestion]: "
-	default_read cachedir $suggestion
+	ask "Enter apk cache directory (or '?' or 'none')" "$suggestion"
+	cachedir="$resp"
 	if [ "$cachedir" = "?" ]; then
 		apk_cache_help
 		cachedir=
