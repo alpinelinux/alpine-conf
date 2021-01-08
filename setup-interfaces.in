@@ -174,17 +174,10 @@ config_iface() {
 	local address= netmask= gateway= bridge_ports=
 	local bridge
 	local conf=$prefix$iface.conf
-	local answer=
 
-	while [ -n "$ask_bridge" ] && ! is_bridge $iface; do
-		ask "Do you want to bridge the interface $iface?" yes
-		case "$resp" in
-			yes|y) resp=yes; break;;
-			no|n) break;;
-		esac
-	done
+	if [ -n "$ask_bridge" ] && ! is_bridge $iface \
+			&& ask_yesno "Do you want to bridge the interface $iface? (y/n)" y; then
 
-	if [ "$resp" = "yes" ]; then
 		bridge="br$(echo $iface | sed 's/[^0-9]//g')"
 		ask "Name of the bridge you want add $iface to:" $bridge
 		bridge_add_port $resp $iface
@@ -532,16 +525,7 @@ prompt_for_interfaces() {
 		echo "" >> interfaces
 	done
 
-	while [ "$answer" != "yes" ] && [ "$answer" != "no" ] ; do
-		ask "Do you want to do any manual network configuration?" no
-		case $resp in
-			y) answer=yes;;
-			n) answer=no;;
-			*) answer=$resp;;
-		esac
-	done
-
-	if yesno "$answer"; then
+	if ask_yesno "Do you want to do any manual network configuration? (y/n)" n; then
 		case "$EDITOR" in
 			nano)	apk add nano;;
 			vim)	apk add vim;;
