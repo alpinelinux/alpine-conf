@@ -1204,28 +1204,27 @@ diskmode_help() {
 }
 
 # ask for a root or data disk
-# returns answer in global variable $answer
+# returns response in global variable $resp
 ask_disk() {
 	local prompt="$1"
 	local help_func="$2"
 	local i=
 	shift 2
-	answer=
 	local default_disk=${DEFAULT_DISK:-$1}
 
-	while ! all_in_list "$answer" $@ "none" "abort"; do
+	resp=
+	while ! all_in_list "$resp" $@ "none" "abort"; do
 		echo "Available disks are:"
 		show_disk_info "$@"
-		echon "$prompt [$default_disk] "
-		default_read answer $default_disk
-		case "$answer" in
+		ask "$prompt"  "$default_disk"
+		case "$resp" in
 			'abort') exit 0;;
 			'none') return 0;;
 			'?') $help_func;;
-			*) for i in $answer; do
+			*) for i in $resp; do
 				if ! [ -b "/dev/$i" ]; then
 					echo "/dev/$i is not a block device" >&2
-					answer=
+					resp=
 				fi
 			done;;
 		esac
@@ -1350,8 +1349,8 @@ if [ $# -gt 0 ]; then
 else
 	ask_disk "Which disk(s) would you like to use? (or '?' for help or 'none')" \
 		diskselect_help $disks
-	if [ "$answer" != none ]; then
-		for i in $answer; do
+	if [ "$resp" != none ]; then
+		for i in $resp; do
 			diskdevs="$diskdevs /dev/$i"
 		done
 	else
@@ -1360,7 +1359,7 @@ else
 fi
 
 if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
-	answer=
+	resp=
 	disk_is_or_disks_are="disk is"
 	it_them="it"
 	set -- $diskdevs
@@ -1373,21 +1372,20 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 		echo "The following $disk_is_or_disks_are selected${USE_LVM:+ (with LVM)}:"
 		show_disk_info $diskdevs
 		_lvm=${USE_LVM:-", 'lvm'"}
-		echon "How would you like to use $it_them? ('sys', 'data'${_lvm#_lvm} or '?' for help) [?] "
-		default_read answer '?'
-		case "$answer" in
+		ask "How would you like to use $it_them? ('sys', 'data'${_lvm#_lvm} or '?' for help)" "?"
+		case "$resp" in
 		'?') diskmode_help;;
 		sys|data) break;;
 		lvm) USE_LVM="_lvm" ;;
 		nolvm) USE_LVM="";;
 		lvmsys|lvmdata)
-			answer=${answer#lvm}
+			resp=${resp#lvm}
 			USE_LVM="_lvm"
 			break
 			;;
 		esac
 	done
-	DISK_MODE="$answer"
+	DISK_MODE="$resp"
 fi
 
 if [ -z "$SWAP_SIZE" ]; then
