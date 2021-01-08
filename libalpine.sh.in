@@ -81,10 +81,10 @@ cfg_add() {
 	[ -z "$NOCOMMIT" ] && lbu_add "$@"
 }
 
-# return true if given value is 1, Y, Yes, yes YES etc
+# return true if given value is Y, y, Yes, yes YES etc
 yesno() {
 	case $1 in
-	[Yy]|[Yy][Ee][Ss]|1|[Tt][Rr][Uu][Ee]) return 0;;
+	[Yy]|[Yy][Ee][Ss]) return 0;;
 	esac
 	return 1
 }
