@@ -132,8 +132,8 @@ if [ -z "$suggestion" ] && [ -n "$usbmnt" ]; then
 fi
 
 while [ -z "$media" ]; do
-	echo -n "Enter where to store configs ($alternatives or 'none') [$suggestion]: "
-	default_read media $suggestion
+	ask "Enter where to store configs ($alternatives or 'none')" "$suggestion"
+	media="$resp"
 	if [ "$media" = "none" ] || [ -d "/media/$media" ]; then
 		break
 	fi
