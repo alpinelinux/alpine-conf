@@ -1328,14 +1328,31 @@ fi
 
 check_dasd
 
-disks=$(find_disks)
 diskdevs=
 
 # no disks so lets exit quietly.
-if [ -z "$disks" ]; then
-	[ -z "$QUIET" ] && echo "No disks found." >&2
-	exit 0
-fi
+while [ -z "$disks" ]; do
+	disks=$(find_disks)
+	[ -n "$disks" ] && break
+
+	# ask to unmount the boot mmc for rpi and similar
+	modloop_media=$(grep -h '^/media.*/modloop.*' /sys/block/*/loop/backing_file 2>/dev/null | cut -d/ -f1-3)
+
+	if [ -z "$modloop_media" ] || ! ask_yesno "No avaliable disks found. Unmount $modloop_media and retry? (y/n)" n; then
+		[ -z "$QUIET" ] && echo "No disks found." >&2
+		exit 0
+	fi
+
+	# save kernel modules, stop modloop and umount boot media
+	mkdir -p /lib/modules.tmp \
+		&& echo -n "Copying kernel modules..." \
+		&& cp -a /lib/modules/* /lib/modules.tmp/ \
+		&& echo "ok" \
+		&& rc-service modloop stop \
+		&& umount $modloop_media \
+		&& rm /lib/modules \
+		&& mv /lib/modules.tmp /lib/modules
+done
 
 if [ $# -gt 0 ]; then
 	# check that they are
