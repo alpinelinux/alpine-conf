@@ -58,9 +58,9 @@ fi
 HOST="$name"
 while [ -z "$name" ]; do
 	HOST=$(hostname)
-	echon "Enter system hostname (short form, e.g. 'foo') [$HOST]: "
-	default_read HOST "$HOST"
-	if valid_hostname "$HOST"; then
+	ask "Enter system hostname (short form, e.g. 'foo')" "$HOST"
+	if valid_hostname "$resp"; then
+		HOST="$resp"
 		break
 	fi
 done
