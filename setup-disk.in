@@ -175,10 +175,9 @@ unpack_apkovl() {
 	ovlfiles=/tmp/ovlfiles
 	if [ "$suffix" = "gz" ]; then
 		if ! tar -C "$dest" --numeric-owner -zxvf "$ovl" > $ovlfiles; then
-			ask "Continue anyway? (y/n)"
-			case "$resp" in
-				n*|N*) return 1;;
-			esac
+			if ! ask_yesno "Continue anyway? (y/n)"; then
+				return 1
+			fi
 		fi
 		return 0
 	fi
@@ -736,20 +735,13 @@ show_disk_info() {
 }
 
 confirm_erase() {
-	local answer=
 	local erasedisks="$@"
 	if [ "$ERASE_DISKS" = "$erasedisks" ]; then
 		return 0
 	fi
 	echo "WARNING: The following disk(s) will be erased:"
 	show_disk_info $@
-	ask "WARNING: Erase the above disk(s) and continue? (y/n)" n
-
-	read answer
-	case "$answer" in
-		y*|Y*) return 0;;
-	esac
-	return 1
+	ask_yesno "WARNING: Erase the above disk(s) and continue? (y/n)" n
 }
 
 # setup partitions on given disk dev in $1.
