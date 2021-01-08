@@ -19,19 +19,18 @@ usage() {
 
 while getopts "hc:" opt; do
 	case $opt in
-		c) ntpchoice="$OPTARG";;
+		c) resp="$OPTARG";;
 		h) usage;;
 	esac
 done
 
-if [ -z "$ntpchoice" ]; then
-	echo -n "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none') [chrony] "
-	default_read ntpchoice "chrony"
-fi
+while ! isin "$resp" busybox openntpd chrony none abort; do
+	ask "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none')" chrony
+done
 
-pkgs="$ntpchoice"
+pkgs="$resp"
 
-case "$ntpchoice" in
+case "$resp" in
 none|abort)
 	exit 0
 	;;
