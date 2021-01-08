@@ -32,25 +32,21 @@ conf="${ROOT}etc/resolv.conf"
 
 if [ -f "$conf" ] ; then
 	domain=$(awk '/^domain/ {print $2}' $conf)
-	dns=$(awk '/^nameserver/ {print $2}' $conf)
+	dns=$(awk '/^nameserver/ {printf "%s ",$2}' $conf)
 fi
 
 if [ -n "$DOMAINNAME" ];then
 	domain="$DOMAINNAME"
 else
-	echon "DNS domain name? (e.g 'bar.com') [$domain] "
-	default_read domain $domain
+	ask "DNS domain name? (e.g 'bar.com')" "$domain"
+	domain="$resp"
 fi
 
 if [ -n "$NAMESERVERS" ] || [ $# -gt 0 ];then
 	dns="$NAMESERVERS"
 else
-	echon "DNS nameserver(s)? ["
-	for i in $dns ; do
-		echon "$i "
-	done
-	echon "] "
-	default_read dns "$dns"
+	ask "DNS nameserver(s)?" "${dns% }"
+	dns="$resp"
 fi
 
 if [ "$domain" != "" ]; then
