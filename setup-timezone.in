@@ -79,10 +79,10 @@ fi
 apk add --quiet $pkg
 
 if [ -L "${ROOT}"etc/zoneinfo/localtime ]; then
-	timezone=$(readlink "${ROOT}"etc/zoneinfo/localtime)
-	timezone=${timezone#*/zoneinfo/}
+	default_timezone=$(readlink "${ROOT}"etc/zoneinfo/localtime)
+	default_timezone=${timezone#*/zoneinfo/}
 else
-	timezone=UTC
+	default_timezone=UTC
 fi
 
 
@@ -92,20 +92,20 @@ while true; do
 		break
 	fi
 
-	echo -n "Which timezone are you in? ('?' for list) [$timezone] "
-	default_read timezone "$timezone"
+	ask "Which timezone are you in? ('?' for list)" "$default_timezone"
+	timezone="$resp"
 	case "$timezone" in
 	"") continue;;
 	"?") show_tz_list; continue;;
 	esac
 
 	while [ -d "$zroot/$timezone" ]; do
-		zone=
-		echo -n "What sub-timezone of '$timezone' are you in? ('?' for list) "
-		default_read zone
+		ask "What sub-timezone of '$timezone' are you in? ('?' for list)"
+		zone="$resp"
 		case "$zone" in
 		"?") show_tz_list "$timezone"; continue;;
 		esac
+		default_timezone="$timezone"
 		timezone="$timezone/$zone"
 	done
 
