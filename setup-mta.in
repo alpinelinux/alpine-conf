@@ -33,13 +33,11 @@ fi
 res=
 
 while [ "$res" != "221" ]; do
-	echon "Outgoing mail server? (e.g 'smtp.isp.com') [$mailhub] "
-	default_read mailhub $mailhub
-	echon "Test connection? (y/n) [y] "
-	default_read testconn "y"
-	case "$testconn" in
-		[Nn]*) break;;
-	esac
+	ask "Outgoing mail server? (e.g 'smtp.isp.com')"  "$mailhub"
+	mailhub="$resp"
+	if ! ask_yesno "Test connection? (y/n)" y; then
+		break
+	fi
 	res=$(echo -e "quit\r\n" | nc $mailhub 25 | awk '/^221/ {print $1}')
 	[ "x$res" = "x221" ] && echo "Connection to $mailhub is ok."
 done
