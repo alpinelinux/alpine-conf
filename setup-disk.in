@@ -175,9 +175,8 @@ unpack_apkovl() {
 	ovlfiles=/tmp/ovlfiles
 	if [ "$suffix" = "gz" ]; then
 		if ! tar -C "$dest" --numeric-owner -zxvf "$ovl" > $ovlfiles; then
-			echo -n "Continue anyway? [Y/n]: "
-			read i
-			case "$i" in
+			ask "Continue anyway? (y/n)"
+			case "$resp" in
 				n*|N*) return 1;;
 			esac
 		fi
@@ -744,7 +743,7 @@ confirm_erase() {
 	fi
 	echo "WARNING: The following disk(s) will be erased:"
 	show_disk_info $@
-	echo -n "WARNING: Erase the above disk(s) and continue? [y/N]: "
+	ask "WARNING: Erase the above disk(s) and continue? (y/n)" n
 
 	read answer
 	case "$answer" in
