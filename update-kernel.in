@@ -323,7 +323,7 @@ case $ARCH in
 	x86|x86_64) mksfs="-Xbcj x86" ;;
 	*) mksfs=
 esac
-mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error -nopad $mksfs
+mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error $mksfs
 
 if [ -n "$MODLOOPSIGN" ]; then
 	sign_modloop "$STAGING/$MODIMG"
