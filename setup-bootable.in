@@ -300,7 +300,7 @@ if [ -f "$src"/.alpine-release ]; then
 else
 	vecho "Extracting $src to $destdir/.new/"
 	case "$src" in
-	http://*|ftp://*)
+	https://*|http://*|ftp://*)
 		${WGET:-wget} -O - "$src" | (cd "$destdir"/.new; exec ${UNISO:-uniso}) \
 			|| die "Failed to download or extract $src"
 		echo ""
