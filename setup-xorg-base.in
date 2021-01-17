@@ -11,6 +11,6 @@ if ! grep -q '^[^#].*/community$' /etc/apk/repositories; then
 	apk update
 fi
 
-apk add xorg-server xf86-input-libinput eudev "$@"
+apk add xorg-server xf86-input-libinput eudev mesa "$@"
 
 setup-udev
