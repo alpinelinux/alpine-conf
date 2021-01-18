@@ -1,0 +1,25 @@
+#!/bin/sh
+
+set -e
+
+if ! rc-service -q modloop status; then
+	echo "modloop is not started"
+	exit 1
+fi
+
+if [ -n "$DO_UMOUNT" ] && [ -z "$modloop_media" ]; then
+	modloop_media=$(find_modloop_media)
+fi
+
+modulesdir=/lib/modules
+if [ -L "$modulesdir" ]; then
+	modulesdir=$(readlink "$modulesdir")
+fi
+cp -a "$modulesdir" /lib/modules.tmp
+rc-service modloop stop
+rm -r /lib/modules
+mv /lib/modules.tmp /lib/modules
+
+if [ -n "$DO_UMOUNT" ]; then
+	umount "$modloop_media"
+fi

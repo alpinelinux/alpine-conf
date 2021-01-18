@@ -5,7 +5,8 @@ sysconfdir	?= /etc/lbu
 PREFIX		?=
 
 LIB_FILES	:= libalpine.sh dasd-functions.sh
-SBIN_FILES	:= lbu\
+SBIN_FILES	:= copy-modloop\
+		lbu\
 		setup-acf\
 		setup-alpine\
 		setup-apkcache\

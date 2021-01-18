@@ -286,3 +286,14 @@ ask_which() {
 		echo "'$resp' is not a valid choice."
 	done
 }
+
+find_modloop_media() {
+	devnum=$(mountpoint -d /.modloop) || return
+	test -n "$devnum" || return
+	modloop_file=$(cat /sys/dev/block/$devnum/loop/backing_file) || return
+	test -n "$modloop_file" || return
+	# assume that device name and mount point don't contain spaces
+	modloop_media=$(df "$modloop_file" | awk 'NR==2{print $6}') || return
+	test -n "$modloop_media" || return
+	echo "$modloop_media"
+}

@@ -1336,22 +1336,14 @@ while [ -z "$disks" ]; do
 	[ -n "$disks" ] && break
 
 	# ask to unmount the boot mmc for rpi and similar
-	modloop_media=$(grep -h '^/media.*/modloop.*' /sys/block/*/loop/backing_file 2>/dev/null | cut -d/ -f1-3)
+	modloop_media=$(find_modloop_media)
 
-	if [ -z "$modloop_media" ] || ! ask_yesno "No avaliable disks found. Unmount $modloop_media and retry? (y/n)" n; then
+	if [ -z "$modloop_media" ] || ! ask_yesno "No disks available. Try boot media $modloop_media? (y/n)" n; then
 		[ -z "$QUIET" ] && echo "No disks found." >&2
 		exit 0
 	fi
 
-	# save kernel modules, stop modloop and umount boot media
-	mkdir -p /lib/modules.tmp \
-		&& echo -n "Copying kernel modules..." \
-		&& cp -a /lib/modules/* /lib/modules.tmp/ \
-		&& echo "ok" \
-		&& rc-service modloop stop \
-		&& umount $modloop_media \
-		&& rm /lib/modules \
-		&& mv /lib/modules.tmp /lib/modules
+	DO_UMOUNT=1 modloop_media=$modloop_media copy-modloop
 done
 
 if [ $# -gt 0 ]; then
