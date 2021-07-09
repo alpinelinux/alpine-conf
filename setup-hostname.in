@@ -28,13 +28,14 @@ valid_hostname() {
 		return 1
 	fi
 	# check that it only contains valid chars
-	if ! [ -z "$(echo $1 | sed 's/[0-9a-z-]//g')" ]; then
-		echo "Hostname must only contain letters (a-z), digits (0-9) or -"
+	if ! [ -z "$(echo $1 | sed 's/[0-9a-z.-]//g')" ]; then
+		echo "Hostname must only contain letters (a-z), digits (0-9), '.' or '-'"
 		return 1
 	fi
-	# must not start with -
+	# must not start with - or .
 	case "$1" in
 		-*) echo "Hostname must not start with a '-'"; return 1;;
+		.*) echo "Hostname must not start with a '.'"; return 1;;
 	esac
 	return 0
 }
@@ -58,7 +59,7 @@ fi
 HOST="$name"
 while [ -z "$name" ]; do
 	HOST=$(hostname)
-	ask "Enter system hostname (short form, e.g. 'foo')" "$HOST"
+	ask "Enter system hostname (fully qualified form, e.g. 'foo.example.org')" "$HOST"
 	if valid_hostname "$resp"; then
 		HOST="$resp"
 		break
