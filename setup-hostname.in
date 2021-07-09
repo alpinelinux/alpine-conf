@@ -7,12 +7,13 @@ PREFIX=
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-hostname [-h] [HOSTNAME]
+		usage: setup-hostname [-h] [-n HOSTNAME]
 
 		Sets the system hostname.
 
 		options:
 		 -h  Show this help
+		 -n  Hostname to set non-interactively
 
 		Sets hostname to HOSTNAME or prompt if unspecified.
 	__EOF__
