@@ -6,16 +6,6 @@ VERSION=@VERSION@
 PREFIX=
 . $PREFIX/lib/libalpine.sh
 
-# Extract fully qualified domain name from current hostname. If none is
-# currently set, use 'my.domain'.
-get_fqdn() {
-	local _dn
-	_dn=$(hostname -f 2>/dev/null)
-	_dn=${_dn#$(hostname -s 2>/dev/null)}
-	_dn=${_dn#.}
-	echo "${_dn:=my.domain}"
-}
-
 is_qemu() {
 	grep -q "QEMU" /proc/cpuinfo \
 		|| strings /sys/firmware/dmi/tables/DMI 2>/dev/null | grep -q QEMU
@@ -175,7 +165,7 @@ _dn=$(sed -n \
 _hn=$(hostname)
 _hn=${_hn%%.*}
 
-sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn)} ${_hn} localhost.localdomain localhost/" /etc/hosts
+sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn my.domain)} ${_hn} localhost.localdomain localhost/" /etc/hosts
 
 if [ -z "$quick" ]; then
 	$PREFIX/sbin/setup-proxy -q ${PROXYOPTS}

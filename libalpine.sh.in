@@ -297,3 +297,13 @@ find_modloop_media() {
 	test -n "$modloop_media" || return
 	echo "$modloop_media"
 }
+
+# Extract fully qualified domain name from current hostname. If none is
+# currently set, use the provided fallback.
+get_fqdn() {
+	local _dn
+	_dn=$(hostname -f 2>/dev/null)
+	_dn=${_dn#$(hostname -s 2>/dev/null)}
+	_dn=${_dn#.}
+	echo "${_dn:=$1}"
+}
