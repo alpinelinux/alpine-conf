@@ -409,14 +409,16 @@ config_vlan() {
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-interfaces [-bhir]
+		usage: setup-interfaces [-abhir] [-p ROOT]
 
 		Setup network interfaces
 
 		options:
+		 -a  Automatic interface setup using DHCP
 		 -b  Ask for bridging of interfaces
 		 -h  Show this help
 		 -i  Read new contents of ${ROOT}etc/network/interfaces from stdin
+		 -p  Set the system root to operate in
 		 -r  Restart the networking service after the setup
 	__EOF__
 	exit 1
