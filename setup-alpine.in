@@ -49,6 +49,17 @@ if [ "$rc_sys" = "XENU" ] && ! grep -q '^xenfs' /proc/mounts; then
 fi
 
 if [ "$USEANSWERFILE" != "" ]; then
+	# dynamically download answer file from URL (supports HTTP(S) and FTP)
+	if [ -z "$(echo "$USEANSWERFILE" | sed -E 's~^(https?|ftp)://.+$~~')" ]; then
+		# ensure the network is up, otherwise setup a temporary interface config
+		network_status="$(/etc/init.d/networking status)"
+		[ -z "${network_status##*started*}" ] || $PREFIX/sbin/setup-interfaces -ar
+
+		temp="$(mktemp)"
+		wget -qO "$temp" "$USEANSWERFILE" || die "Failed to download '$USEANSWERFILE'"
+		USEANSWERFILE="$temp"
+	fi
+
 	if [ -e "$USEANSWERFILE" ]; then
 		. "$USEANSWERFILE"
 	fi
