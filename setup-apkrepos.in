@@ -109,9 +109,10 @@ get_alpine_release() {
 
 add_mirror() {
 	local mirror="$1"
+	community_char="$([ "$enable_community" = true ] || echo -n "#")"
 	mkdir -p "${APKREPOS_PATH%/*}"
 	echo "${mirror%/}/${release}/main" >> $APKREPOS_PATH
-	echo "#${mirror%/}/${release}/community" >> $APKREPOS_PATH
+	echo "${community_char}${mirror%/}/${release}/community" >> $APKREPOS_PATH
 	case "$release" in
 	v[0-9]*)
 		echo "#${mirror%/}/edge/main" >> $APKREPOS_PATH;
@@ -138,11 +139,12 @@ edit_repositories() {
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-apkrepos [-fhr] [REPO...]
+		usage: setup-apkrepos [-cfhr1] [REPO...]
 
 		Setup apk repositories
 
 		options:
+		 -c  Enable the community repo
 		 -f  Detect and add fastest mirror
 		 -h  Show this help
 		 -r  Add a random mirror and do not prompt
@@ -152,11 +154,13 @@ usage() {
 
 }
 
+enable_community=false
 add_fastest=false
 add_first=false
 add_random=false
 while getopts "1fhr" opt; do
 	case $opt in
+		c) enable_community=true;;
 		f) add_fastest=true;;
 		1) add_first=true;;
 		h) usage;;
