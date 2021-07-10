@@ -128,12 +128,10 @@ if [ "$rc_sys" != LXC ]; then
 fi
 
 if [ -n "$INTERFACESOPTS" ]; then
-	printf "$INTERFACESOPTS" | $PREFIX/sbin/setup-interfaces -i
+	printf "$INTERFACESOPTS" | $PREFIX/sbin/setup-interfaces -ir
 else
-	$PREFIX/sbin/setup-interfaces ${quick:+-a}
+	$PREFIX/sbin/setup-interfaces ${quick:+-a} -r
 fi
-# start the networking
-/etc/init.d/networking --quiet start >/dev/null
 
 # setup up dns if no dhcp was configured
 grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\

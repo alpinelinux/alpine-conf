@@ -409,7 +409,7 @@ config_vlan() {
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-interfaces [-bhi]
+		usage: setup-interfaces [-bhir]
 
 		Setup network interfaces
 
@@ -417,6 +417,7 @@ usage() {
 		 -b  Ask for bridging of interfaces
 		 -h  Show this help
 		 -i  Read new contents of ${ROOT}etc/network/interfaces from stdin
+		 -r  Restart the networking service after the setup
 	__EOF__
 	exit 1
 }
@@ -565,13 +566,14 @@ auto_setup() {
 ask_bridge=
 is_xen_dom0 && ask_bridge=1
 
-while getopts "abhip:" opt; do
+while getopts "abhip:r" opt; do
 	case $opt in
 		a) auto=1;;
 		b) ask_bridge=1;;
 		h) usage;;
 		i) STDINPUT=1;;
 		p) ROOT=$OPTARG;;
+		r) restart=1;;
 	esac
 done
 
@@ -582,4 +584,8 @@ elif [ -n "$auto" ]; then
 	auto_setup
 else
 	prompt_for_interfaces
+fi
+
+if [ -n "$restart" ]; then
+	/etc/init.d/networking --quiet restart >/dev/null
 fi
