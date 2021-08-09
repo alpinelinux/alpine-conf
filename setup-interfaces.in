@@ -481,7 +481,6 @@ prompt_for_interfaces() {
 		echo "type=loopback" > 000~lo.conf
 		echo "" > interface
 	fi
-	hostname=$(cat $ROOT/etc/hostname 2>/dev/null)
 
 	for i in *.conf ; do
 		iface=$(basename $i .conf)
@@ -514,10 +513,6 @@ prompt_for_interfaces() {
 			echo -e "\tup ip link set \$IFACE up" >> interfaces
 			echo -e "\tdown ip link set \$IFACE down" >> interfaces
 			;;
-		dhcp)
-			[ -n "$hostname" ] \
-				&& echo -e "\thostname $hostname" >> interfaces
-			;;
 		static)
 			echo -e "\taddress $address" >> interfaces
 			echo -e "\tnetmask $netmask" >> interfaces
@@ -546,7 +541,6 @@ prompt_for_interfaces() {
 
 auto_setup() {
 	local iface
-	local hostname=$(cat $ROOT/etc/hostname 2>/dev/null)
 	for iface in $(available_ifaces); do
 		if [ "$(cat /sys/class/net/$iface/operstate)" = "up" ]; then
 			break
@@ -560,9 +554,6 @@ auto_setup() {
 	auto $iface
 	iface $iface inet dhcp
 	EOF
-	if [ -n "$hostname" ]; then
-		echo -e "\thostname $hostname" >> $ROOT/etc/network/interfaces
-	fi
 }
 
 ask_bridge=
