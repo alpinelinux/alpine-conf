@@ -348,6 +348,30 @@ setup_syslinux() {
 	extlinux $extlinux_raidopt --install "$mnt"/boot
 }
 
+# setup u-boot bootloader
+setup_uboot() {
+	local mnt="$1" root="$2" modules="$3" kernel_opts="$4"
+	local parameters="root=$root modules=$modules $kernel_opts"
+
+	mkdir -p "$mnt"/boot/extlinux
+	cat > "$mnt/boot/extlinux/extlinux.conf" <<- EOF
+	menu title Alpine Linux
+	timeout 50
+	default $KERNEL_FLAVOR
+
+	label $KERNEL_FLAVOR
+		menu label Linux $KERNEL_FLAVOR
+		kernel /vmlinuz-$KERNEL_FLAVOR
+		initrd /initramfs-$KERNEL_FLAVOR
+		fdtdir /dtbs-$KERNEL_FLAVOR
+		append $parameters
+	EOF
+
+	# Rely on update-u-boot to automatically determine the
+	# board, imagedir, etc. this may not work in all cases.
+	update-u-boot
+}
+
 rpi_gen_config() {
 	cat <<-EOF
 	# do not modify this file as it will be overwritten on upgrade.
@@ -556,6 +580,7 @@ install_mounted_root() {
 		syslinux) setup_syslinux "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" ;;
 		zipl) setup_zipl "$mnt" "$root" "$modules" "$kernel_opts" ;;
 		raspberrypi-bootloader) setup_raspberrypi_bootloader "$mnt" "$root" "$modules" "$kernel_opts" ;;
+		u-boot) setup_uboot "$mnt" "$root" "$modules" "$kernel_opts" ;;
 		*) die "Bootloader \"$BOOTLOADER\" not supported!" ;;
 	esac
 
@@ -1311,6 +1336,7 @@ fi
 if [ -d "$1" ]; then
 	# install to given mounted root
 	[ "$BOOTLOADER" = "syslinux" ] && apk add --quiet syslinux
+	[ "$BOOTLOADER" = "u-boot" ] && apk add --quiet u-boot
 	install_mounted_root "${1%/}" \
 		&& echo "You might need fix the MBR to be able to boot" >&2
 	exit $?
