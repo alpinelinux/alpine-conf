@@ -288,6 +288,7 @@ setup_grub() {
 			x86)		target=i386-efi ; fwa=ia32 ;;
 			arm*)		target=arm-efi ; fwa=arm ;;
 			aarch64)	target=arm64-efi ; fwa=aa64 ;;
+			riscv64)	target=riscv64-efi ; fwa=riscv64 ;;
 		esac
 		# currently disabling nvram so grub doesnt call efibootmgr
 		# installing to alpine directory so other distros dont overwrite it

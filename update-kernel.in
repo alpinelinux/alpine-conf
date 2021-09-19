@@ -244,6 +244,7 @@ _apk add --initdb --update-cache
 if [ "$BUILDDIR" ]; then
 	case "$ARCH" in
 		arm*|aarch64*)	_install="zinstall dtbs_install" ;;
+		riscv64)	_install="zinstall dtbs_install" ;;
 		*)		_install="install" ;;
 	esac
 
