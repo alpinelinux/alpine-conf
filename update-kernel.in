@@ -289,7 +289,7 @@ MODIMG=modloop-$FLAVOR
 mkdir $MODLOOP $STAGING
 cp -a $ROOT/lib/modules $MODLOOP
 mkdir -p $MODLOOP/modules/firmware
-find $ROOT/lib/modules -type f -name "*.ko" | xargs modinfo -F firmware | sort -u | while read FW; do
+find $ROOT/lib/modules -type f -name "*.ko*" | xargs modinfo -F firmware | sort -u | while read FW; do
 	if [ -e "$ROOT/lib/firmware/$FW" ]; then
 		install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
 		# copy also all potentially associated files
@@ -312,14 +312,14 @@ if [ -n "$modloopfw" ]; then
 fi
 
 # wireless regulatory db
-if [ -e "$ROOT"/lib/modules/*/kernel/net/wireless/cfg80211.ko ]; then
+if [ -e "$ROOT"/lib/modules/*/kernel/net/wireless/cfg80211.ko* ]; then
 	for _regdb in "$ROOT"/lib/firmware/regulatory.db*; do
 		[ -e "$_regdb" ] && install -pD "$_regdb" "$MODLOOP"/modules/firmware/"${_regdb##*/}"
 	done
 fi
 
 # include bluetooth firmware in modloop
-if [ -e "$ROOT"/lib/modules/*/kernel/drivers/bluetooth/btbcm.ko ]; then
+if [ -e "$ROOT"/lib/modules/*/kernel/drivers/bluetooth/btbcm.ko* ]; then
 	for _btfw in "$ROOT"/lib/firmware/brcm/*.hcd; do
 		install -pD "$_btfw" \
 			"$MODLOOP"/modules/firmware/brcm/"${_btfw##*/}"
