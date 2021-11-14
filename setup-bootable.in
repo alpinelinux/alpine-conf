@@ -144,7 +144,7 @@ check_syslinux() {
 	done
 
 	#initramfs
-	initrds=$(awk 'tolower($1) == "initrd" {print $2}' \
+	initrds=$(awk 'tolower($1) == "initrd" {sub(",", " "); for (i=2; i<=NF; i++) print $i}' \
 			"$destdir"/$syslinux_cfg)
 	for i in $(awk 'tolower($1) == "append" {print $0}' \
 			"$destdir"/$syslinux_cfg); do
