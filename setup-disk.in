@@ -82,6 +82,33 @@ enumerate_fstab() {
 		done
 }
 
+# given an fstab on stdin, determine if any of the mountpoints are encrypted
+crypt_required() {
+	while read -r devname mountpoint fstype mntops freq passno; do
+		if [ -z "$devname" ] || [ "${devname###}" != "$devname" ]; then
+			continue
+		fi
+		uuid="${devname##UUID=}"
+		if [ "$uuid" != "$devname" ]; then
+			devname="$(blkid --uuid "$uuid")"
+		fi
+		local devnames="$devname"
+		if is_lvm "$devname"; then
+			local vg=$(find_volume_group "$devname")
+			devnames=$(find_pvs_in_vg $vg)
+		fi
+		for dev in $devnames; do
+			mapname="${dev##/dev/mapper/}"
+			if [ "$mapname" != "$dev" ]; then
+				if cryptsetup status "$mapname" >&1 >/dev/null; then
+					return 0
+				fi
+			fi
+		done
+	done
+	return 1
+}
+
 is_vmware() {
 	grep -q VMware /proc/scsi/scsi 2>/dev/null \
 		|| grep -q VMware /proc/ide/hd*/model 2>/dev/null
@@ -283,6 +310,7 @@ setup_grub() {
 	# install GRUB efi mode
 	if [ -n "$USE_EFI" ]; then
 		local target fwa
+		local efi_directory="$mnt"/boot/efi
 		case "$ARCH" in
 			x86_64)		target=x86_64-efi ; fwa=x64 ;;
 			x86)		target=i386-efi ; fwa=ia32 ;;
@@ -290,13 +318,16 @@ setup_grub() {
 			aarch64)	target=arm64-efi ; fwa=aa64 ;;
 			riscv64)	target=riscv64-efi ; fwa=riscv64 ;;
 		esac
+		if [ -n "$USE_CRYPT" ]; then
+			efi_directory="$mnt"/boot
+		fi
 		# currently disabling nvram so grub doesnt call efibootmgr
 		# installing to alpine directory so other distros dont overwrite it
-		grub-install --target=$target --efi-directory="$mnt"/boot/efi \
+		grub-install --target=$target --efi-directory="$efi_directory" \
 			--bootloader-id=alpine --boot-directory="$mnt"/boot --no-nvram
 		# fallback mode will use boot/boot${fw arch}.efi
-		install -D "$mnt"/boot/efi/EFI/alpine/grub$fwa.efi \
-			"$mnt"/boot/efi/EFI/boot/boot$fwa.efi
+		install -D "$efi_directory"/EFI/alpine/grub$fwa.efi \
+			"$efi_directory"/EFI/boot/boot$fwa.efi
 	# install GRUB for ppc64le
 	elif [ "$ARCH" = "ppc64le" ]; then
 		shift 5
@@ -452,7 +483,7 @@ setup_raspberrypi_bootloader() {
 install_mounted_root() {
 	local mnt="$1"
 	shift 1
-	local disks="${@}" mnt_boot= boot_fs= root_fs=
+	local disks="${@}" mnt_boot= boot_fs= root_fs= use_crypt=
 	local initfs_features="ata base ide scsi usb virtio"
 	local pvs= dev= rootdev= bootdev= extlinux_raidopt= root= modules=
 	local kernel_opts="$KERNELOPTS"
@@ -515,7 +546,6 @@ install_mounted_root() {
 		esac
 	done
 
-
 	if [ -n "$VERBOSE" ]; then
 		echo "Root device:     $rootdev"
 		echo "Root filesystem: $root_fs"
@@ -538,6 +568,28 @@ install_mounted_root() {
 	# we should not try start modloop on sys install
 	rm -f "$mnt"/etc/runlevels/*/modloop
 
+	# generate the fstab
+	if [ -f "$mnt"/etc/fstab ]; then
+		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
+	fi
+	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
+	if [ -n "$SWAP_DEVICES" ]; then
+		local swap_dev
+		for swap_dev in $SWAP_DEVICES; do
+			echo -e "$(uuid_or_device ${swap_dev})\tswap\tswap\tdefaults\t0 0" \
+				>> "$mnt"/etc/fstab
+		done
+	fi
+	cat >>"$mnt"/etc/fstab <<-__EOF__
+		/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
+		/dev/usbdisk	/media/usb	vfat	noauto	0 0
+	__EOF__
+
+	if crypt_required <"$mnt"/etc/fstab; then
+		use_crypt=1
+		initfs_features="$initfs_features cryptsetup"
+	fi
+
 	# generate mkinitfs.conf
 	mkdir -p "$mnt"/etc/mkinitfs/features.d
 	echo "features=\"$initfs_features\"" > "$mnt"/etc/mkinitfs/mkinitfs.conf
@@ -555,24 +607,25 @@ install_mounted_root() {
 	if [ -n "$(get_bootopt nomodeset)" ]; then
 		kernel_opts="nomodeset $kernel_opts"
 	fi
+	if [ "$use_crypt" ]; then
+		# Boot to encrypted root
+		if [ $(echo "$pvs" | wc -w) -gt 1 ]; then
+			echo "Root logical volume spans more than one physical volume."
+			echo "This is currently unsupported."
+			echo "Proceed manually or retry with root on a single physical volume."
+			exit 1
+		fi
+		local cryptroot=${pvs:-"$rootdev"}
+		if cryptsetup status "$cryptroot" 2>&1 >/dev/null; then
+			cryptroot=$(cryptsetup status "$cryptroot" | awk '/device:/ { print $2 }')
+			cryptroot=$(uuid_or_device $cryptroot)
+			kernel_opts="cryptroot=$cryptroot cryptdm=root"
+			root=$([ -n "$pvs" ] && echo "$rootdev" || echo "/dev/mapper/root")
+		fi
+
+	fi
 	modules="sd-mod,usb-storage,${root_fs}${raidmod}"
 
-	# generate the fstab
-	if [ -f "$mnt"/etc/fstab ]; then
-		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
-	fi
-	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
-	if [ -n "$SWAP_DEVICES" ]; then
-		local swap_dev
-		for swap_dev in $SWAP_DEVICES; do
-			echo -e "$(uuid_or_device ${swap_dev})\tswap\tswap\tdefaults\t0 0" \
-				>> "$mnt"/etc/fstab
-		done
-	fi
-	cat >>"$mnt"/etc/fstab <<-__EOF__
-		/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
-		/dev/usbdisk	/media/usb	vfat	noauto	0 0
-	__EOF__
 	# remove the installed db in case its there so we force re-install
 	rm -f "$mnt"/var/lib/apk/installed "$mnt"/lib/apk/db/installed
 	echo "Installing system on $rootdev:"
@@ -621,6 +674,13 @@ unmount_partitions() {
 
 	# unmount the partitions
 	umount $(awk '{print $2}' /proc/mounts | egrep "^$mnt(/|\$)" | sort -r)
+
+	if [ -n "$USE_CRYPT" ]; then
+		if [ -n "$USE_LVM" ]; then
+			vgchange -a n
+		fi
+		cryptsetup close /dev/mapper/root
+	fi
 }
 
 # figure out decent default swap size in mega bytes
@@ -723,9 +783,10 @@ select_bootloader_pkg() {
 
 # install needed programs
 init_progs() {
-	local raidpkg= lvmpkg= fs= fstools= grub=
+	local raidpkg= lvmpkg= cryptpkg= fs= fstools= grub=
 	[ -n "$USE_RAID" ] && raidpkg="mdadm"
 	[ -n "$USE_LVM" ] && lvmpkg="lvm2"
+	[ -n "$USE_CRYPT" ] && cryptpkg="cryptsetup blkid"
 	for fs in $BOOTFS $ROOTFS $VARFS; do
 		# we need load btrfs module early to avoid the error message:
 		# 'failed to open /dev/btrfs-control'
@@ -740,7 +801,7 @@ init_progs() {
 		vfat) fstools="$fstools dosfstools";;
 		esac
 	done
-	apk add --quiet sfdisk $lvmpkg $raidpkg $fstools $@
+	apk add --quiet sfdisk util-linux $cryptpkg $lvmpkg $raidpkg $fstools $@
 }
 
 show_disk_info() {
@@ -892,6 +953,15 @@ setup_lvm_volume_group() {
 		lvmdev=$(find_partitions "$1" "lvm")
 	fi
 
+	if [ -n "$USE_CRYPT" ] && [ "$DISK_MODE" = "data" ]; then
+		echo -e "target=var\nsource='$lvmdev'" > /etc/conf.d/dmcrypt
+		lvmdev=$(setup_crypt $lvmdev var) || return 1
+		rc-update add dmcrypt boot
+	fi
+	if [ -n "$USE_CRYPT" ] && [ "$DISK_MODE" = "sys" ]; then
+		lvmdev=$(setup_crypt $lvmdev root) || return 1
+	fi
+
 	# be quiet on success
 	local errmsg=$(dd if=/dev/zero of=$lvmdev bs=1k count=1 2>&1) \
 		|| echo "$errmsg"
@@ -1031,6 +1101,13 @@ data_only_disk_install() {
 		swap_dev=$(find_nth_non_boot_parts 1 "$swap_part_type" $@)
 		var_dev=$(find_nth_non_boot_parts 1 "$var_part_type" $@)
 	fi
+
+	if [ -n "$USE_CRYPT" ]; then
+		echo -e "target=var\nsource='$var_dev'" > /etc/conf.d/dmcrypt
+		var_dev=$(setup_crypt $var_dev var) || return 1
+		rc-update add dmcrypt boot
+	fi
+
 	[ $SWAP_SIZE -gt 0 ] && setup_swap_dev $swap_dev
 	setup_var $var_dev
 }
@@ -1044,19 +1121,19 @@ setup_root() {
 	mkfs.$ROOTFS $MKFS_OPTS_ROOT $mkfs_args "$root_dev"
 	mkdir -p "$SYSROOT"
 	mount -t $ROOTFS $root_dev "$SYSROOT" || return 1
-	if [ -n "$boot_dev" ] && [ -z "$USE_EFI" ]; then
+	if [ -n "$boot_dev" ] && ([ -z "$USE_EFI" ] || [ -n "$USE_CRYPT" ]); then
 		mkdir -p "$SYSROOT"/boot
 		mount -t $BOOTFS $boot_dev "$SYSROOT"/boot || return 1
 	fi
-	if [ -n "$boot_dev" ] && [ -n "$USE_EFI" ]; then
+	if [ -n "$boot_dev" ] && [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ]; then
 		mkdir -p "$SYSROOT"/boot/efi
 		mount -t $BOOTFS $boot_dev "$SYSROOT"/boot/efi || return 1
 	fi
 
 	setup_mdadm_conf
 	install_mounted_root "$SYSROOT" "$disks" || return 1
-	unmount_partitions "$SYSROOT"
 	swapoff -a
+	unmount_partitions "$SYSROOT"
 
 	echo ""
 	echo "Installation is complete. Please reboot."
@@ -1106,6 +1183,18 @@ native_disk_install_lvm() {
 	lvcreate --quiet -n ${root_dev##*/} -l ${ROOT_SIZE:-100%FREE} $vgname
 	rc-update add lvm boot
 	setup_root $root_dev $BOOT_DEV
+}
+
+setup_crypt() {
+	local dev="$1" local dmname="$2"
+	mkdir -p /run/cryptsetup
+	echo "Preparing partition for encryption." >&2
+	echo "You will be prompted for your password at boot." >&2
+	echo "If you forget your password, your data will be lost." >&2
+	cryptsetup luksFormat --type luks2 "$dev" >&2 || return 1
+	echo "Enter password again to unlock disk for installation." >&2
+	cryptsetup open "$dev" "$dmname" >&2 || return 1
+	echo "/dev/mapper/$dmname"
 }
 
 native_disk_install() {
@@ -1182,6 +1271,10 @@ native_disk_install() {
 		root_dev=$(find_nth_non_boot_parts $index "$root_part_type" $@)
 	fi
 
+	if [ -n "$USE_CRYPT" ]; then
+		root_dev=$(setup_crypt $root_dev root) || return 1
+	fi
+
 	[ $SWAP_SIZE -gt 0 ] && setup_swap_dev $swap_dev
 	setup_root $root_dev $BOOT_DEV $@
 }
@@ -1202,7 +1295,7 @@ diskselect_help() {
 diskmode_help() {
 	cat <<-__EOF__
 
-		You can select between 'sys', 'data', 'lvm', 'lvmsys' or 'lvmdata'.
+		You can select between 'sys', 'data', 'crypt', 'lvm', 'lvmsys' or 'lvmdata'.
 
 		sys:
 		  This mode is a traditional disk install. The following partitions will be
@@ -1216,6 +1309,11 @@ diskmode_help() {
 
 		  Use this mode if you only want to use the disk(s) for a mailspool, databases,
 		  logs, etc.
+
+		crypt:
+		  Enable encryption with cryptsetup and ask again for 'sys' or 'data'.
+		  You will be prompted to enter a decryption password, and will need to
+		  use this password to boot up the operating system after installation.
 
 		lvm:
 		  Enable logical volume manager and ask again for 'sys' or 'data'.
@@ -1259,7 +1357,7 @@ ask_disk() {
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-disk [-hLqrv] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAPSIZE]
+		usage: setup-disk [-hLqrve] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAPSIZE]
 		                  [MOUNTPOINT | DISKDEV...]
 
 		Install alpine on harddisk.
@@ -1273,6 +1371,7 @@ usage() {
 
 		options:
 		 -h  Show this help
+		 -e  Encrypt disk
 		 -m  Use disk for MODE without asking, where MODE is either 'data' or 'sys'
 		 -o  Restore system from given apkovl file
 		 -k  Use kernelflavor instead of $KERNEL_FLAVOR
@@ -1312,11 +1411,13 @@ case $kver in
 	*) KERNEL_FLAVOR=lts;;
 esac
 
+USE_CRYPT=
 DISK_MODE=
 USE_LVM=
 # Parse args
-while getopts "hk:Lm:o:qrs:v" opt; do
+while getopts "hek:Lm:o:qrs:v" opt; do
 	case $opt in
+		e) USE_CRYPT="_crypt";;
 		m) DISK_MODE="$OPTARG";;
 		k) KERNEL_FLAVOR="$OPTARG";;
 		L) USE_LVM="_lvm";;
@@ -1405,15 +1506,19 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 	fi
 
 	while true; do
-		echo "The following $disk_is_or_disks_are selected${USE_LVM:+ (with LVM)}:"
+		echo -n "The following $disk_is_or_disks_are selected"
+		echo "${USE_CRYPT:+ (with crypt)}${USE_LVM:+ (with LVM)}:"
 		show_disk_info $diskdevs
+		_crypt=${USE_CRYPT:-", 'crypt'"}
 		_lvm=${USE_LVM:-", 'lvm'"}
-		ask "How would you like to use $it_them? ('sys', 'data'${_lvm#_lvm} or '?' for help)" "?"
+		ask "How would you like to use $it_them? ('sys', 'data'${_crypt#_crypt}${_lvm#_lvm} or '?' for help)" "?"
 		case "$resp" in
 		'?') diskmode_help;;
 		sys|data) break;;
 		lvm) USE_LVM="_lvm" ;;
 		nolvm) USE_LVM="";;
+		crypt) USE_CRYPT="_crypt" ;;
+		nocrypt) USE_CRYPT="";;
 		lvmsys|lvmdata)
 			resp=${resp#lvm}
 			USE_LVM="_lvm"
