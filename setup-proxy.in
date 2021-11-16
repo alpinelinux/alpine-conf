@@ -61,6 +61,8 @@ else
 		export https_proxy=$proxyurl
 		export ftp_proxy=$proxyurl
 	__EOF__
+	# busybox wget does not handle http proxies well
+	apk add --quiet --no-progress wget
 fi
 
 [ -e "$PROFILE" ] || exit 1
