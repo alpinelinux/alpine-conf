@@ -48,24 +48,24 @@ if [ "$rc_sys" = "XENU" ] && ! grep -q '^xenfs' /proc/mounts; then
 	mount -t xenfs xenfs /proc/xen
 fi
 
-if [ "$USEANSWERFILE" != "" ]; then
-	# dynamically download answer file from URL (supports HTTP(S) and FTP)
-	if [ -z "$(echo "$USEANSWERFILE" | sed -E 's~^(https?|ftp)://.+$~~')" ]; then
+case "$USEANSWERFILE" in
+	http*://*|ftp://*)
+		# dynamically download answer file from URL (supports HTTP(S) and FTP)
 		# ensure the network is up, otherwise setup a temporary interface config
-		network_status="$(/etc/init.d/networking status)"
-		[ -z "${network_status##*started*}" ] || $PREFIX/sbin/setup-interfaces -ar
+		if ! rc-status networking --quiet status; then
+			$PREFIX/sbin/setup-interfaces -ar
+		fi
 
 		temp="$(mktemp)"
 		wget -qO "$temp" "$USEANSWERFILE" || die "Failed to download '$USEANSWERFILE'"
 		USEANSWERFILE="$temp"
-	fi
-
-	if [ -e "$USEANSWERFILE" ]; then
-		. "$USEANSWERFILE"
-	fi
+		;;
+esac
+if [ -n "$USERANSERFILE" ] && [ -e "$USEANSWERFILE" ]; then
+	. "$USEANSWERFILE"
 fi
 
-if [ "$CREATEANSWERFILE" != "" ]; then
+if [ -n "$CREATEANSWERFILE" ]; then
 	touch "$CREATEANSWERFILE" || echo "Cannot touch file $CREATEANSWERFILE"
 	cat > "$CREATEANSWERFILE" <<-__EOF__
 		# Example answer file for setup-alpine script
@@ -159,7 +159,7 @@ for svc in acpid cron crond; do
 done
 
 # enable new hostname
-/etc/init.d/hostname --quiet restart
+rc-service hostname --quiet restart
 
 # start up the services
 openrc boot
