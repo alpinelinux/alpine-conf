@@ -619,7 +619,7 @@ install_mounted_root() {
 		if cryptsetup status "$cryptroot" 2>&1 >/dev/null; then
 			cryptroot=$(cryptsetup status "$cryptroot" | awk '/device:/ { print $2 }')
 			cryptroot=$(uuid_or_device $cryptroot)
-			kernel_opts="cryptroot=$cryptroot cryptdm=root"
+			kernel_opts="cryptroot=$cryptroot cryptdm=root $kernel_opts"
 			root=$([ -n "$pvs" ] && echo "$rootdev" || echo "/dev/mapper/root")
 		fi
 
