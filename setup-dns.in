@@ -46,7 +46,7 @@ if [ -n "$NAMESERVERS" ] || [ $# -gt 0 ];then
 	dns="$NAMESERVERS"
 else
 	ask "DNS nameserver(s)?" "${dns% }"
-	dns="$resp"
+	dns="$(echo $resp | tr ',' ' ')"
 fi
 
 if [ "$domain" != "" ]; then
