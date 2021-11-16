@@ -14,12 +14,6 @@ KERNELOPTS=${KERNELOPTS:-quiet}
 # default location for mounted root
 SYSROOT=${SYSROOT:-/mnt}
 
-# machine arch
-ARCH=$(apk --print-arch)
-case "$ARCH" in
-	x86*) BOOTLOADER=${BOOTLOADER:-syslinux};;
-esac
-
 in_list() {
 	local i="$1"
 	shift
@@ -1433,7 +1427,26 @@ shift $(( $OPTIND - 1))
 
 if is_rpi; then
 	: ${BOOTLOADER:=raspberrypi-bootloader}
+	BOOTFS=vfat
+	SWAP_SIZE=0
 fi
+
+if is_efi || [ -n "$USE_EFI" ]; then
+	USE_EFI=1
+	DISKLABEL=gpt
+	BOOT_SIZE=512
+	BOOTFS=vfat
+	: ${BOOTLOADER:=grub}
+fi
+
+# machine arch
+ARCH=$(apk --print-arch)
+case "$ARCH" in
+	x86*) 		: ${BOOTLOADER:=syslinux};;
+	ppc64le)	: ${BOOTLOADER:=grub};;
+	s390x) 		: ${BOOTLOADER:=zipl};;
+	arm*|aarch64) : ${BOOTLOADER:=u-boot};;
+esac
 
 if [ -d "$1" ]; then
 	# install to given mounted root
@@ -1540,24 +1553,6 @@ fi
 if [ $# -gt 1 ]; then
 	USE_RAID=1
 fi
-
-if is_efi || [ -n "$USE_EFI" ]; then
-	USE_EFI=1
-	DISKLABEL=gpt
-	BOOTLOADER=grub
-	BOOT_SIZE=512
-	BOOTFS=vfat
-fi
-
-if is_rpi; then
-	BOOTFS=vfat
-	SWAP_SIZE=0
-fi
-
-case "$ARCH" in
-	ppc64le) BOOTLOADER=grub;;
-	s390x) BOOTLOADER=zipl;;
-esac
 
 dmesg -n1
 
