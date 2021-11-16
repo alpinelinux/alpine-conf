@@ -801,7 +801,7 @@ init_progs() {
 		vfat) fstools="$fstools dosfstools";;
 		esac
 	done
-	apk add --quiet sfdisk util-linux $cryptpkg $lvmpkg $raidpkg $fstools $@
+	apk add --quiet sfdisk $cryptpkg $lvmpkg $raidpkg $fstools $@
 }
 
 show_disk_info() {
