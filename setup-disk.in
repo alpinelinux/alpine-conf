@@ -1521,11 +1521,14 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 
 	while true; do
 		echo -n "The following $disk_is_or_disks_are selected"
-		echo "${USE_CRYPT:+ (with crypt)}${USE_LVM:+ (with LVM)}:"
+		[ -n "$USE_CRYPT" ] && [ -z "$USE_LVM" ] && echo -n " (with encryption)"
+		[ -z "$USE_CRYPT" ] && [ -n "$USE_LVM" ] && echo -n " (with LVM)"
+		[ -n "$USE_CRYPT" ] && [ -n "$USE_LVM" ] && echo -n " (with LVM on LUKS)"
+		echo ":"
 		show_disk_info $diskdevs
-		_crypt=${USE_CRYPT:-", 'crypt'"}
+		_crypt=$([ -z "$USE_CRYPT" ] && [ -z "$USE_LVM" ] && echo ", 'crypt'")
 		_lvm=${USE_LVM:-", 'lvm'"}
-		ask "How would you like to use $it_them? ('sys', 'data'${_crypt#_crypt}${_lvm#_lvm} or '?' for help)" "?"
+		ask "How would you like to use $it_them? ('sys', 'data'$_crypt${_lvm#_lvm} or '?' for help)" "?"
 		case "$resp" in
 		'?') diskmode_help;;
 		sys|data) break;;
