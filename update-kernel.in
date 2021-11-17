@@ -6,7 +6,7 @@
 # with setup-bootable
 #
 # Copyright (c) 2014 Timo Teräs
-# Copyright (c) 2014-2015 Kaarle Ritvanen
+# Copyright (c) 2014-2021 Kaarle Ritvanen
 
 PREFIX=
 . $PREFIX/lib/libalpine.sh
@@ -62,6 +62,9 @@ usage() {
 		         -M|--media                Boot media directory layout
 		         -d|--keys-dir             Override directory of trusted keys for apk
 		         --repositories-file <f>   apk repositories file
+
+		On low-memory systems, you may want to point the TMPDIR environment variable to
+		a storage-backed directory.
 
 	__EOF__
 	exit $1
