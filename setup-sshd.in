@@ -18,6 +18,7 @@ usage() {
 	exit 1
 }
 
+authorized_key="$SSH_KEY"
 while getopts "hc:k:" opt; do
 	case $opt in
 		h) usage;;
@@ -53,21 +54,14 @@ if [ -n "$svc" ]; then
 	rc-service $svc start
 fi
 
-if [ -z "$authorized_key" ]; then
-	ask "Authorized SSH public key for root? (HTTP(S)/FTP URL or the public key itself)" none
-	authorized_key="$resp"
-fi
-
 if [ -n "$authorized_key" -a "$authorized_key" != "none" ]; then
 	# if the argument is an HTTP(S)/FTP URL, try to fetch the file contents
-	if [ -z "$(echo "$authorized_key" | sed -E 's~^(https?|ftp)://.+$~~')" ]; then
-		key_url="$authorized_key"
-		authorized_key="$(wget -qO- "$key_url")" || die "Could not fetch key from '$key_url'"
-
-		echo "Received authorized SSH key from '$key_url':"
-		echo "$authorized_key"
-	fi
-
+	case "$authorized_key" in
+		http*://*|ftp://)
+			key_url="$authorized_key"
+			authorized_key="$(wget -qO- "$key_url")" || die "Could not fetch key from '$key_url'"
+			;;
+	esac
 	mkdir -p ${ROOT}/root/.ssh
 	echo "$authorized_key" >> ${ROOT}/root/.ssh/authorized_keys
 fi
