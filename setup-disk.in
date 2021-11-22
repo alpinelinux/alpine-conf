@@ -1144,7 +1144,7 @@ native_disk_install_lvm() {
 	init_progs $(select_bootloader_pkg) || return 1
 	confirm_erase $@ || return 1
 
-	if [ "$BOOTFS" = "vfat" ]; then
+	if [ "$BOOTFS" = "vfat" ] && [ -z "$USE_EFI" ]; then
 		boot_part_type=$(partition_id vfat)
 	fi
 	if [ -n "$USE_RAID" ]; then
@@ -1205,7 +1205,7 @@ native_disk_install() {
 	init_progs $(select_bootloader_pkg) || return 1
 	confirm_erase $@ || return 1
 
-	if [ "$BOOTFS" = "vfat" ]; then
+	if [ "$BOOTFS" = "vfat" ] && [ -z "$USE_EFI" ]; then
 		boot_part_type=$(partition_id vfat)
 	fi
 	if [ -n "$USE_RAID" ]; then
