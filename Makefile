@@ -1,4 +1,4 @@
-VERSION		:= 3.13.0_rc3
+VERSION		:= 3.13.0
 
 sysconfdir	?= /etc/lbu
 
