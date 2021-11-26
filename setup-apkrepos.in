@@ -157,7 +157,7 @@ community_prefix="# "
 add_fastest=false
 add_first=false
 add_random=false
-while getopts "1fhr" opt; do
+while getopts "c1fhr" opt; do
 	case $opt in
 		c) community_prefix="";;
 		f) add_fastest=true;;
