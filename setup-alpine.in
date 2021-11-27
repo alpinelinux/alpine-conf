@@ -61,7 +61,7 @@ case "$USEANSWERFILE" in
 		USEANSWERFILE="$temp"
 		;;
 esac
-if [ -n "$USERANSERFILE" ] && [ -e "$USEANSWERFILE" ]; then
+if [ -n "$USEANSWERFILE" ] && [ -e "$USEANSWERFILE" ]; then
 	. "$USEANSWERFILE"
 fi
 
