@@ -277,6 +277,11 @@ KVER=$(basename $(ls -d $ROOT/lib/modules/*"$KVER_FLAVOR"))
 DTBDIR=$ROOT/boot/dtbs-$FLAVOR
 [ -d "$DTBDIR" ] || DTBDIR=$ROOT/usr/lib/linux-$KVER
 [ -d "$DTBDIR" ] || DTBDIR=$ROOT/boot
+find $ROOT/lib/modules \
+	   -name \*.gz -exec gunzip {} + \
+	-o -name \*.xz -exec unxz {} + \
+	-o -name \*.zst -exec unzstd --rm {} + \
+	-o ! -name '' # don't fail if no files found. busybox find doesn't support -true
 depmod -b $ROOT "$KVER"
 
 
