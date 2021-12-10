@@ -1,6 +1,7 @@
 *.tar.gz
 lbu
 *.sh
+copy-modloop
 setup-acf
 setup-ads
 setup-alpine
