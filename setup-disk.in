@@ -455,6 +455,10 @@ install_mounted_root() {
 	root_fs=$(find_mount_fs "$mnt")
 	initfs_features="$initfs_features $root_fs"
 
+	if [ "$root_fs" = "zfs" ]; then
+		initfs_features="$initfs_features keymap"
+	fi
+
 	if is_lvm "$rootdev"; then
 		initfs_features="$initfs_features lvm"
 		local vg="$(find_volume_group "$rootdev")"
