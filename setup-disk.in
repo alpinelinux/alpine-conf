@@ -581,7 +581,7 @@ install_mounted_root() {
 
 	if crypt_required <"$mnt"/etc/fstab; then
 		use_crypt=1
-		initfs_features="$initfs_features cryptsetup"
+		initfs_features="$initfs_features cryptsetup keymap"
 	fi
 
 	# generate mkinitfs.conf
