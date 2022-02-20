@@ -60,6 +60,7 @@ else
 		export http_proxy=$proxyurl
 		export https_proxy=$proxyurl
 		export ftp_proxy=$proxyurl
+		export no_proxy=localhost
 	__EOF__
 	# busybox wget does not handle http proxies well
 	apk add --quiet --no-progress wget
