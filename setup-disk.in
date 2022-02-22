@@ -409,10 +409,10 @@ rpi_gen_config() {
 		cat <<-EOF
 		[pi0]
 		kernel=vmlinuz-rpi
-		initramfs boot/initramfs-rpi
+		initramfs initramfs-rpi
 		[pi0w]
 		kernel=vmlinuz-rpi
-		initramfs boot/initramfs-rpi
+		initramfs initramfs-rpi
 		[pi1]
 		kernel=vmlinuz-rpi
 		initramfs initramfs-rpi
