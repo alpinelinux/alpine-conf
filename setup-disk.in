@@ -1258,7 +1258,7 @@ native_disk_install() {
 		swap_dev=$(find_nth_non_boot_parts 1 "$swap_part_type" $@)
 		local index=
 		case "$ARCH" in
-			# use the second non botable partition on ppc64le,
+			# use the second non-bootable partition on ppc64le,
 			# as PReP partition is the bootable partition
 			ppc64le) index=2;;
 			*) index=1;;
