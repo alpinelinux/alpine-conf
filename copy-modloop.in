@@ -1,5 +1,8 @@
 #!/bin/sh
 
+PREFIX=@PREFIX@
+. "$PREFIX/lib/libalpine.sh"
+
 set -e
 
 if ! rc-service -q modloop status; then
