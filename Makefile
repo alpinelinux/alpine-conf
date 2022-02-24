@@ -79,11 +79,17 @@ install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES)
 	install -m 644 $(ETC_LBU_FILES) $(DESTDIR)/$(sysconfdir)
 
 uninstall:
+	for i in $(BIN_FILES); do \
+		rm -f "$(DESTDIR)/$(PREFIX)/bin/$$i";\
+	done
 	for i in $(SBIN_FILES); do \
 		rm -f "$(DESTDIR)/$(PREFIX)/sbin/$$i";\
 	done
 	for i in $(LIB_FILES); do \
 		rm -f "$(DESTDIR)/$(PREFIX)/lib/$$i";\
+	done
+	for i in $(ETC_LBU_FILES); do \
+		rm -f "$(DESTDIR)/$(sysconfdir)/$$i";\
 	done
 
 clean:
