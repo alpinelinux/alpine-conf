@@ -3,7 +3,7 @@
 PROGRAM=setup-acf
 VERSION=@VERSION@
 
-PREFIX=
+PREFIX=@PREFIX@
 . $PREFIX/lib/libalpine.sh
 
 usage() {

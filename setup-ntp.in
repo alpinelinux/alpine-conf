@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PREFIX=
+PREFIX=@PREFIX@
 
 . "$PREFIX/lib/libalpine.sh"
 

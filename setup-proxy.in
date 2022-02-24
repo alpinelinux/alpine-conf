@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PREFIX=
+PREFIX=@PREFIX@
 for i in ./libalpine.sh $PREFIX/lib/libalpine.sh; do
 	[ -e $i ] && . $i && break
 done

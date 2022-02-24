@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PROGRAM=setup-apkrepos
-PREFIX=
+PREFIX=@PREFIX@
 MIRRORS_URL=https://mirrors.alpinelinux.org/mirrors.txt
 
 . $PREFIX/lib/libalpine.sh
