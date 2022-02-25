@@ -586,6 +586,7 @@ install_mounted_root() {
 	cat >>"$mnt"/etc/fstab <<-__EOF__
 		/dev/cdrom	/media/cdrom	iso9660	noauto,ro 0 0
 		/dev/usbdisk	/media/usb	vfat	noauto	0 0
+		tmpfs	/tmp	tmpfs	nosuid,nodev	0	0
 	__EOF__
 
 	if crypt_required <"$mnt"/etc/fstab; then
