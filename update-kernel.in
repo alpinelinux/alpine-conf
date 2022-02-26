@@ -297,16 +297,14 @@ find $ROOT/lib/modules -type f -name "*.ko*" | xargs modinfo -F firmware | sort 
 done
 
 # install extra firmware files in modloop (i.e. not detected by modinfo)
-if [ -n "$modloopfw" ]; then
-	for _xfw in "$modloopfw"; do
-		if [ -f "$ROOT/lib/firmware/$_xfw" ]; then
-			install -pD "$ROOT/lib/firmware/$_xfw" \
-				"$MODLOOP"/modules/firmware/"$_xfw"
-		elif [ -n "$_xfw" ]; then
-			echo "Warning: extra firmware \"$_xfw\" not found!"
-		fi
-	done
-fi
+for _xfw in "$modloopfw"; do
+	if [ -f "$ROOT/lib/firmware/$_xfw" ]; then
+		install -pD "$ROOT/lib/firmware/$_xfw" \
+			"$MODLOOP"/modules/firmware/"$_xfw"
+	elif [ -n "$_xfw" ]; then
+		echo "Warning: extra firmware \"$_xfw\" not found!"
+	fi
+done
 
 # wireless regulatory db
 if [ -e "$ROOT"/lib/modules/*/kernel/net/wireless/cfg80211.ko* ]; then
