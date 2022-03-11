@@ -126,6 +126,7 @@ while :; do
 		MEDIA=yes
 		;;
 	-d|--keys-dir)
+		shift
 		KEYS_DIR="$1"
 		;;
 	--repositories-file)
