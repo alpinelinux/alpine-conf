@@ -128,10 +128,11 @@ if [ "$rc_sys" != LXC ]; then
 	$PREFIX/sbin/setup-hostname ${HOSTNAMEOPTS}
 fi
 
+[ -z "$SSH_CONNECTION" ] && rst_if=1
 if [ -n "$INTERFACESOPTS" ]; then
-	printf "$INTERFACESOPTS" | $PREFIX/sbin/setup-interfaces -ir
+	printf "$INTERFACESOPTS" | $PREFIX/sbin/setup-interfaces -i ${rst_if:+-r}
 else
-	$PREFIX/sbin/setup-interfaces ${quick:+-a} -r
+	$PREFIX/sbin/setup-interfaces ${quick:+-a} ${rst_if:+-r}
 fi
 
 # setup up dns if no dhcp was configured
