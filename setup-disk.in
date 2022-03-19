@@ -416,6 +416,9 @@ rpi_gen_config() {
 		[pi1]
 		kernel=vmlinuz-rpi
 		initramfs initramfs-rpi
+		[pi02]
+		kernel=vmlinuz-rpi2
+		initramfs initramfs-rpi2
 		[pi2]
 		kernel=vmlinuz-rpi2
 		initramfs initramfs-rpi2
@@ -431,6 +434,9 @@ rpi_gen_config() {
 	;;
 	armv7)
 		cat <<-EOF
+		[pi02]
+		kernel=vmlinuz-rpi2
+		initramfs initramfs-rpi2
 		[pi2]
 		kernel=vmlinuz-rpi2
 		initramfs initramfs-rpi2
@@ -449,6 +455,9 @@ rpi_gen_config() {
 	;;
 	aarch64)
 		cat <<-EOF
+		[pi02]
+		kernel=vmlinuz-rpi
+		initramfs initramfs-rpi
 		[pi3]
 		kernel=vmlinuz-rpi
 		initramfs initramfs-rpi
