@@ -77,6 +77,9 @@ if [ -n "$CREATEANSWERFILE" ]; then
 		# Set hostname to alpine-test
 		HOSTNAMEOPTS="-n alpine-test"
 
+		# Set device manager to mdev
+		DEVDOPTS="mdev"
+
 		# Contents of /etc/network/interfaces
 		INTERFACESOPTS="auto lo
 		iface lo inet loopback
@@ -126,6 +129,7 @@ fi
 if [ "$rc_sys" != LXC ]; then
 	$PREFIX/sbin/setup-keymap ${KEYMAPOPTS}
 	$PREFIX/sbin/setup-hostname ${HOSTNAMEOPTS}
+	$PREFIX/sbin/setupd-devd -C mdev # just to bootstrap
 fi
 
 [ -z "$SSH_CONNECTION" ] && rst_if=1
@@ -192,6 +196,11 @@ if ! is_qemu && [ "$rc_sys" != "LXC" ] && [ "$quick" != 1 ]; then
 fi
 
 $PREFIX/sbin/setup-apkrepos ${APKREPOSOPTS}
+
+# Now that network and apk are operational we can install another device manager
+if [ "$rc_sys" != LXC ] && [ -n "$DEVDOPTS" -a "$DEVDOPTS" != mdev ]; then
+	$PREFIX/sbin/setup-devd ${DEVDOPTS}
+fi
 
 # lets stop here if in "quick mode"
 if [ "$quick" = 1 ]; then

@@ -11,6 +11,7 @@ setup-apkrepos
 setup-bootable
 setup-cryptswap
 setup-desktop
+setup-devd
 setup-disk
 setup-dns
 setup-gparted-desktop
