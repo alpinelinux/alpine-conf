@@ -157,7 +157,12 @@ fi
 
 rc-update --quiet add networking boot
 rc-update --quiet add urandom boot
-for svc in acpid cron crond; do
+svc_list="cron crond"
+if [ -d /sys/firmware/acpi ]; then
+	# Only enable acpid for systems with ACPI
+	svc_list="$svc_list acpid"
+fi
+for svc in $svc_list; do
 	if rc-service --exists $svc; then
 		rc-update --quiet add $svc
 	fi
