@@ -140,7 +140,7 @@ config_wpa_supp() {
 	local iface="$1" essid="$2" auth_type="$3" psk="$4"
 	local conffile=/etc/wpa_supplicant/wpa_supplicant.conf
 	if [ "$auth_type" = "WPA-PSK" ]; then
-		wpa_passphrase "$essid" "$psk" >> "$conffile"
+		(umask 0077 && wpa_passphrase "$essid" "$psk" | sed -e '/^\t#psk=.*/d' >> "$conffile")
 	else
 		cat << EOF >> $conffile
 network={
