@@ -263,16 +263,6 @@ find_pvs_in_vg() {
 	pvs --noheadings | awk "\$2 == \"$vg\" {print \$1}"
 }
 
-# echo current grsecurity option and set new
-set_grsec() {
-	local key="$1" value="$2"
-	if ! [ -e /proc/sys/kernel/grsecurity/$key ]; then
-		return 0
-	fi
-	cat /proc/sys/kernel/grsecurity/$key
-	echo $value > /proc/sys/kernel/grsecurity/$key
-}
-
 init_chroot_mounts() {
 	local mnt="$1" i=
 	for i in proc dev; do
@@ -360,10 +350,6 @@ setup_syslinux() {
 		-e "s:^default_kernel_opts=.*:default_kernel_opts=\"$kernel_opts\":" \
 		-e "s:^modules=.*:modules=$modules:" \
 		/etc/update-extlinux.conf > "$mnt"/etc/update-extlinux.conf
-	if [ "$(rc --sys)" = "XEN0" ]; then
-		sed -i -e "s:^default=.*:default=xen-grsec:" \
-			"$mnt"/etc/update-extlinux.conf
-	fi
 
 	# Check if we boot from raid so we can pass proper option to
 	# extlinux later.
@@ -605,9 +591,6 @@ install_mounted_root() {
 	# generate update-extlinux.conf
 	root=$(uuid_or_device $rootdev)
 	kernel_opts="$kernel_opts rootfstype=$root_fs"
-	if is_vmware; then
-		kernel_opts="pax_nouderef $kernel_opts"
-	fi
 	if [ -n "$(get_bootopt nomodeset)" ]; then
 		kernel_opts="nomodeset $kernel_opts"
 	fi
@@ -663,13 +646,11 @@ install_mounted_root() {
 		repoflags="$repoflags --repository $i"
 	done
 
-	chroot_caps=$(set_grsec chroot_caps 0)
 	init_chroot_mounts "$mnt"
 	apk add --root "$mnt" $apkflags --overlay-from-stdin \
 		$repoflags $pkgs <$ovlfiles
 	local ret=$?
 	cleanup_chroot_mounts "$mnt"
-	set_grsec chroot_caps $chroot_caps > /dev/null
 	return $ret
 }
 
