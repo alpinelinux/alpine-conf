@@ -469,6 +469,16 @@ setup_raspberrypi_bootloader() {
 	echo "root=$root modules=$modules $kernel_opts" > "$mnt"/boot/cmdline.txt
 }
 
+# detect which firmware packages to install, if any
+select_firmware_pkgs() {
+	local firmware_pkgs=$( (cd /sys/module/ && echo *) \
+		| xargs modinfo -F firmware 2>/dev/null \
+		| awk -F/ '{print $1 == $0 ? "linux-firmware-other" : "linux-firmware-"$1}' \
+		| sort -u)
+	echo ${firmware_pkgs:-linux-firmware-none}
+	echo DEBUG:${firmware_pkgs:-linux-firmware-none} >&2
+}
+
 install_mounted_root() {
 	local mnt="$1"
 	shift 1
@@ -633,7 +643,7 @@ install_mounted_root() {
 	local pkgs=$(grep -h -v -w sfdisk "$mnt"/etc/apk/world \
 		"$mnt"/var/lib/apk/world 2>/dev/null)
 
-	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base $(select_bootloader_pkg)"
+	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base $(select_bootloader_pkg) $(select_firmware_pkgs)"
 	if [ "$(rc --sys)" = "XEN0" ]; then
 		pkgs="$pkgs xen-hypervisor"
 	fi
