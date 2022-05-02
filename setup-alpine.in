@@ -129,7 +129,7 @@ fi
 if [ "$rc_sys" != LXC ]; then
 	$PREFIX/sbin/setup-keymap ${KEYMAPOPTS}
 	$PREFIX/sbin/setup-hostname ${HOSTNAMEOPTS}
-	$PREFIX/sbin/setupd-devd -C mdev # just to bootstrap
+	$PREFIX/sbin/setup-devd -C mdev # just to bootstrap
 fi
 
 [ -z "$SSH_CONNECTION" ] && rst_if=1
