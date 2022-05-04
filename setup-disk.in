@@ -533,9 +533,17 @@ install_mounted_root() {
 			;;
 		esac
 
-		[ -e "/sys/block/${dev#/dev/}/md" ] || continue
-
 		local md=${dev#/dev/}
+		[ -e "/sys/block/$md/md" ] || continue
+
+		for i in /sys/block/$md/slaves/*; do
+			case ${i##*/} in
+				nvme*)
+					initfs_features="${initfs_features% nvme} nvme"
+					break
+					;;
+			esac
+		done
 		initfs_features="${initfs_features% raid} raid"
 		local level=$(cat /sys/block/$md/md/level)
 		case "$level" in
