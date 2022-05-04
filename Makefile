@@ -61,7 +61,7 @@ SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
 %: %.in
 	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@
 
-.PHONY:	all apk clean install uninstall
+.PHONY:	all apk clean install uninstall iso
 all:	$(SCRIPTS) $(BIN_FILES)
 
 uniso:	uniso.c
@@ -94,4 +94,10 @@ uninstall:
 	done
 
 clean:
-	rm -rf $(SCRIPTS) $(BIN_FILES)
+	rm -rf $(SCRIPTS) $(BIN_FILES) alpine-conf.iso
+
+alpine-conf.iso: $(SCRIPTS) $(BIN_FILES)
+	$(MAKE) install PREFIX=/ DESTDIR=tmp/
+	xorriso -as mkisofs -r -V 'ALPINECONF' -J -o $@ tmp/ && rm -rf tmp
+
+iso: alpine-conf.iso
