@@ -493,7 +493,7 @@ install_mounted_root() {
 	shift 1
 	local disks="${@}" mnt_boot= boot_fs= root_fs= use_crypt=
 	local initfs_features="ata base ide scsi usb virtio"
-	local pvs= dev= rootdev= bootdev= extlinux_raidopt= root= modules=
+	local pvs= dev= rootdev= cryptdev= bootdev= extlinux_raidopt= root= modules=
 	local kernel_opts="$KERNELOPTS"
 	[ "$ARCH" = "s390x" ] && initfs_features="$initfs_features qeth dasd_mod"
 	is_rpi && initfs_features="base mmc usb"
@@ -510,8 +510,10 @@ install_mounted_root() {
 		initfs_features="$initfs_features lvm"
 		local vg=$(find_volume_group "$rootdev")
 		pvs=$(find_pvs_in_vg $vg)
+		cryptdev=$(cryptsetup status $pvs 2>&1 | awk '/device:/ { print $2 }')
+	else
+		cryptdev=$(cryptsetup status "$rootdev" 2>&1 | awk '/device:/ { print $2 }')
 	fi
-
 
 	bootdev=$(find_mount_dev "$mnt"/boot)
 	if [ -z "$bootdev" ]; then
@@ -528,7 +530,7 @@ install_mounted_root() {
 
 	# check if our root is on raid so we can feed mkinitfs and
 	# bootloader conf with the proper kernel module params
-	for dev in $rootdev $pvs; do
+	for dev in $rootdev $pvs $cryptdev; do
 
 		# check if we need hardware raid drivers
 		case $dev in
