@@ -128,7 +128,7 @@ fi
 
 if [ "$rc_sys" != LXC ]; then
 	$PREFIX/sbin/setup-keymap ${KEYMAPOPTS}
-	$PREFIX/sbin/setup-hostname ${HOSTNAMEOPTS}
+	$PREFIX/sbin/setup-hostname ${HOSTNAMEOPTS} && rc-service hostname --quiet restart
 	$PREFIX/sbin/setup-devd -C mdev # just to bootstrap
 fi
 
@@ -167,9 +167,6 @@ for svc in $svc_list; do
 		rc-update --quiet add $svc
 	fi
 done
-
-# enable new hostname
-rc-service hostname --quiet restart
 
 # start up the services
 openrc boot
