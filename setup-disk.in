@@ -637,6 +637,9 @@ install_mounted_root() {
 
 	fi
 	modules="sd-mod,usb-storage,${root_fs}${raidmod}"
+	case "$initfs_features" in
+		*nvme*) modules="$modules,nvme";;
+	esac
 
 	# remove the installed db in case its there so we force re-install
 	rm -f "$mnt"/var/lib/apk/installed "$mnt"/lib/apk/db/installed
