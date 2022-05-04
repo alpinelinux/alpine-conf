@@ -476,7 +476,6 @@ select_firmware_pkgs() {
 		| awk -F/ '{print $1 == $0 ? "linux-firmware-other" : "linux-firmware-"$1}' \
 		| sort -u)
 	echo ${firmware_pkgs:-linux-firmware-none}
-	echo DEBUG:${firmware_pkgs:-linux-firmware-none} >&2
 }
 
 install_mounted_root() {
