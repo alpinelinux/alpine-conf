@@ -478,6 +478,16 @@ select_firmware_pkgs() {
 	echo ${firmware_pkgs:-linux-firmware-none}
 }
 
+is_nvme_dev() {
+	local i
+	for i; do
+		case ${i##*/} in
+			nvme*) return 0;;
+		esac
+	done
+	return 1
+}
+
 install_mounted_root() {
 	local mnt="$1"
 	shift 1
@@ -536,14 +546,9 @@ install_mounted_root() {
 		local md=${dev#/dev/}
 		[ -e "/sys/block/$md/md" ] || continue
 
-		for i in /sys/block/$md/slaves/*; do
-			case ${i##*/} in
-				nvme*)
-					initfs_features="${initfs_features% nvme} nvme"
-					break
-					;;
-			esac
-		done
+		if is_nvme_dev /sys/block/$md/slaves/*; then
+			initfs_features="${initfs_features% nvme} nvme"
+		fi
 		initfs_features="${initfs_features% raid} raid"
 		local level=$(cat /sys/block/$md/md/level)
 		case "$level" in
@@ -595,6 +600,9 @@ install_mounted_root() {
 	if crypt_required <"$mnt"/etc/fstab; then
 		use_crypt=1
 		initfs_features="$initfs_features cryptsetup keymap"
+		if is_nvme_dev /sys/block/dm-*/slaves/*; then
+			initfs_features="$initfs_features nvme"
+		fi
 	fi
 
 	# generate mkinitfs.conf
