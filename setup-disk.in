@@ -1290,7 +1290,8 @@ diskselect_help() {
 diskmode_help() {
 	cat <<-__EOF__
 
-		You can select between 'sys', 'data', 'crypt', 'lvm', 'lvmsys' or 'lvmdata'.
+		You can select between 'sys', 'data', 'crypt', 'cryptsys', 'lvm', 'lvmsys'
+		or 'lvmdata'.
 
 		sys:
 		  This mode is a traditional disk install. The following partitions will be
@@ -1309,6 +1310,9 @@ diskmode_help() {
 		  Enable encryption with cryptsetup and ask again for 'sys' or 'data'.
 		  You will be prompted to enter a decryption password, and will need to
 		  use this password to boot up the operating system after installation.
+
+		cryptsys:
+		  Same as 'sys' but also enable encryption.
 
 		lvm:
 		  Enable logical volume manager and ask again for 'sys' or 'data'.
@@ -1539,6 +1543,11 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 		lvmsys|lvmdata)
 			resp=${resp#lvm}
 			USE_LVM="_lvm"
+			break
+			;;
+		cryptsys)
+			resp=${resp#crypt}
+			USE_CRYPT="_crypt"
 			break
 			;;
 		esac
