@@ -105,7 +105,7 @@ set_media() {
 		case "$media" in
 			LABEL=*|UUID=*) UUID="$media";;
 		esac
-		printf "%s\t%s\t%s\tnoauto,ro 0 0\n" "${UUID:-$dev}" "$mnt" "$TYPE" >> /etc/fstab
+		printf "%s\t%s\t%s\tnoauto,defaults 0 0\n" "${UUID:-$dev}" "$mnt" "$TYPE" >> /etc/fstab
 	fi
 
 	# hack in case we have alpine_dev mounted on /media/usbdisk but
