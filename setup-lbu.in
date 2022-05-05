@@ -49,6 +49,10 @@ is_in_fstab() {
 	test -n "$(get_mnt_line $1 /etc/fstab)"
 }
 
+is_iso9660() {
+	! awk "\$2 == \"$1\" && \$3 == \"iso9660\" {exit 1}" /proc/mounts /etc/fstab
+}
+
 set_media() {
 	local media="${1%/}"	# strip trailing /
 	local mnt=/media/$media
@@ -111,7 +115,10 @@ alternatives=
 suggestion="none"
 for dir in /media/*; do
 	[ -d "$dir" ] || continue
-	[ "$dir" = "/media/cdrom" ] && continue
+	if is_iso9660 "$dir"; then
+		continue
+	fi
+
 	alternatives="$alternatives, '${dir#/media/}'"
 	if is_mounted $dir; then
 		suggestion=${dir#/media/}
