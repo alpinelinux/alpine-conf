@@ -20,43 +20,43 @@ usage() {
 	exit 1
 }
 
-get_mnt_line() {
-	local mntpoint="$1"
-	local mnttab="$2"
-	local media=${mntpoint#/media/}
-	local uuid=
-	# replace the device with UUID since the device is in /proc/mounts
-	# and we want the UUID in fstab
-	if [ "${media#UUID}" != "$media" ]; then
-		uuid="$media"
-	fi
-
-	# we need filter out codepage=... in mount option as it makes
-	# mount fail if its there.
-	awk -v uuid="$uuid" "\$2 == \"$mntpoint\" {
-		if (uuid)
-			\$1 = uuid;
-		gsub(/,codepage=.*,/, \",\", \$4);
-		print \$0;
-	}" "$mnttab"
+get_filesystem_type() {
+	local mountpoint="$1"
+	shift
+	awk "\$2==\"$mountpoint\" {print \$3}" "$@"
 }
 
-is_mounted() {
-	test -n "$(get_mnt_line $1 /proc/mounts)"
+get_dev() {
+	local mountpoint="$1"
+	shift
+	awk "\$2==\"$mountpoint\" {print \$1}" "$@"
 }
 
 is_in_fstab() {
-	test -n "$(get_mnt_line $1 /etc/fstab)"
+	test -n "$(get_filesystem_type $1 /etc/fstab)"
+}
+
+is_mounted() {
+	test -n "$(get_filesystem_type $1 /proc/mounts)"
 }
 
 is_iso9660() {
-	! awk "\$2 == \"$1\" && \$3 == \"iso9660\" {exit 1}" /proc/mounts /etc/fstab
+	local fs
+	for fs in $(get_filesystem_type $1 /proc/mounts /etc/fstab); do
+		if [ "$fs" = "iso9660" ]; then
+			return 0
+		fi
+	done
+	return 1
 }
 
 set_media() {
 	local media="${1%/}"	# strip trailing /
 	local mnt=/media/$media
 
+	case "$media" in
+		LABEL=*|UUID=*) mkdir -p /media/$media;;
+	esac
 	if [ -d "$media" ] && [ "${media#/media/}" != "$media" ]; then
 		mnt="$media"
 		media=${mnt#/media/}
@@ -83,8 +83,29 @@ set_media() {
 	fi
 
 	# append to fstab if its missing
-	if ! is_in_fstab $mnt && is_mounted $mnt; then
-		get_mnt_line "$mnt" /proc/mounts >> /etc/fstab
+	if ! is_in_fstab $mnt; then
+		case "$media" in
+			LABEL=*|UUID=*)
+				dev=$(findfs $media)
+				;;
+			*)	dev=$(get_dev $mnt /proc/mounts)
+				;;
+		esac
+		if [ -z "$dev" ]; then
+			echo "$media: Could not find device" >&2
+			exit 1
+		fi
+		# get TYPE=... LABEL=... UUID=... from blkid
+		eval $(blkid $dev | awk -F: '{print $2}')
+		if [ -z "$TYPE" ]; then
+			echo "$media: Could not find filesystem type" >&2
+			exit 1
+		fi
+		# use LABEL= if it was specifically selected, otherwise use UUID
+		case "$media" in
+			LABEL=*|UUID=*) UUID="$media";;
+		esac
+		printf "%s\t%s\t%s\tnoauto,ro 0 0\n" "${UUID:-$dev}" "$mnt" "$TYPE" >> /etc/fstab
 	fi
 
 	# hack in case we have alpine_dev mounted on /media/usbdisk but
@@ -120,11 +141,21 @@ for dir in /media/*; do
 	fi
 
 	alternatives="$alternatives, '${dir#/media/}'"
-	if is_mounted $dir; then
+	if is_mounted "$dir"; then
 		suggestion=${dir#/media/}
 		[ -n "$quiet" ] && media=$suggestion
 	fi
 done
+
+if findfs "LABEL=APKOVL" >/dev/null; then
+	suggestion="LABEL=APKOVL"
+	case ", $alternatives, " in
+		*"'LABEL=APKOVL'"*)
+			;;
+		*) alternatives="$alternatives, 'LABEL=APKOVL'"
+			;;
+	esac
+fi
 
 # strip leading , + space
 alternatives=${alternatives#, }
@@ -141,7 +172,10 @@ fi
 while [ -z "$media" ]; do
 	ask "Enter where to store configs ($alternatives or 'none')" "$suggestion"
 	media="$resp"
-	if [ "$media" = "none" ] || [ -d "/media/$media" ]; then
+	case "$media" in
+		none|LABEL=*) break;;
+	esac
+	if [ -d "/media/$media" ]; then
 		break
 	fi
 	echo "/media/$media is not a directory. Please try again."
