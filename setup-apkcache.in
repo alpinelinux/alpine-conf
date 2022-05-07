@@ -60,21 +60,35 @@ find_mount_point() {
 	echo $dir
 }
 
-get_mount_opts() {
+# get device for a given mount point
+get_dev_from_mountpoint() {
 	local mnt="$1"
-	awk "\$2 == \"$mnt\" {gsub(/,/, \" \", \$4); print \$4}" /proc/mounts
+	local fstab="$2"
+	awk "\$2 == \"$mnt\" {print \$1}" "$fstab"
 }
 
-is_mounted_ro() {
+get_mount_opts_from_mountpoint() {
 	local mnt="$1"
-	local opts=$(get_mount_opts $mnt)
+	local fstab="$2"
+	awk "\$2 == \"$mnt\" {gsub(/,/, \" \", \$4); print \$4}" "$fstab"
+}
+
+has_mount_opt() {
+	local searchfor="$1"
+	local mnt="$2"
+	local fstab="$3"
+	local opts=$(get_mount_opts_from_mountpoint $mnt $fstab)
 	local opt=
 	for opt in $opts; do
-		if [ "$opt" = "ro" ]; then
+		if [ "$opt" = "$searchfor" ]; then
 			return 0
 		fi
 	done
 	return 1
+}
+
+is_mounted_ro() {
+	has_mount_opt ro "$1" /proc/mounts
 }
 
 # get the fstype of the given mount point
@@ -147,8 +161,19 @@ mount=$(find_mount_point $cachedir)
 cleanup=
 
 if ! is_mounted $mount; then
+	# remove noauto that setup-lbu might have added
+	if has_mount_opt noauto "$mount" /etc/fstab; then
+		fstabtmp=$(mktemp)
+		awk -v mnt="$mount" \
+			'$2 != mnt {print $0}
+			 $2 == mnt {
+			 	sub(/noauto,|,noauto/, "", $4);
+				sub(/^noauto$/, "defaults", $4);
+				print $0
+			}' /etc/fstab > "$fstabtmp"
+		mv "$fstabtmp" /etc/fstab
+	fi
 	mount $mount || exit 1
-	cleanup="umount"
 elif is_mounted_ro $mount; then
 	mount -o remount,rw $mount || exit 1
 	cleanup="remount"
