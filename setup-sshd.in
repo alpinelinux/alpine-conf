@@ -43,6 +43,25 @@ fi
 
 apk add --quiet $pkgs
 
+if [ "$sshdchoice" = "openssh" ]; then
+	while true; do
+		ask "Allow root ssh login? ('yes', 'no', 'prohibit-password' or KEYURL) [prohibit-password]" prohibit-password
+		case "$resp" in
+			yes|no|prohibit-password)
+				sed -i -E -e "s/^#?\s*PermitRootLogin.*/PermitRootLogin $resp/" /etc/ssh/sshd_config
+				if ! grep -q ^PermitRootLogin /etc/ssh/sshd_config; then
+					echo "PermitRootLogin $resp"  >> /etc/ssh/sshd_config
+				fi
+				break
+				;;
+			http://*|https://*)
+				authorized_key="$(wget -qO- "$resp")" || { echo "Could not fetch key from '$resp'"; continue; }
+				break
+				;;
+		esac
+	done
+fi
+
 svc=
 case "$sshdchoice" in
 	openssh) svc=sshd;;
