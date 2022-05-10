@@ -1460,7 +1460,7 @@ fi
 if is_efi || [ -n "$USE_EFI" ]; then
 	USE_EFI=1
 	DISKLABEL=gpt
-	BOOT_SIZE=512
+	BOOT_SIZE=${BOOT_SIZE:-512}
 	BOOTFS=vfat
 	: ${BOOTLOADER:=grub}
 fi
