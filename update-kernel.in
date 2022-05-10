@@ -295,7 +295,7 @@ MODIMG=modloop-$FLAVOR
 mkdir $MODLOOP $STAGING
 cp -a $ROOT/lib/modules $MODLOOP
 mkdir -p $MODLOOP/modules/firmware
-find $ROOT/lib/modules -type f -name "*.ko*" | xargs modinfo -F firmware | sort -u | while read FW; do
+find $ROOT/lib/modules -type f -name "*.ko*" | xargs modinfo -k $KVER -F firmware | sort -u | while read FW; do
 	if [ -e "$ROOT/lib/firmware/$FW" ]; then
 		install -pD $ROOT/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
 		# copy also all potentially associated files
