@@ -54,9 +54,9 @@ if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ]; then
 		ask "Allow root ssh login? ('yes', 'no', 'prohibit-password' or KEYURL) [prohibit-password]" prohibit-password
 		case "$resp" in
 			yes|no|prohibit-password)
-				sed -i -E -e "s/^#?\s*PermitRootLogin.*/PermitRootLogin $resp/" /etc/ssh/sshd_config
-				if ! grep -q ^PermitRootLogin /etc/ssh/sshd_config; then
-					echo "PermitRootLogin $resp"  >> /etc/ssh/sshd_config
+				sed -i -E -e "s/^#?\s*PermitRootLogin.*/PermitRootLogin $resp/" "$ROOT"/etc/ssh/sshd_config
+				if ! grep -q ^PermitRootLogin "$ROOT"/etc/ssh/sshd_config; then
+					echo "PermitRootLogin $resp"  >> "$ROOT"/etc/ssh/sshd_config
 				fi
 				break
 				;;
@@ -87,6 +87,6 @@ if [ -n "$authorized_key" -a "$authorized_key" != "none" ]; then
 			authorized_key="$($MOCK wget -qO- "$key_url")" || die "Failed to fetch key from '$key_url'"
 			;;
 	esac
-	mkdir -p ${ROOT}/root/.ssh
-	echo "$authorized_key" >> ${ROOT}/root/.ssh/authorized_keys
+	mkdir -p "$ROOT"/root/.ssh
+	echo "$authorized_key" >> "$ROOT"/root/.ssh/authorized_keys
 fi
