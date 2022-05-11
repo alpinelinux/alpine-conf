@@ -49,7 +49,7 @@ fi
 
 $MOCK apk add --quiet $pkgs
 
-if [ "$sshdchoice" = "openssh" ]; then
+if [ "$sshdchoice" = "openssh" ] && [ -z "authorized_keys" ]; then
 	while true; do
 		ask "Allow root ssh login? ('yes', 'no', 'prohibit-password' or KEYURL) [prohibit-password]" prohibit-password
 		case "$resp" in
