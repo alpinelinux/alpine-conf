@@ -6,13 +6,12 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-sshd [-h] [-c choice of SSH daemon] [-k authorized key]
+		usage: setup-sshd [-h] [-k authorized key] [openssh | dropbear | none]
 
 		Setup sshd daemon
 
 		options:
 		 -h  Show this help
-		 -c  Choice of SSH daemon: openssh dropbear none
 		 -k  Authorized key for root (HTTP(S)/FTP URL, the public key itself or 'none')
 	__EOF__
 	exit 1
@@ -22,10 +21,17 @@ authorized_key="$SSH_KEY"
 while getopts "hc:k:" opt; do
 	case $opt in
 		h) usage;;
-		c) sshdchoice="$OPTARG";;
+		c) sshdchoice="$OPTARG";; # backwards compat
 		k) authorized_key="$OPTARG";;
 	esac
 done
+shift $(( $OPTIND - 1 ))
+
+case "$1" in
+	openssh|dropbear|none) sshdchoice="$1" ;;
+	"") ;;
+	*) usage;;
+esac
 
 while ! isin "$sshdchoice" openssh dropbear none; do
 	ask "Which SSH server? ('openssh', 'dropbear' or 'none')" openssh
