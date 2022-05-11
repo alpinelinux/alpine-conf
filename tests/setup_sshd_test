@@ -35,8 +35,21 @@ setup_sshd_dropbear_body() {
 		setup-sshd dropbear
 }
 
+atf_test_case setup_sshd_openssh
+setup_sshd_openssh_body() {
+	init_env
+	atf_check -s exit:0 \
+		-e empty \
+		-o match:"^apk add .* openssh" \
+		-o match:"^rc-update add sshd" \
+		-o match:"^rc-service sshd start" \
+		setup-sshd -k 'https://example.com/user.keys' openssh
+	grep '^wget .*https://example.com/user.keys$' root/.ssh/authorized_keys || atf_fail "failed to wget ssh key"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case setup_sshd_help
 	atf_add_test_case setup_sshd_empty
 	atf_add_test_case setup_sshd_dropbear
+	atf_add_test_case setup_sshd_openssh
 }
