@@ -1,10 +1,14 @@
 #!/usr/bin/env atf-sh
 
-PATH=$(atf_get_srcdir)/..:$PATH
 
 init_env() {
+	PATH=$(atf_get_srcdir)/..:$PATH
 	export ROOT=$PWD LIBDIR=$(atf_get_srcdir)/.. MOCK=echo
 }
+
+# docs:
+# - https://github.com/jmmv/kyua/wiki/Quickstart-atf-sh-test
+# - https://manned.org/atf-sh-api
 
 atf_test_case setup_sshd_help
 setup_sshd_help_body() {
