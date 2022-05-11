@@ -2,22 +2,21 @@
 
 PROGRAM=setup-hostname
 PREFIX=@PREFIX@
-
-. $PREFIX/lib/libalpine.sh
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-hostname [-h] [-n HOSTNAME]
+		usage: setup-hostname [-h] [HOSTNAME]
 
 		Sets the system hostname.
 
 		options:
 		 -h  Show this help
-		 -n  Hostname to set non-interactively
 
 		Sets hostname to HOSTNAME or prompt if unspecified.
 	__EOF__
-	exit 1
+	exit $1
 }
 
 
@@ -43,7 +42,7 @@ valid_hostname() {
 
 while getopts "hn:" opt; do
 	case $opt in
-		h) usage;;
+		h) usage 0;;
 		n) name="$OPTARG";;
 	esac
 done
