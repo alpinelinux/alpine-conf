@@ -1,0 +1,42 @@
+#!/usr/bin/env atf-sh
+
+PATH=$(atf_get_srcdir)/..:$PATH
+
+init_env() {
+	export ROOT=$PWD LIBDIR=$(atf_get_srcdir)/.. MOCK=echo
+}
+
+atf_test_case setup_sshd_help
+setup_sshd_help_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:'^usage:' \
+		-e empty \
+		setup-sshd -h
+}
+
+atf_test_case setup_sshd_empty
+setup_sshd_empty_body() {
+	init_env
+	atf_check -s exit:0 \
+		-e empty \
+		-o empty \
+		setup-sshd none
+}
+
+atf_test_case setup_sshd_dropbear
+setup_sshd_dropbear_body() {
+	init_env
+	atf_check -s exit:0 \
+		-e empty \
+		-o match:"^apk add .* dropbear" \
+		-o match:"^rc-update add dropbear" \
+		-o match:"^rc-service dropbear start" \
+		setup-sshd dropbear
+}
+
+atf_init_test_cases() {
+	atf_add_test_case setup_sshd_help
+	atf_add_test_case setup_sshd_empty
+	atf_add_test_case setup_sshd_dropbear
+}

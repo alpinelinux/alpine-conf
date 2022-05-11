@@ -1,0 +1,5 @@
+syntax(2)
+
+test_suite('alpine-conf')
+
+atf_test_program{name='setup_sshd_test'}

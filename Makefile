@@ -59,7 +59,7 @@ SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
 	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@
 
 %: %.in
-	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@
+	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@ && chmod +x $@
 
 .PHONY:	all apk clean install uninstall iso
 all:	$(SCRIPTS) $(BIN_FILES)
@@ -101,3 +101,6 @@ alpine-conf.iso: $(SCRIPTS) $(BIN_FILES)
 	xorriso -as mkisofs -r -V 'ALPINECONF' -J -o $@ tmp/ && rm -rf tmp
 
 iso: alpine-conf.iso
+
+test: $(SCRIPTS) $(BIN_FILES)
+	kyua test || (kyua report --verbose && exit 1)
