@@ -9,8 +9,8 @@ init_env() {
 # - https://github.com/jmmv/kyua/wiki/Quickstart-atf-sh-test
 # - https://manned.org/atf-sh-api
 
-atf_test_case setup_hostname_help
-setup_hostname_help_body() {
+atf_test_case setup_hostname_usage
+setup_hostname_usage_body() {
 	init_env
 	atf_check -s exit:0 \
 		-o match:'^usage: setup-hostname' \
@@ -19,5 +19,5 @@ setup_hostname_help_body() {
 }
 
 atf_init_test_cases() {
-	atf_add_test_case setup_hostname_help
+	atf_add_test_case setup_hostname_usage
 }
