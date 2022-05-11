@@ -1,8 +1,8 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-
-. "$PREFIX/lib/libalpine.sh"
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 usage() {
 	cat <<-__EOF__
@@ -14,13 +14,13 @@ usage() {
 		 -h  Show this help
 		 -k  Authorized key for root (HTTP(S)/FTP URL, the public key itself or 'none')
 	__EOF__
-	exit 1
+	exit $1
 }
 
 authorized_key="$SSH_KEY"
 while getopts "hc:k:" opt; do
 	case $opt in
-		h) usage;;
+		h) usage 0;;
 		c) sshdchoice="$OPTARG";; # backwards compat
 		k) authorized_key="$OPTARG";;
 	esac
@@ -30,7 +30,7 @@ shift $(( $OPTIND - 1 ))
 case "$1" in
 	openssh|dropbear|none) sshdchoice="$1" ;;
 	"") ;;
-	*) usage;;
+	*) usage 1 >&2;;
 esac
 
 while ! isin "$sshdchoice" openssh dropbear none; do
@@ -47,7 +47,7 @@ if [ "$sshdchoice" = "openssh" ] && apk info --quiet --installed acf-core; then
 	pkgs="$pkgs acf-openssh"
 fi
 
-apk add --quiet $pkgs
+$MOCK apk add --quiet $pkgs
 
 if [ "$sshdchoice" = "openssh" ]; then
 	while true; do
@@ -61,7 +61,7 @@ if [ "$sshdchoice" = "openssh" ]; then
 				break
 				;;
 			http://*|https://*)
-				authorized_key="$(wget -qO- "$resp")" || { echo "Could not fetch key from '$resp'"; continue; }
+				authorized_key="$($MOCK wget -qO- "$resp")" || { echo "Could not fetch key from '$resp'"; continue; }
 				break
 				;;
 		esac
@@ -75,8 +75,8 @@ case "$sshdchoice" in
 esac
 
 if [ -n "$svc" ]; then
-	rc-update add $svc default
-	rc-service $svc start
+	$MOCK rc-update add $svc default
+	$MOCK rc-service $svc start
 fi
 
 if [ -n "$authorized_key" -a "$authorized_key" != "none" ]; then
