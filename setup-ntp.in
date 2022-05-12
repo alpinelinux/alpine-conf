@@ -1,11 +1,11 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-
-. "$PREFIX/lib/libalpine.sh"
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 usage() {
-	cat <<-__EOF__
+	cat >&$(( $1 + 1 ))<<-__EOF__
 		usage: setup-ntp [-h] [-c choice of NTP daemon]
 
 		Setup NTP time synchronization
@@ -14,13 +14,14 @@ usage() {
 		 -h  Show this help
 		 -c  Choice of NTP daemon: busybox openntpd chrony none
 	__EOF__
-	exit 1
+	exit $1
 }
 
 while getopts "hc:" opt; do
 	case $opt in
 		c) resp="$OPTARG";;
-		h) usage;;
+		h) usage 0;;
+		'?') usage 1;;
 	esac
 done
 
