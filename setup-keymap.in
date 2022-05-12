@@ -1,7 +1,8 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-. $PREFIX/lib/libalpine.sh
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 MAPDIR="$ROOT/usr/share/bkeymaps"
 
@@ -10,6 +11,20 @@ if [ -f "$ROOT/etc/conf.d/loadkmap" ]; then
 	variant=$(basename "KEYMAP")
 	variant="${variant%%.*}"
 fi
+
+usage() {
+	cat <<-__EOF__
+		usage: setup-keymap [-h] [LAYOUT [VARIANT]]
+
+		Sets the system keymap layout and variant.
+
+		options:
+		 -h  Show this help
+
+		Sets keymap to LAYOUT (and VARIANT) or prompt if unspecified.
+	__EOF__
+	exit $1
+}
 
 
 show_layouts() {
@@ -56,8 +71,8 @@ setup_mapfile() {
 		[ -f "$conf" ] && sed -i '/^KEYMAP=/d' "$conf"
 		echo "KEYMAP=/etc/keymap/$name" >> "$conf"
 		# we actually load the keymap now
-		rc-service loadkmap restart
-		rc-update -q add loadkmap boot
+		$MOCK rc-service loadkmap restart
+		$MOCK rc-update -q add loadkmap boot
 		goodbye 0
 	fi
 }
@@ -81,12 +96,19 @@ select_variant() {
 }
 
 goodbye() {
-	apk del --quiet --no-progress .setup-keymap-deps
+	$MOCK apk del --quiet --no-progress .setup-keymap-deps
 	exit $1
 }
 
+while getopts "h" opt; do
+	case $opt in
+		h) usage 0;;
+	esac
+done
+shift $(( $OPTIND - 1 ))
+
 trap 'goodbye 1' INT
-apk add --quiet --virtual .setup-keymap-deps kbd-bkeymaps
+$MOCK apk add --quiet --virtual .setup-keymap-deps kbd-bkeymaps
 
 deflayout="$1"
 defvariant="$2"
