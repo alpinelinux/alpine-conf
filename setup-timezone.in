@@ -1,14 +1,14 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-. "$PREFIX/lib/libalpine.sh"
-
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 zroot=/usr/share/zoneinfo
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-timezone [-h] [-k|-i] [-z TIMEZONE]
+		usage: setup-timezone [-h] [-k|-i] [TIMEZONE]
 
 		Sets the timezone for the system.
 
@@ -16,9 +16,12 @@ usage() {
 		 -h  Show this help
 		 -i  Install tzdata and symlink instead of making a copy
 		 -k  Keep previous copies of tzdata
-		 -z  Set given timezone. (relative $zroot)
+
+		TIMEZONE is relative $zroot.
+
+		If TIMEZONE is not specified user will be prompted.
 	__EOF__
-	exit 1
+	exit $1
 }
 
 show_tz_list() {
@@ -61,12 +64,16 @@ INSTALL_TZDATA=false
 KEEP_TZDATA=false
 while getopts "hikz:" opt; do
 	case $opt in
-		h) usage;;
+		h) usage 0;;
 		i) INSTALL_TZDATA=true;;
 		k) KEEP_TZDATA=true;;
 		z) ZONE="$OPTARG";;
+		'?') usage "1" >&2;;
 	esac
 done
+shift $(( $OPTIND - 1))
+
+ZONE="$1"
 
 if $INSTALL_TZDATA; then
 	pkg=tzdata
