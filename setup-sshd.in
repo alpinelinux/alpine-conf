@@ -23,6 +23,7 @@ while getopts "hc:k:" opt; do
 		h) usage 0;;
 		c) sshdchoice="$OPTARG";; # backwards compat
 		k) authorized_key="$OPTARG";;
+		'?') usage "1" >&2;;
 	esac
 done
 shift $(( $OPTIND - 1 ))
@@ -30,7 +31,7 @@ shift $(( $OPTIND - 1 ))
 case "$1" in
 	openssh|dropbear|none) sshdchoice="$1" ;;
 	"") ;;
-	*) usage 1 >&2;;
+	*) usage "1" >&2;;
 esac
 
 while ! isin "$sshdchoice" openssh dropbear none; do
