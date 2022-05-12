@@ -103,6 +103,7 @@ goodbye() {
 while getopts "h" opt; do
 	case $opt in
 		h) usage 0;;
+		'?') usage "1" >&2;;
 	esac
 done
 shift $(( $OPTIND - 1 ))
