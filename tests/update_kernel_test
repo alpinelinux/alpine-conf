@@ -1,0 +1,36 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	update_kernel_usage \
+	update_kernel_builddir_and_flavor \
+	update_kernel_arch \
+	update_kernel_flavor
+
+update_kernel_usage_body() {
+	test_usage update-kernel
+}
+
+update_kernel_builddir_and_flavor_body() {
+	init_env
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"Cannot specify both build directory and flavor" \
+		update-kernel --build-dir tmp --flavor virt
+}
+
+update_kernel_arch_body() {
+	init_env
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"Cannot specify architecture when updating the current kernel" \
+		update-kernel --arch foobar
+}
+
+update_kernel_flavor_body() {
+	init_env
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"Cannot specify flavor when updating the current kernel" \
+		update-kernel --flavor virt
+}
