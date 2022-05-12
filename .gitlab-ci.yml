@@ -1,0 +1,10 @@
+test-job:
+  image: alpine:latest
+  stage: test
+  script:
+    - apk add make gcc musl-dev kyua
+    - make -j $(nproc) test
+  tags:
+    - docker-alpine
+    - x86_64
+
