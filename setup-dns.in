@@ -39,9 +39,9 @@ elif fqdn="$(get_fqdn)" && [ -n "$fqdn" ]; then
 	domain="$fqdn"
 fi
 
-if [ -n "$DOMAINNAME" ];then
+if [ -n "$DOMAINNAME" ]; then
 	domain="$DOMAINNAME"
-else
+elif [ $# -eq 0 ]; then
 	ask "DNS domain name? (e.g 'bar.com')" "$domain"
 	domain="$resp"
 fi
@@ -53,7 +53,7 @@ else
 	dns="$(echo $resp | tr ',' ' ')"
 fi
 
-if [ "$domain" != "" ]; then
+if [ -n "$domain" ]; then
 	mkdir -p "${conf%/*}"
 	echo "search $domain" > $conf
 fi
