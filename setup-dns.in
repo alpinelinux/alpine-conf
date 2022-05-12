@@ -1,11 +1,12 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-. "$PREFIX/lib/libalpine.sh"
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-dns [-h] [-d domain name] [IPADDR...]
+		usage: setup-dns [-h] [-d DOMAINNAME] [IPADDR...]
 
 		Setup ${ROOT}etc/resolv.conf DNS settings
 
@@ -15,14 +16,15 @@ usage() {
 
 		The optional IPADDR are a list of DNS servers to use.
 	__EOF__
-	exit 1
+	exit $1
 }
 
 while getopts "d:n:h" opt; do
 	case $opt in
 		d) DOMAINNAME="$OPTARG";;
-		h) usage;;
+		h) usage 0;;
 		n) NAMESERVERS="$OPTARG";;
+		'?') usage "1" >&2;;
 	esac
 done
 shift $(($OPTIND - 1))
