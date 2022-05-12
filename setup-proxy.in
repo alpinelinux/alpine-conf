@@ -1,9 +1,8 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-for i in ./libalpine.sh $PREFIX/lib/libalpine.sh; do
-	[ -e $i ] && . $i && break
-done
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 usage() {
 	cat <<-__EOF__
@@ -17,19 +16,17 @@ usage() {
 
 		If PROXYURL is not specified user will be prompted.
 	__EOF__
-	exit 1
+	exit $1
 }
-
-
 
 while getopts "hp:q" opt; do
 	case "$opt" in
-	q) quiet=1;;
-	h) usage;;
-	p) ROOT=$OPTARG;;
+		q) quiet=1;;
+		h) usage 0;;
+		p) ROOT=$OPTARG;;
+		'?') usage "1" >&2;;
 	esac
 done
-
 shift $(( $OPTIND - 1))
 
 proxyurl="$1"
