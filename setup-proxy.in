@@ -38,16 +38,16 @@ if [ -f "$PROFILE" ] ; then
 fi
 
 suggest=${http_proxy:-none}
-while true; do
+while [ $# -eq 0 ]; do
 	case "$proxyurl" in
-		http://*) break;;
+		http://*|https://*) break;;
 		none) proxyurl= ; break;;
 	esac
 	ask "HTTP/FTP proxy URL? (e.g. 'http://proxy:8080', or 'none')" $suggest
 	proxyurl=$resp
 done
 
-if [ -z "$proxyurl" ]; then
+if [ "$proxyurl" = "none" ]; then
 	rm -f "$PROFILE"
 else
 	mkdir -p "${PROFILE%/*}"
@@ -60,11 +60,9 @@ else
 		export no_proxy=localhost
 	__EOF__
 	# busybox wget does not handle http proxies well
-	apk add --quiet --no-progress wget
+	$MOCK apk add --quiet --no-progress wget
 fi
 
-[ -e "$PROFILE" ] || exit 1
-
-if [ -z "$quiet" ]; then
+if [ -z "$quiet" ] && [ "$proxyurl" != "none" ]; then
 	echo -e "\nTo make changes active please do login again or source $PROFILE\nwith \". $PROFILE\""
 fi
