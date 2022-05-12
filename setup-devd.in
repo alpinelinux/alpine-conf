@@ -36,7 +36,8 @@ disable_mdev () {
 }
 
 enable_mdev () {
-	apk add --quiet mdev-openrc
+	# mdev openrc script is provided by busybox-initscripts which is assumed
+	# to be there
 	rc-update add mdev sysinit
 	rc-update add mdev-init sysinit
 	rc-service mdev start
