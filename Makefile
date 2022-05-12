@@ -62,7 +62,7 @@ SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
 	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@ && chmod +x $@
 
 .PHONY:	all apk clean install uninstall iso
-all:	$(SCRIPTS) $(BIN_FILES)
+all:	$(SCRIPTS) $(BIN_FILES) Kyuafile tests/Kyuafile
 
 uniso:	uniso.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
@@ -94,7 +94,7 @@ uninstall:
 	done
 
 clean:
-	rm -rf $(SCRIPTS) $(BIN_FILES) alpine-conf.iso
+	rm -rf $(SCRIPTS) $(BIN_FILES) alpine-conf.iso tests/Kyuafile Kyuafile
 
 alpine-conf.iso: $(SCRIPTS) $(BIN_FILES)
 	$(MAKE) install PREFIX=/ DESTDIR=tmp/
@@ -102,5 +102,18 @@ alpine-conf.iso: $(SCRIPTS) $(BIN_FILES)
 
 iso: alpine-conf.iso
 
-test: $(SCRIPTS) $(BIN_FILES)
+tests/Kyuafile: $(wildcard tests/*_test)
+	echo "syntax(2)" > $@
+	echo 'test_suite("alpine-conf")' >> $@
+	for i in $(notdir $(wildcard tests/*_test)); do \
+		echo "atf_test_program{name='$$i',timeout=1}" >> $@ ; \
+	done
+
+Kyuafile:
+	echo "syntax(2)" > $@
+	echo "test_suite('alpine-conf')" >> $@
+	echo "include('tests/Kyuafile')" >> $@
+
+test: $(SCRIPTS) $(BIN_FILES) tests/Kyuafile Kyuafile
 	kyua test || (kyua report --verbose && exit 1)
+

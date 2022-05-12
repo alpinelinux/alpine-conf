@@ -1,5 +1,0 @@
-syntax(2)
-
-test_suite('alpine-conf')
-
-include('tests/Kyuafile')

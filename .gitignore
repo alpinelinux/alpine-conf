@@ -1,7 +1,8 @@
-*.tar.gz
-lbu
 *.sh
+*.tar.gz
+Kyuafile
 copy-modloop
+lbu
 setup-acf
 setup-ads
 setup-alpine
@@ -26,6 +27,6 @@ setup-sshd
 setup-timezone
 setup-xen-dom0
 setup-xorg-base
+uniso
 update-conf
 update-kernel
-uniso

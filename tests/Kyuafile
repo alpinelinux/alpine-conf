@@ -1,6 +1,0 @@
-syntax(2)
-
-test_suite('alpine-conf')
-
-atf_test_program{name='setup_sshd_test', timeout=1}
-atf_test_program{name='setup_hostname_test', timeout=1}
