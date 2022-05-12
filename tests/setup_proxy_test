@@ -19,7 +19,6 @@ setup_proxy_url_body() {
 	grep http_proxy etc/profile.d/proxy.sh || atf_fail "http_proxy not set in etc/profile.d/proxy.sh"
 }
 
-
 setup_proxy_none_body() {
 	init_env
 
