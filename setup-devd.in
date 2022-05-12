@@ -2,7 +2,8 @@
 
 PREFIX=@PREFIX@
 
-. "$PREFIX/lib/libalpine.sh"
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 prog="${0##*/}"
 
@@ -23,7 +24,7 @@ udev (from eudev) is the complex, full-featured one.
 Without an argument, the choice is prompted interactively.
 
 EOF
-	exit 1
+	exit $1
 }
 
 disable_mdev () {
@@ -91,9 +92,9 @@ enable_udev () {
 coldplug=false
 while getopts "hC" opt ; do
 	case $opt in
-		h) usage ;;
+		h) usage 0;;
 		C) coldplug=true ;;
-		'?') usage ;;
+		'?') usage 1 >&2;;
 	esac
 done
 shift $((OPTIND - 1))
