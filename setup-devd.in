@@ -9,7 +9,7 @@ prog="${0##*/}"
 
 usage () {
 	cat <<EOF
-$prog: usage: setup-devd [ -h ] [ -C ] [ mdev | mdevd | udev ]
+usage: setup-devd [ -h ] [ -C ] [ mdev | mdevd | udev ]
 
 Set up the device manager.
 
