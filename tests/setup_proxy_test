@@ -1,0 +1,38 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	setup_proxy_usage \
+	setup_proxy_url \
+	setup_proxy_none
+
+setup_proxy_usage_body() {
+	test_usage setup-proxy
+}
+
+setup_proxy_url_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:'^apk add.*wget' \
+		-e empty \
+		setup-proxy https://example.com
+	grep http_proxy etc/profile.d/proxy.sh || atf_fail "http_proxy not set in etc/profile.d/proxy.sh"
+}
+
+
+setup_proxy_none_body() {
+	init_env
+
+	mkdir -p etc/profile.d
+	touch etc/profile.d/proxy.sh
+
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		setup-proxy none
+
+	if test -e etc/profile.d/proxy.sh; then
+		atf_fail "etc/profile.d/proxy.sh was not removed"
+	fi
+}
+
