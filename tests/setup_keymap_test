@@ -9,6 +9,10 @@ init_env() {
 # - https://github.com/jmmv/kyua/wiki/Quickstart-atf-sh-test
 # - https://manned.org/atf-sh-api
 
+atf_init_test_cases() {
+	atf_add_test_case setup_keymap_usage
+}
+
 atf_test_case setup_keymap_usage
 setup_keymap_usage_body() {
 	init_env
@@ -18,6 +22,3 @@ setup_keymap_usage_body() {
 		setup-keymap -h
 }
 
-atf_init_test_cases() {
-	atf_add_test_case setup_keymap_usage
-}
