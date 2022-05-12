@@ -2,12 +2,10 @@
 
 PROGRAM=setup-interfaces
 PREFIX=@PREFIX@
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 PKGS=
-
-for i in ./libalpine.sh $PREFIX/lib/libalpine.sh; do
-	[ -e $i ] && . $i && break
-done
 
 unconfigured_add() {
 	touch $1.noconf
@@ -421,7 +419,7 @@ usage() {
 		 -p  Set the system root to operate in
 		 -r  Restart the networking service after the setup
 	__EOF__
-	exit 1
+	exit $1
 }
 
 iface_help() {
@@ -563,10 +561,11 @@ while getopts "abhip:r" opt; do
 	case $opt in
 		a) auto=1;;
 		b) ask_bridge=1;;
-		h) usage;;
+		h) usage 0;;
 		i) STDINPUT=1;;
 		p) ROOT=$OPTARG;;
 		r) restart=1;;
+		'?') usage "1" >&2;;
 	esac
 done
 
