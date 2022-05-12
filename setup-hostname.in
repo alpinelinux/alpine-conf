@@ -44,6 +44,7 @@ while getopts "hn:" opt; do
 	case $opt in
 		h) usage 0;;
 		n) name="$OPTARG";;
+		'?') usage "1"  >&2;;
 	esac
 done
 shift $(( $OPTIND - 1 ))
