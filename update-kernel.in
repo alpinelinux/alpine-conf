@@ -9,7 +9,8 @@
 # Copyright (c) 2014-2021 Kaarle Ritvanen
 
 PREFIX=@PREFIX@
-. $PREFIX/lib/libalpine.sh
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 SCRIPT=update-kernel
 VIRTUAL=.tmp-$SCRIPT
@@ -39,14 +40,16 @@ error() {
 }
 
 usage() {
-	[ "$2" ] && error "$2"
+	[ "$2" ] && error "$2" $outfh
 	local opts="[-F <feature>]... [-p <package>]..."
 	local dest_args="[-a <arch>] <dest_dir>"
-	cat >&2 <<-__EOF__
+	local outfh=2
+	[ $1 -eq 0 ] && outfh=1
+	cat >&$outfh <<-__EOF__
 
-		Syntax: $SCRIPT $opts [$dest_args]
-		        $SCRIPT -f <flavor> $opts $dest_args
-		        $SCRIPT -b <build_dir> $opts [$dest_args]
+		usage: $SCRIPT $opts [$dest_args]
+		       $SCRIPT -f <flavor> $opts $dest_args
+		       $SCRIPT -b <build_dir> $opts [$dest_args]
 
 		Options: -a|--arch <arch>          Install kernel for specified architecture
 		         -b|--build-dir <dir>      Install custom-built kernel
@@ -98,7 +101,7 @@ while :; do
 		modloopfw="$modloopfw $1"
 		;;
 	-h|--help)
-		echo "$SCRIPT @VERSION@" >&2
+		echo "$SCRIPT @VERSION@"
 		usage 0
 		;;
 	-p|--package)
