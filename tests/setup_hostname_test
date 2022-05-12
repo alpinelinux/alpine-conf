@@ -2,9 +2,37 @@
 
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
-	setup_hostname_usage
+	setup_hostname_usage \
+	setup_hostname_invalid_hostname
 
 setup_hostname_usage_body() {
 	test_usage setup-hostname
+}
+
+setup_hostname_invalid_hostname_body() {
+	init_env
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"must only contain letters" \
+		setup-hostname -- 'asdf_'
+
+	a=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+	# verify that string is 64 chars
+	atf_check_equal $(printf "$a" | wc -c) 64
+
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"is too long" \
+		setup-hostname -- "$a$a$a$a"
+
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"must not start with" \
+		setup-hostname -- '-asdf'
+
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"must not start with" \
+		setup-hostname -- '.asdf'
 }
 
