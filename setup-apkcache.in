@@ -40,7 +40,7 @@ find_fstab_mount_point() {
 
 # figure out mount point
 find_mount_point() {
-	local dir=$(find_fstab_mount_point $1)
+	local dir=$(find_fstab_mount_point "$1")
 	if [ -d "$dir" ] && [ "$dir" != "/" ]; then
 		echo $dir
 		return
@@ -50,9 +50,10 @@ find_mount_point() {
 	while [ -n "$dir" ] && ! [ -d "$dir" ]; do
 		dir=${dir%/*}
 	done
-	local fs_id=$(stat -f -c %i "${dir:-/}")
+
+	local fs_id="$(stat -f -c %i "${dir:-/}")"
 	local parent="${dir%/*}"
-	while [ -n "$dir" ] && [ "$(stat -f -c %i $parent/)" = "$fs_id" ]; do
+	while [ -n "$dir" ] && [ "$(stat -f -c %i "$parent/")" = "$fs_id" ]; do
 		dir=$parent
 		parent=${parent%/*}
 	done
@@ -77,7 +78,7 @@ has_mount_opt() {
 	local searchfor="$1"
 	local mnt="$2"
 	local fstab="$3"
-	local opts=$(get_mount_opts_from_mountpoint $mnt $fstab)
+	local opts="$(get_mount_opts_from_mountpoint "$mnt" "$fstab")"
 	local opt=
 	for opt in $opts; do
 		if [ "$opt" = "$searchfor" ]; then
@@ -116,7 +117,7 @@ while getopts "h" opt; do
 		'?') usage "1" >&2;;
 	esac
 done
-shift $(( $OPTIND - 1 ))
+shift $(( OPTIND - 1 ))
 
 # try auto detetect what we suggest
 suggestion=
@@ -124,8 +125,8 @@ if [ -L "${ROOT}"etc/apk/cache ]; then
 	suggestion=$(readlink "${ROOT}"etc/apk/cache)
 fi
 
-if [ -z "$suggestion" ] && [ -f "${ROOT}"etc/lbu/lbu.conf ]; then
-	. "${ROOT}"etc/lbu/lbu.conf
+if [ -z "$suggestion" ] && [ -f "$ROOT"etc/lbu/lbu.conf ]; then
+	. "$ROOT"etc/lbu/lbu.conf
 	if [ -n "$LBU_MEDIA" ]; then
 		suggestion=/media/$LBU_MEDIA/cache
 	fi
@@ -144,6 +145,7 @@ if [ -z "$suggestion" ]; then
 fi
 cachedir="$1"
 
+resp=
 while [ $# -eq 0 ] && [ -z "$cachedir" ]; do
 	ask "Enter apk cache directory (or '?' or 'none')" "$suggestion"
 	cachedir="$resp"
@@ -157,11 +159,11 @@ if [ "$cachedir" = "none" ]; then
 	exit 0
 fi
 
-mount=$(find_mount_point $cachedir)
+mount=$(find_mount_point "$cachedir")
 
 cleanup=
 
-if ! is_mounted $mount; then
+if ! is_mounted "$mount"; then
 	# remove noauto that setup-lbu might have added
 	if has_mount_opt noauto "$mount" /etc/fstab; then
 		fstabtmp=$(mktemp)
@@ -174,20 +176,20 @@ if ! is_mounted $mount; then
 			}' /etc/fstab > "$fstabtmp"
 		mv "$fstabtmp" /etc/fstab
 	fi
-	mount $mount || exit 1
-elif is_mounted_ro $mount; then
-	mount -o remount,rw $mount || exit 1
+	mount "$mount" || exit 1
+elif is_mounted_ro "$mount"; then
+	mount -o remount,rw "$mount" || exit 1
 	cleanup="remount"
 fi
 
-mkdir -p $cachedir
-if [ -L "${ROOT}"etc/apk/cache ]; then
-	rm -f "${ROOT}"etc/apk/cache
+mkdir -p "$ROOT$cachedir"
+if [ -L "$ROOT"etc/apk/cache ]; then
+	rm -f "$ROOT"etc/apk/cache
 fi
-mkdir -p "${ROOT}"etc/apk
-ln -s $cachedir "${ROOT}"etc/apk/cache
+mkdir -p "$ROOT"etc/apk
+ln -s "$cachedir" "$ROOT"etc/apk/cache
 
 case "$cleanup" in
-	umount) umount $mount;;
-	remount) mount -o remount,ro $mount;;
+	umount) umount "$mount";;
+	remount) mount -o remount,ro "$mount";;
 esac
