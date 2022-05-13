@@ -1,8 +1,8 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-
-. "$PREFIX/lib/libalpine.sh"
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 usage() {
 	cat <<-__EOF__
@@ -15,7 +15,7 @@ usage() {
 		options:
 		 -h  Show this help
 	__EOF__
-	exit 1
+	exit $1
 }
 
 is_mounted() {
@@ -112,7 +112,8 @@ apk_cache_help() {
 
 while getopts "h" opt; do
 	case $opt in
-		h) usage;;
+		h) usage 0;;
+		'?') usage "1" >&2;;
 	esac
 done
 shift $(( $OPTIND - 1 ))
