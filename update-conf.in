@@ -1,9 +1,9 @@
 #!/bin/sh
 
-PREFIX=@PREFIX@
 VERSION=@VERSION@
-
-. $PREFIX/lib/libalpine.sh
+PREFIX=@PREFIX@
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 # set up temp dir
 init_tmpdir TMPD
@@ -11,24 +11,24 @@ init_tmpdir TMPD
 LBUCACHE="$TMPD/lbucache"
 
 usage() {
-	cat >&2 <<-__EOF__
+	cat <<-__EOF__
 		$PROGRAM $VERSION
-		Usage: $PROGRAM [-a|--all] [-i|--initd] [-l|--list] [-h|--help]
-		Options:
+		usage: $PROGRAM [-a|--all] [-i|--initd] [-l|--list] [-h|--help]
+
+		options:
 		  -a, --all    Select all updated files
 		  -i, --initd  Use all new init.d scripts
 		  -l, --list   List updated files
 		  -h, --help   Show this help
 
 	__EOF__
+	exit $1
 }
-
 
 is_modified() {
 	[ -f "$LBUCACHE" ] || lbu status -a | awk '{print $2}' > "$LBUCACHE"
 	test -n "$( ( echo "$1" ; cat "$LBUCACHE" ) | sort | uniq -d)"
 }
-
 
 is_initd() {
 	echo "$1" | grep etc/init.d/ > /dev/null
@@ -36,8 +36,7 @@ is_initd() {
 
 args=$(getopt -o ailh --long all,initd,list,help -n "$PROGRAM" -- "$@")
 if [ $? -ne 0 ]; then
-	usage
-	exit 2
+	usage "1" >&2
 fi
 eval set -- "$args"
 while true; do
@@ -45,9 +44,9 @@ while true; do
 		-a|--all) aflag="-a";;
 		-i|--initd) iflag="-i";;
 		-l|--list) lflag="-l";;
-		-h|--help) usage; exit;;
+		-h|--help) usage 0;;
 		--) shift; break;;
-		*) exit 1;; # getopt error
+		'?') usage "1" >&2;;
 	esac
 	shift
 done
