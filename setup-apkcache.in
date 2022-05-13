@@ -159,6 +159,10 @@ if [ "$cachedir" = "none" ]; then
 	exit 0
 fi
 
+case "$cachedir" in
+	/*) ;;
+	*) cachedir="${PWD#${ROOT%/}}/$cachedir";;
+esac
 mount=$(find_mount_point "$cachedir")
 
 cleanup=
