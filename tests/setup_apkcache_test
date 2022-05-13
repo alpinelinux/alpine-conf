@@ -1,0 +1,31 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	setup_apkcache_usage \
+	setup_apkcache_abspath \
+	setup_apkcache_relpath_with_slash
+
+setup_apkcache_usage_body() {
+	test_usage setup-apkcache
+}
+
+setup_apkcache_abspath_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		setup-apkcache /media/LABEL=APKOVL/cache
+	[ "$(readlink etc/apk/cache)" = "/media/LABEL=APKOVL/cache" ] \
+		|| atf_fail "etc/apk/cache is not a symlink to /media/LABEL=APKOVL/cache"
+}
+
+setup_apkcache_relpath_with_slash_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		setup-apkcache media/LABEL=APKOVL/cache
+	[ "$(readlink etc/apk/cache)" = "/media/LABEL=APKOVL/cache" ] \
+		|| atf_fail "etc/apk/cache is symlink to $(readlink /etc/apk/cache) instead of /media/LABEL=APKOVL/cache"
+}
