@@ -1,0 +1,21 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	setup_lbu_usage \
+	setup_lbu_label
+
+setup_lbu_usage_body() {
+	test_usage setup-lbu
+}
+
+setup_lbu_label_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		setup-lbu LABEL=APKOVL
+	grep -q 'LBU_MEDIA=LABEL=APKOVL' etc/lbu/lbu.conf || atf_fail "LBU_MEDIA not set in etc/lbu/lbu.conf"
+	test -d media/LABEL=APKOVL || atf_fail "directory /media/LABEL=APKOVL was not created"
+}
+
