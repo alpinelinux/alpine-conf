@@ -184,6 +184,7 @@ changed=false
 if [ $# -gt 0 ]; then
 	# replace the apk repos with the specified ones
 	rm -f "$APKREPOS_PATH"
+	mkdir -p "${APKREPOS_PATH%/*}"
 	for i; do
 		echo "$i" >> "$APKREPOS_PATH" && changed=true
 	done
@@ -225,6 +226,6 @@ done
 
 if $changed; then
 	echo -n "Updating repository indexes... "
-	apk update --quiet $apk_root_opt && echo "done."
+	$MOCK apk update --quiet $apk_root_opt && echo "done."
 fi
 
