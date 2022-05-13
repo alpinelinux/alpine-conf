@@ -1,8 +1,9 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-. "$PREFIX/lib/libalpine.sh"
-. "$PREFIX/lib/dasd-functions.sh"
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
+. "$LIBDIR/dasd-functions.sh"
 
 MBR=${MBR:-"/usr/share/syslinux/mbr.bin"}
 ROOTFS=${ROOTFS:-ext4}
@@ -1421,7 +1422,7 @@ usage() {
 		  root: ext2, ext3, ext4, btrfs, xfs
 		   var: ext2, ext3, ext4, btrfs, xfs
 	__EOF__
-	exit 1
+	exit $1
 }
 
 kver=$(uname -r)
@@ -1438,6 +1439,7 @@ USE_LVM=
 while getopts "hek:Lm:o:qrs:v" opt; do
 	case $opt in
 		e) USE_CRYPT="_crypt";;
+		h) usage 0;;
 		m) DISK_MODE="$OPTARG";;
 		k) KERNEL_FLAVOR="$OPTARG";;
 		L) USE_LVM="_lvm";;
@@ -1446,7 +1448,7 @@ while getopts "hek:Lm:o:qrs:v" opt; do
 		r) USE_RAID=1;;
 		s) SWAP_SIZE="$OPTARG";;
 		v) VERBOSE=1;;
-		*) usage;;
+		'?') usage "1" >&2;;
 	esac
 done
 shift $(( $OPTIND - 1))
