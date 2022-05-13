@@ -6,13 +6,14 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat >&$(( $1 + 1 ))<<-__EOF__
-		usage: setup-ntp [-h] [-c choice of NTP daemon]
+		usage: setup-ntp [-h] [busybox|openntpd|chrony|none]
 
 		Setup NTP time synchronization
 
 		options:
 		 -h  Show this help
-		 -c  Choice of NTP daemon: busybox openntpd chrony none
+
+		 User is prompted if no NTP daemon is specified
 	__EOF__
 	exit $1
 }
@@ -24,32 +25,39 @@ while getopts "hc:" opt; do
 		'?') usage 1;;
 	esac
 done
+shift $(( $OPTIND - 1 ))
 
-while ! isin "$resp" busybox openntpd chrony none abort; do
+resp=$1
+
+while [ $# -eq 0 ] && ! isin "$resp" busybox openntpd chrony none abort; do
 	ask "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none')" chrony
 done
 
 pkgs="$resp"
 
 case "$resp" in
-none|abort)
-	exit 0
-	;;
-busybox)
-	pkgs=''
-	svc=ntpd
-	;;
-chrony)
-	if apk info --installed --quiet acf-core; then
-		pkgs="$pkgs acf-chrony"
-	fi
-	svc=chronyd
-	;;
-openntpd)
-	svc=openntpd
-	;;
+	none|abort)
+		exit 0
+		;;
+	busybox)
+		pkgs=''
+		svc=ntpd
+		;;
+	chrony)
+		if apk info --installed --quiet acf-core; then
+			pkgs="$pkgs acf-chrony"
+		fi
+		svc=chronyd
+		;;
+	openntpd)
+		svc=openntpd
+		;;
+	*)
+		echo "setup-ntp: '$resp' is not a supported NTP client" >&2
+		usage 1
+		;;
 esac
 
-[ -z "$pkgs" ] || apk add --quiet $pkgs
-rc-update add $svc default
-rc-service $svc start
+[ -z "$pkgs" ] || $MOCK apk add --quiet $pkgs
+$MOCK rc-update add $svc default
+$MOCK rc-service $svc start
