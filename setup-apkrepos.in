@@ -2,9 +2,10 @@
 
 PROGRAM=setup-apkrepos
 PREFIX=@PREFIX@
-MIRRORS_URL=https://mirrors.alpinelinux.org/mirrors.txt
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
-. $PREFIX/lib/libalpine.sh
+MIRRORS_URL=https://mirrors.alpinelinux.org/mirrors.txt
 
 if [ "$ROOT" != "/" ]; then
 	apk_root_opt="--root $ROOT"
@@ -149,8 +150,7 @@ usage() {
 		 -r  Add a random mirror and do not prompt
 		 -1  Add first mirror on the list (normally a CDN)
 	__EOF__
-	exit 1
-
+	exit $1
 }
 
 community_prefix="# "
@@ -162,8 +162,9 @@ while getopts "c1fhr" opt; do
 		c) community_prefix="";;
 		f) add_fastest=true;;
 		1) add_first=true;;
-		h) usage;;
+		h) usage 0;;
 		r) add_random=true;;
+		'?') usage "1" >&2;;
 	esac
 done
 shift $(($OPTIND - 1))
