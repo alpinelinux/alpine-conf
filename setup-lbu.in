@@ -55,7 +55,7 @@ set_media() {
 	local mnt=/media/$media
 
 	case "$media" in
-		LABEL=*|UUID=*) mkdir -p /media/$media;;
+		LABEL=*|UUID=*) mkdir -p $ROOT/media/$media;;
 	esac
 	if [ -d "$media" ] && [ "${media#/media/}" != "$media" ]; then
 		mnt="$media"
