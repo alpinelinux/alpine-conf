@@ -1,0 +1,45 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	setup_ntp_usage \
+	setup_ntp_invalid \
+	setup_ntp_busybox \
+	setup_ntp_chrony \
+	setup_ntp_openntpd
+
+setup_ntp_usage_body() {
+	test_usage setup-ntp
+}
+
+setup_ntp_invalid_body() {
+	init_env
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"is not a supported NTP client" \
+		setup-ntp invalid
+}
+
+setup_ntp_busybox_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"rc-update add ntpd default" \
+		-o match:"rc-service ntpd start" \
+		setup-ntp busybox
+}
+
+setup_ntp_chrony_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"rc-update add chronyd default" \
+		-o match:"rc-service chronyd start" \
+		setup-ntp chrony
+}
+
+setup_ntp_openntpd_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"rc-update add openntpd default" \
+		-o match:"rc-service openntpd start" \
+		setup-ntp openntpd
+}
