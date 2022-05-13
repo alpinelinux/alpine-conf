@@ -4,11 +4,12 @@ PROGRAM=setup-acf
 VERSION=@VERSION@
 
 PREFIX=@PREFIX@
-. $PREFIX/lib/libalpine.sh
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 usage() {
-	echo "$PROGRAM [-ahn] [-e email] [-l address] [PACKAGE...]"
-	exit 0;
+	echo "usage: $PROGRAM [-ahn] [-e email] [-l address] [PACKAGE...]"
+	exit $1
 }
 
 pkgs="acf-core acf-alpine-baselayout acf-apk-tools openssl"
@@ -17,10 +18,10 @@ while getopts "ae:hl:n" opt ; do
 	case $opt in
 		a) pkgs=$(apk search --quiet --exact 'acf-*');;
 		e) EMAIL="$OPTARG";;
-		h) usage;;
+		h) usage 0;;
 		l) address="$OPTARG";;
 		n) create_passwd=no;;
-		*) usage;;
+		'?') usage "1" >&2;;
 	esac
 done
 shift $(expr $OPTIND - 1)
