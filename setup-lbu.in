@@ -1,8 +1,8 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-
-. "$PREFIX/lib/libalpine.sh"
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 usage() {
 	cat <<-__EOF__
@@ -17,7 +17,7 @@ usage() {
 		 -q  Quietly pick best suggestion. Only prompts user if unsure.
 
 	__EOF__
-	exit 1
+	exit $1
 }
 
 get_filesystem_type() {
@@ -120,8 +120,9 @@ set_media() {
 
 while getopts "hq" opt; do
 	case $opt in
-		h) usage;;
+		h) usage 0;;
 		q) quiet=1;;
+		'?') usage "1" >&2;;
 	esac
 done
 shift $(($OPTIND - 1))
