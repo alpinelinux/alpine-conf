@@ -4,7 +4,8 @@ PROGRAM=setup-alpine
 VERSION=@VERSION@
 
 PREFIX=@PREFIX@
-. $PREFIX/lib/libalpine.sh
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 is_qemu() {
 	grep -q "QEMU" /proc/cpuinfo \
@@ -25,7 +26,7 @@ usage() {
 		 -h  Show this help
 		 -q  Quick mode. Ask fewer questions.
 	__EOF__
-	exit 1
+	exit $1
 }
 
 while getopts "aef:c:hq" opt ; do
@@ -34,9 +35,9 @@ while getopts "aef:c:hq" opt ; do
 		f) USEANSWERFILE="$OPTARG";;
 		c) CREATEANSWERFILE="$OPTARG";;
 		e) empty_root_password=1;;
-		h) usage;;
+		h) usage 0;;
 		q) empty_root_password=1; quick=1; APKREPOSOPTS="-1"; HOSTNAMEOPTS="alpine";;
-		*) usage;;
+		'?') usage "1" >&2;;
 	esac
 done
 shift $(expr $OPTIND - 1)
