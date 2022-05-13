@@ -142,9 +142,9 @@ fi
 if [ -z "$suggestion" ]; then
 	suggestion=none
 fi
-cachedir=$1
+cachedir="$1"
 
-while [ -z "$cachedir" ]; do
+while [ $# -eq 0 ] && [ -z "$cachedir" ]; do
 	ask "Enter apk cache directory (or '?' or 'none')" "$suggestion"
 	cachedir="$resp"
 	if [ "$cachedir" = "?" ]; then
