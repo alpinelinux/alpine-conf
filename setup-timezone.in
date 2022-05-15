@@ -67,13 +67,15 @@ while getopts "hikz:" opt; do
 		h) usage 0;;
 		i) INSTALL_TZDATA=true;;
 		k) KEEP_TZDATA=true;;
-		z) ZONE="$OPTARG";;
+		z) ZONE="$OPTARG";;  # backwards compat
 		'?') usage "1" >&2;;
 	esac
 done
 shift $(( $OPTIND - 1))
 
-ZONE="$1"
+if [ -z "$ZONE" ]; then
+	ZONE="$1"
+fi
 
 if $INSTALL_TZDATA; then
 	pkg=tzdata
