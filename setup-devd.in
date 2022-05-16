@@ -29,9 +29,7 @@ EOF
 
 disable_mdev () {
 	if rc-service -e mdev ; then
-		rc-service -s mdev-init stop
 		rc-service -s mdev stop
-		rc-update delete mdev-init sysinit || :
 		rc-update delete mdev sysinit || :
 	fi
 }
@@ -40,11 +38,7 @@ enable_mdev () {
 	# mdev openrc script is provided by busybox-initscripts which is assumed
 	# to be there
 	rc-update add mdev sysinit
-	rc-update add mdev-init sysinit
 	rc-service mdev start
-	if "$1" ; then
-		rc-service mdev-init start
-	fi
 }
 
 disable_mdevd () {
