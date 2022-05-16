@@ -29,31 +29,31 @@ EOF
 
 disable_mdev () {
 	if rc-service --exists mdev ; then
-		rc-service --ifstarted mdev stop
-		rc-update delete mdev sysinit || :
+		rc-service --ifstarted --quiet mdev stop
+		rc-update delete --quiet mdev sysinit || :
 	fi
 }
 
 enable_mdev () {
 	# mdev openrc script is provided by busybox-initscripts which is assumed
 	# to be there
-	rc-update add mdev sysinit
-	rc-service mdev start
+	rc-update add --quiet mdev sysinit
+	rc-service mdev --ifstopped start
 }
 
 disable_mdevd () {
 	if rc-service --exists mdevd ; then
-		rc-service --ifstarted mdevd stop
-		rc-update delete mdevd-init sysinit 2>/dev/null || :
-		rc-update delete mdevd sysinit 2>/dev/null || :
+		rc-service --ifstarted --quiet mdevd stop
+		rc-update delete --quiet mdevd-init sysinit 2>/dev/null || :
+		rc-update delete --quiet mdevd sysinit 2>/dev/null || :
 	fi
 }
 
 enable_mdevd () {
 	apk add --quiet mdevd mdevd-openrc
-	rc-update add mdevd sysinit
-	rc-update add mdevd-init sysinit
-	rc-service mdevd start
+	rc-update add --quiet mdevd sysinit
+	rc-update add --quiet mdevd-init sysinit
+	rc-service --ifstopped mdevd start
 	if "$1" ; then
 		rc-service mdevd-init start
 	fi
@@ -61,24 +61,25 @@ enable_mdevd () {
 
 disable_udev () {
 	if rc-service --exists udev ; then
-		rc-service --ifstarted udev stop
-		rc-update delete udev-postmount default 2>/dev/null || :
-		rc-update delete udev-settle sysinit 2>/dev/null || :
-		rc-update delete udev-trigger sysinit 2>/dev/null || :
-		rc-update delete udev sysinit 2>/dev/null || :
+		rc-service --ifstopped --quiet udev-postmount stop
+		rc-service --ifstarted --quiet udev stop
+		rc-update delete --quiet udev-postmount default 2>/dev/null || :
+		rc-update delete --quiet udev-settle sysinit 2>/dev/null || :
+		rc-update delete --quiet udev-trigger sysinit 2>/dev/null || :
+		rc-update delete --quiet udev sysinit 2>/dev/null || :
 	fi
 }
 
 enable_udev () {
 	apk add --quiet eudev udev-init-scripts udev-init-scripts-openrc
-	rc-update add udev sysinit
-	rc-update add udev-trigger sysinit
-	rc-update add udev-settle sysinit
-	rc-update add udev-postmount default
-	rc-service udev start
-	rc-service udev-trigger start
-	rc-service udev-settle start
-	rc-service udev-postmount start
+	rc-update add --quiet udev sysinit
+	rc-update add --quiet udev-trigger sysinit
+	rc-update add --quiet udev-settle sysinit
+	rc-update add --quiet udev-postmount default
+	rc-service --ifstopped udev start
+	rc-service --ifstopped udev-trigger start
+	rc-service --ifstopped udev-settle start
+	rc-service --ifstopped udev-postmount start
 }
 
 coldplug=false
