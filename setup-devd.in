@@ -28,8 +28,8 @@ EOF
 }
 
 disable_mdev () {
-	if rc-service -e mdev ; then
-		rc-service -s mdev stop
+	if rc-service --exists mdev ; then
+		rc-service --ifstarted mdev stop
 		rc-update delete mdev sysinit || :
 	fi
 }
@@ -42,8 +42,8 @@ enable_mdev () {
 }
 
 disable_mdevd () {
-	if rc-service -e mdevd ; then
-		rc-service -s mdevd stop
+	if rc-service --exists mdevd ; then
+		rc-service --ifstarted mdevd stop
 		rc-update delete mdevd-init sysinit 2>/dev/null || :
 		rc-update delete mdevd sysinit 2>/dev/null || :
 	fi
@@ -60,8 +60,8 @@ enable_mdevd () {
 }
 
 disable_udev () {
-	if rc-service -e udev ; then
-		rc-service -s udev stop
+	if rc-service --exists udev ; then
+		rc-service --ifstarted udev stop
 		rc-update delete udev-postmount default 2>/dev/null || :
 		rc-update delete udev-settle sysinit 2>/dev/null || :
 		rc-update delete udev-trigger sysinit 2>/dev/null || :
