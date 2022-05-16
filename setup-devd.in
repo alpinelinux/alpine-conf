@@ -82,11 +82,9 @@ enable_udev () {
 	rc-update add udev-settle sysinit
 	rc-update add udev-postmount default
 	rc-service udev start
-	if "$1" ; then
-		rc-service udev-trigger start
-		rc-service udev-settle start
-		rc-service udev-postmount start
-	fi
+	rc-service udev-trigger start
+	rc-service udev-settle start
+	rc-service udev-postmount start
 }
 
 coldplug=false
