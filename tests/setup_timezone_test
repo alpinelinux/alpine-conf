@@ -4,6 +4,7 @@
 init_tests \
 	setup_timezone_usage \
 	setup_timezone_copy \
+	setup_timezone_install \
 
 setup_timezone_usage_body() {
 	test_usage setup-timezone
@@ -18,5 +19,17 @@ setup_timezone_copy_body() {
 		-o match:"apk del" \
 		-e empty \
 		setup-timezone Europe/Oslo
+}
+
+setup_timezone_install_body() {
+	init_env
+	mkdir -p usr/share/zoneinfo/Europe
+	touch usr/share/zoneinfo/Europe/Oslo
+	atf_check -s exit:0 \
+		-o match:"apk add .*tzdata" \
+		-o not-match:"apk add.*--virtual" \
+		-o not-match:"apk del" \
+		-e empty \
+		setup-timezone -i Europe/Oslo
 }
 
