@@ -905,8 +905,9 @@ setup_boot_dev() {
 		bootdev=/dev/md0
 	fi
 	case "$BOOTFS" in
-	btrfs) mkfs_args="";;
-	ext4) mkfs_args="$mkfs_args -O ^64bit";; # pv-grub does not support 64bit
+		vfat) mkfs_args="-F 32";; # UEFI firmware often only support FAT32
+		btrfs) mkfs_args="";;
+		ext4) mkfs_args="$mkfs_args -O ^64bit";; # pv-grub does not support 64bit
 	esac
 	mkfs.$BOOTFS $MKFS_OPTS_BOOT $mkfs_args $bootdev
 	BOOT_DEV="$bootdev"
@@ -1462,7 +1463,7 @@ fi
 if is_efi || [ -n "$USE_EFI" ]; then
 	USE_EFI=1
 	DISKLABEL=gpt
-	BOOT_SIZE=${BOOT_SIZE:-512}
+	BOOT_SIZE=${BOOT_SIZE:-36} # UEFI needs fat32, which needs minimum 32MB
 	BOOTFS=vfat
 	: ${BOOTLOADER:=grub}
 fi
