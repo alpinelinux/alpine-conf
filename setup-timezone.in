@@ -4,7 +4,7 @@ PREFIX=@PREFIX@
 : ${LIBDIR=$PREFIX/lib}
 . "$LIBDIR/libalpine.sh"
 
-zroot=/usr/share/zoneinfo
+zroot="$ROOT"/usr/share/zoneinfo
 
 usage() {
 	cat <<-__EOF__
@@ -83,7 +83,7 @@ else
 	apkdel=".setup-timezone"
 fi
 
-apk add --quiet $pkg
+$MOCK apk add --quiet $pkg
 
 if [ -L "${ROOT}"etc/zoneinfo/localtime ]; then
 	default_timezone=$(readlink "${ROOT}"etc/zoneinfo/localtime)
@@ -124,5 +124,5 @@ while true; do
 done
 
 if [ -n "$apkdel" ]; then
-	apk del --quiet $apkdel
+	$MOCK apk del --quiet $apkdel
 fi
