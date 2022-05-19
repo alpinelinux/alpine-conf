@@ -76,8 +76,8 @@ case "$sshdchoice" in
 esac
 
 if [ -n "$svc" ]; then
-	$MOCK rc-update add $svc default
-	$MOCK rc-service $svc start
+	rc-update add $svc default
+	rc-service $svc start
 fi
 
 if [ -n "$authorized_key" -a "$authorized_key" != "none" ]; then

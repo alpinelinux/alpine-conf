@@ -25,8 +25,8 @@ setup_sshd_dropbear_body() {
 	atf_check -s exit:0 \
 		-e empty \
 		-o match:"^apk add .* dropbear" \
-		-o match:"^rc-update add dropbear" \
-		-o match:"^rc-service dropbear start" \
+		-o match:"service dropbear added" \
+		-o match:"Starting dropbear" \
 		setup-sshd dropbear
 }
 
@@ -36,8 +36,8 @@ setup_sshd_openssh_body() {
 	atf_check -s exit:0 \
 		-e empty \
 		-o match:"^apk add .* openssh" \
-		-o match:"^rc-update add sshd" \
-		-o match:"^rc-service sshd start" \
+		-o match:"service sshd added" \
+		-o match:"Starting sshd" \
 		setup-sshd -k 'https://example.com/user.keys' openssh
 	grep 'ssh-id FOOBAR' root/.ssh/authorized_keys || atf_fail "failed to wget ssh key"
 }
