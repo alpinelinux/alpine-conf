@@ -1,0 +1,22 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	setup_xorg_base_usage \
+	setup_xorg_base
+
+setup_xorg_base_usage_body() {
+	test_usage setup-xorg-base
+}
+
+setup_xorg_base_body() {
+	init_env
+	mkdir -p etc/apk
+	echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" > etc/apk/repositories
+
+	atf_check -s exit:0 \
+		-o match:"apk add.*xorg-server.*foobar" \
+		-o match:"Starting udev" \
+		-e empty \
+		setup-xorg-base foobar
+}
