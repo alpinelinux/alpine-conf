@@ -1,4 +1,4 @@
-PATH=$(atf_get_srcdir)/..:$PATH
+PATH=$(atf_get_srcdir)/..:$(atf_get_srcdir)/bin:$PATH
 
 init_env() {
 	export ROOT=$PWD LIBDIR=$(atf_get_srcdir)/.. MOCK=echo
