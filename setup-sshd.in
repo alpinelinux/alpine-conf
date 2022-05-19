@@ -62,7 +62,7 @@ if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ]; then
 				break
 				;;
 			http://*|https://*)
-				authorized_key="$($MOCK wget -qO- "$resp")" || { echo "Failed to fetch key from '$resp'"; continue; }
+				authorized_key="$(wget -qO- "$resp")" || { echo "Failed to fetch key from '$resp'"; continue; }
 				break
 				;;
 		esac
@@ -85,7 +85,7 @@ if [ -n "$authorized_key" -a "$authorized_key" != "none" ]; then
 	case "$authorized_key" in
 		http*://*|ftp://)
 			key_url="$authorized_key"
-			authorized_key="$($MOCK wget -qO- "$key_url")" || die "Failed to fetch key from '$key_url'"
+			authorized_key="$(wget -qO- "$key_url")" || die "Failed to fetch key from '$key_url'"
 			;;
 	esac
 	mkdir -p "$ROOT"/root/.ssh
