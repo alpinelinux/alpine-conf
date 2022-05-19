@@ -1,0 +1,187 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	rc_service_usage \
+	rc_service_not_exists \
+	rc_service_exists \
+	rc_service_start \
+	rc_service_start_quiet \
+	rc_service_already_started \
+	rc_service_stop \
+	rc_service_stop_quiet \
+	rc_service_already_stopped \
+	rc_service_ifstarted_stop \
+	rc_service_ifstarted_start \
+	rc_service_ifstopped_start \
+	rc_service_ifstopped_stop \
+	rc_service_restart_stopped \
+	rc_service_restart_started
+
+test_started() {
+	test -e run/started/$1 || atf_fail "$1 was not started"
+}
+
+test_stopped() {
+	! test -e run/started/$1 || atf_fail "$1 was not stopped"
+}
+
+rc_service_usage_body() {
+	test_usage rc-service
+}
+
+rc_service_not_exists_body() {
+	init_env
+	atf_check -s exit:1 \
+		-o empty \
+		-e empty \
+		rc-service --exist foo
+}
+
+rc_service_exists_body() {
+	init_env
+	mkdir -p etc/init.d
+	touch etc/init.d/foo
+
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-service --exist foo
+}
+
+rc_service_start_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"Starting foo" \
+		-e empty \
+		rc-service foo start
+	test_started foo
+}
+
+rc_service_start_quiet_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-service --quiet foo start
+	test_started foo
+}
+
+rc_service_already_started_body() {
+	init_env
+	rc-service --quiet foo start
+	atf_check -s exit:0 \
+		-o empty \
+		-e match:"WARNING: foo has already been started" \
+		rc-service foo start
+
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-service --quiet foo start
+}
+
+rc_service_stop_body() {
+	init_env
+	rc-service --quiet foo start
+	atf_check -s exit:0 \
+		-o match:"Stopping foo" \
+		-e empty \
+		rc-service foo stop
+	test_stopped foo
+}
+
+rc_service_stop_quiet_body() {
+	init_env
+	rc-service --quiet foo start
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-service --quiet foo stop
+	test_stopped foo
+}
+
+rc_service_already_stopped_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e match:"WARNING: foo is already stopped" \
+		rc-service foo stop
+
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-service --quiet foo stop
+}
+
+rc_service_ifstarted_stop_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-service --ifstarted foo stop
+	rc-service --quiet foo start
+	atf_check -s exit:0 \
+		-o match:"Stopping foo" \
+		-e empty \
+		rc-service --ifstarted foo stop
+}
+
+rc_service_ifstarted_start_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-service --ifstarted foo start
+	rc-service --quiet foo start
+	atf_check -s exit:0 \
+		-o empty \
+		-e match:"WARNING: foo has already been started" \
+		rc-service --ifstarted foo start
+}
+
+rc_service_ifstopped_start_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"Starting foo" \
+		-e empty \
+		rc-service --ifstopped foo start
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-service --ifstopped foo start
+}
+
+rc_service_ifstopped_stop_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e match:"WARNING: foo is already stopped" \
+		rc-service --ifstopped foo stop
+	rc-service --quiet foo start
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-service --ifstopped foo stop
+}
+
+rc_service_restart_started_body() {
+	init_env
+	rc-service --quiet foo start
+	atf_check -s exit:0 \
+		-o match:"Stopping foo" \
+		-o match:"Starting foo" \
+		-e empty \
+		rc-service foo restart
+	test_started foo
+}
+
+rc_service_restart_stopped_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"Starting foo" \
+		-e empty \
+		rc-service foo restart
+	test_started foo
+}
+

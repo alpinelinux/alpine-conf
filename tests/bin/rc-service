@@ -1,0 +1,107 @@
+#!/bin/sh
+
+prog=$0
+usage() {
+	echo "usage: rc-service [OPTS] SERVICE [ACTION]"
+	exit $1
+}
+
+msg() {
+	if ! [ -n "$quiet" ]; then
+		echo "$@"
+	fi
+}
+
+OPTS=$(getopt -l help,exists,ifexists,ifstarted,ifstopped,verbose,quiet \
+	-o "heiNsSvq" -n $prog -- "$@") || usage "1" >&2
+
+#  -e, --exists <arg>                tests if the service exists or not
+#  -i, --ifexists                    if the service exists run the command
+#  -N, --ifnotstarted                if the service is not started run the command
+#  -s, --ifstarted                   if the service is started run the command
+#  -S, --ifstopped                   if the service is stopped run the command
+#  -v, --verbose                     Run verbosely
+#  -q, --quiet                       Run quietly (repeat to suppress errors)
+
+eval set -- "$OPTS"
+for opt; do
+	case "$opt" in
+		-h|--help)
+			usage 0
+			;;
+		--exists)
+			exists=1
+			;;
+		--ifexists)
+			ifexists=1
+			;;
+		--ifstarted)
+			ifstarted=1
+			;;
+		--ifstopped)
+			ifstopped=1
+			;;
+		--verbose)
+			verbose=1
+			;;
+		--quiet)
+			quiet=1
+			;;
+		--)
+			shift
+			break
+			;;
+	esac
+	shift
+done
+
+svc="$1"
+action="$2"
+
+if [ -z "$svc" ]; then
+	usage "1" >&2
+fi
+
+if [ -z "$action" ] && [ -z "$exists" ]; then
+	usage "1" >&2
+fi
+
+if [ -n "$exists" ]; then
+	test -e "$ROOT"/etc/init.d/$svc
+	exit
+fi
+
+if [ -n "$ifstarted" ] && ! [ -e "$ROOT"/run/started/$svc ]; then
+			exit 0
+fi
+
+if [ -n "$ifstopped" ] && [ -e "$ROOT"/run/started/$svc ]; then
+			exit 0
+fi
+
+case "$action" in
+	start)
+		if [ -e "$ROOT"/run/started/$svc ]; then
+			! [ -n "$ifstopped" ] && msg " * WARNING: $svc has already been started" >&2
+			exit 0
+		fi
+
+		msg " * Starting $svc ... [ok]"
+		mkdir -p "$ROOT"/run/started
+		touch "$ROOT"/run/started/$svc
+		;;
+	stop)
+		if ! [ -e "$ROOT"/run/started/$svc ]; then
+			msg " * WARNING: $svc is already stopped" >&2
+			exit 0
+		fi
+
+		msg "* Stopping $svc ... [ok]"
+		rm -f "$ROOT"/run/started/$svc
+		;;
+	restart)
+		$prog --ifstarted $svc stop && $prog $svc start
+		;;
+	*) usage 1
+esac
+
