@@ -48,12 +48,12 @@ setup_user_interactive_body() {
 setup_user_interactive_fullname_body() {
 	init_env
 	(
-		echo "testuser"
+		echo ""
 	) | atf_check -s exit:0 \
 		-o not-match:"Enter full name" \
-		-o match:"Enter username" \
-		-o not-match:"adduser.* -D .*testuser" \
-		-o match:"adduser.* -g Joe User .*testuser" \
+		-o match:"Enter username.*[juser]" \
+		-o not-match:"adduser.* -D .*" \
+		-o match:"adduser.* -g Joe User .*juser" \
 		-e empty \
 		setup-user -f "Joe User" -k none
 }

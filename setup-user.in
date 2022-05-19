@@ -52,7 +52,8 @@ fi
 
 if [ -n "$interactive" ] && [ -z "$username" ]; then
 	while true; do
-		ask "Enter username for $fullname:"
+		ask "Enter username for $fullname" \
+			$(echo "$fullname" | sed -E 's/^(.).*\s+(.*)/\1\2/' | tr '[:upper:]' '[:lower:]')
 		username="$resp"
 		if [ -n "$fullname" ]; then
 			$MOCK adduser -g "$fullname" $nopassword "$username" && break
