@@ -6,6 +6,7 @@ init_tests \
 	setup_user_fullname \
 	setup_user_interactive \
 	setup_user_interactive_fullname \
+	setup_user_interactive_singlename \
 	setup_user_groups_commas \
 	setup_user_groups_spaces
 
@@ -56,6 +57,19 @@ setup_user_interactive_fullname_body() {
 		-o match:"adduser.* -g Joe User .*juser" \
 		-e empty \
 		setup-user -f "Joe User" -k none
+}
+
+setup_user_interactive_singlename_body() {
+	init_env
+	(
+		echo ""
+	) | atf_check -s exit:0 \
+		-o not-match:"Enter full name" \
+		-o match:"Enter username.*[joe]" \
+		-o not-match:"adduser.* -D .*" \
+		-o match:"adduser.* -g Joe .*joe" \
+		-e empty \
+		setup-user -f "Joe" -k none
 }
 
 setup_user_groups_commas_body() {
