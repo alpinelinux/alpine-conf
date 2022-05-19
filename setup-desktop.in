@@ -1,0 +1,70 @@
+#!/bin/sh
+
+PREFIX=@PREFIX@
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
+
+usage() {
+	cat <<-__EOF__
+		usage: setup-desktop [-h] [xfce|gnome]
+
+		Install a standard desktop
+
+		options:
+		 -h  Show this help
+
+	__EOF__
+	exit $1
+}
+
+while getopts "h" opt; do
+	case $opt in
+		h) usage 0;;
+		'?') usage "1" >&2;;
+	esac
+done
+shift $(($OPTIND - 1))
+
+if [ $# -gt 1 ]; then
+	usage "1" >&2
+fi
+
+de="$1"
+shift
+
+while [ $# -ne 1 ] && ! isin "$de" xfce gnome none; do
+	ask "Which desktop environment? ('gnome', 'xfce' or 'none')" none
+	de="$resp"
+done
+
+case "$de" in
+	none)
+		exit 0
+		;;
+	xfce)
+		setup-xorg-base xfce4 ${BROWSER:-firefox} \
+			consolekit2 \
+			gvfs \
+			lightdm \
+			lightdm-gtk-greeter \
+			polkit \
+			xfce4-terminal \
+			"$@"
+		rc-update add lightdm
+		;;
+	gnome)
+		setup-xorg-base ${BROWSER:-firefox} gnome gnome-apps-core "$@"
+		rc-update add gdm
+		;;
+	*)
+		usage "1" >&2
+		;;
+esac
+
+users=$(awk -F: '{if ($3<65000 && $3 >= 1000) print $1}' "$ROOT"/etc/passwd)
+if [ -z "$users" ]; then
+	echo "WARNING: You need to create a user account. Please run:" >&2
+	echo "" >&2
+	echo "  adduser -g 'Fistname Lastname' <username>" >&2
+	echo "" >&2
+fi

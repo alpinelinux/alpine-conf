@@ -12,6 +12,7 @@ SBIN_FILES	:= copy-modloop\
 		setup-apkcache\
 		setup-apkrepos\
 		setup-bootable\
+		setup-desktop\
 		setup-devd\
 		setup-disk\
 		setup-dns\
