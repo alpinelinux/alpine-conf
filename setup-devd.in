@@ -50,7 +50,7 @@ disable_mdevd () {
 }
 
 enable_mdevd () {
-	apk add --quiet mdevd mdevd-openrc
+	$MOCK apk add --quiet mdevd mdevd-openrc
 	rc-update add --quiet mdevd sysinit
 	rc-update add --quiet mdevd-init sysinit
 	rc-service --ifstopped mdevd start
@@ -71,7 +71,7 @@ disable_udev () {
 }
 
 enable_udev () {
-	apk add --quiet eudev udev-init-scripts udev-init-scripts-openrc
+	$MOCK apk add --quiet eudev udev-init-scripts udev-init-scripts-openrc
 	rc-update add --quiet udev sysinit
 	rc-update add --quiet udev-trigger sysinit
 	rc-update add --quiet udev-settle sysinit
