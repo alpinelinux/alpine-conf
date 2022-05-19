@@ -7,7 +7,9 @@ init_tests \
 	fake_wget_quiet \
 	fake_wget \
 	fake_wget_outfile \
-	fake_wget_stdout
+	fake_wget_stdout \
+	fake_wget_fail \
+	fake_wget_404
 
 fake_wget_usage_body() {
 	test_usage wget
@@ -56,3 +58,18 @@ fake_wget_stdout_body() {
 		wget -O - https://example.com
 		! test -f - || atf_fail "- was created"
 }
+
+fake_wget_fail_body() {
+	init_env
+	atf_check -s exit:1 \
+		-e match:"bad address" \
+		wget https://example.com/fail
+}
+
+fake_wget_404_body() {
+	init_env
+	atf_check -s exit:1 \
+		-e match:"404 Not Found" \
+		wget https://example.com/404
+}
+

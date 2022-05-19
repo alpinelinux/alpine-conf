@@ -63,6 +63,13 @@ while true; do
 	shift
 done
 
+for url; do
+	case "$url" in
+		*fail*) msg "bad address"; exit 1;;
+		*404*) msg "wget: server returned error: HTTP/1.1 404 Not Found"; exit 1;;
+	esac
+done
+
 : ${outfile:=index.html}
 case "$outfile" in
 	-)	msg "writing to stdout"
