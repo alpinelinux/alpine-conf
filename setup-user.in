@@ -1,0 +1,66 @@
+#!/bin/sh
+
+PREFIX=@PREFIX@
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
+
+usage() {
+	cat <<-__EOF__
+		usage: setup-user [-h] [-f FULLNAME] [USERNAME]
+
+		Create user account
+
+		options:
+		 -h  Show this help
+		 -f  Set full name for user
+
+		If USERNAME is not specified user will be prompted.
+	__EOF__
+	exit $1
+}
+
+while getopts "f:h" opt; do
+	case $opt in
+		h) usage 0;;
+		f) fullname="$OPTARG";;
+		'?') usage "1" >&2;;
+	esac
+done
+shift $(($OPTIND - 1))
+
+if [ $# -gt 1 ]; then
+	usage "1" >&2
+elif [ $# -eq 1 ]; then
+	username="$1"
+	nopassword="-D"
+else
+	interactive=1
+fi
+
+if [ -n "$interactive" ] && [ -z "$fullname" ]; then
+	ask "Enter full name for user account (or 'skip')"
+	case "$resp" in
+		skip) exit 0;;
+		*) fullname="$resp";;
+	esac
+fi
+
+if [ -n "$interactive" ] && [ -z "$username" ]; then
+	while true; do
+		ask "Enter username for $fullname:"
+		username="$resp"
+		if [ -n "$fullname" ]; then
+			$MOCK adduser -g "$fullname" $nopassword "$username" && break
+		else
+			$MOCK adduser $nopassword "$username" && break
+		fi
+	done
+else
+	if [ -n "$fullname" ]; then
+		$MOCK adduser -g "$fullname" $nopassword "$username"
+	else
+		$MOCK adduser $nopassword "$username"
+	fi
+fi
+
+

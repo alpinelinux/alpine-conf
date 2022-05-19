@@ -25,6 +25,7 @@ SBIN_FILES	:= copy-modloop\
 		setup-proxy\
 		setup-sshd\
 		setup-timezone\
+		setup-user\
 		setup-xen-dom0\
 		setup-xorg-base\
 		update-conf\
