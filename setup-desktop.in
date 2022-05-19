@@ -31,7 +31,7 @@ fi
 
 de="$1"
 
-valid_desktops="xfce gnome none"
+valid_desktops="xfce gnome plasma none"
 if [ $# -eq 1 ] && ! isin "$de" $valid_desktops; then
 	echo "$de is not a valid desktop" >&2
 	usage "1" >&2
@@ -39,7 +39,7 @@ fi
 shift
 
 while ! isin "$de" $valid_desktops; do
-	ask "Which desktop environment? ('gnome', 'xfce' or 'none')" none
+	ask "Which desktop environment? ('gnome', 'plasma', 'xfce' or 'none')" none
 	de="$resp"
 done
 
@@ -61,6 +61,56 @@ case "$de" in
 	gnome)
 		setup-xorg-base ${BROWSER:-firefox} gnome gnome-apps-core "$@"
 		rc-update add gdm
+		;;
+	plasma)
+		setup-xorg-base ${BROWSER:-firefox} \
+			ark \
+			bluedevil \
+			breeze \
+			breeze-gtk \
+			breeze-icons \
+			dbus \
+			discover \
+			drkonqi \
+			font-noto \
+			gwenview \
+			kate \
+			kde-cli-tools \
+			kde-gtk-config \
+			kdeplasma-addons \
+			kgamma5 \
+			khotkeys \
+			kinfocenter \
+			kio-fuse \
+			kmenuedit \
+			konsole \
+			kscreen \
+			ksshaskpass \
+			kwallet-pam \
+			kwayland-integration \
+			pinentry-qt \
+			plasma-browser-integration \
+			plasma-desktop \
+			plasma-disks \
+			plasma-nm \
+			plasma-pa \
+			plasma-systemmonitor \
+			plasma-vault \
+			plasma-workspace-wallpapers \
+			polkit-elogind \
+			polkit-kde-agent-1 \
+			print-manager \
+			powerdevil \
+			sddm-breeze \
+			sddm-kcm \
+			spectacle \
+			systemsettings \
+			udisks2 \
+			xdg-desktop-portal-kde \
+			xdg-user-dirs \
+			"$@"
+		rc-update add dbus
+		rc-update add sddm
 		;;
 	*)
 		usage "1" >&2
