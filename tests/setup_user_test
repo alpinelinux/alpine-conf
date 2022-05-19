@@ -33,6 +33,7 @@ setup_user_interactive_body() {
 	(
 		echo "Joe User"
 		echo "testuser"
+		echo "none"
 	) | atf_check -s exit:0 \
 		-o match:"Enter full name" \
 		-o match:"Enter username" \
@@ -52,6 +53,6 @@ setup_user_interactive_fullname_body() {
 		-o not-match:"adduser.* -D .*testuser" \
 		-o match:"adduser.* -g Joe User .*testuser" \
 		-e empty \
-		setup-user -f "Joe User"
+		setup-user -f "Joe User" -k none
 }
 

@@ -6,23 +6,26 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-user [-h] [-f FULLNAME] [USERNAME]
+		usage: setup-user [-h] [-f FULLNAME] [-k SSHKEY] [USERNAME]
 
 		Create user account
 
 		options:
 		 -h  Show this help
 		 -f  Set full name for user
+		 -k  ssh key or URL to ssh key (eg. https://gitlab.alpinelinux.org/user.keys)
+		     or 'none' for no key
 
 		If USERNAME is not specified user will be prompted.
 	__EOF__
 	exit $1
 }
 
-while getopts "f:h" opt; do
+while getopts "f:hk:" opt; do
 	case $opt in
 		h) usage 0;;
 		f) fullname="$OPTARG";;
+		k) keysopt="$OPTARG";;
 		'?') usage "1" >&2;;
 	esac
 done
@@ -63,4 +66,35 @@ else
 	fi
 fi
 
+if [ -n "$interactive" ] && [ -z "$keysopt" ]; then
+	while true; do
+		ask "Enter ssh key or URL for $username (or 'none')"
+		case "$resp" in
+			none) break;;
+			https://*|http://*) sshkeys=$(wget -q -O- $resp | grep ^ssh-);;
+			*) sshkeys="$resp";;
+		esac
+		if echo "$sshkeys" | grep -q ^ssh-; then
+			break
+		fi
+		echo "Did not find any key in '$resp'"
+	done
+else
+	case "$keysopt" in
+		https://*|http://*)
+			sshkeys=$(wget -q -O- "$sshkeys" | grep ^ssh-);;
+		none)
+			sshkeys="" ;;
+		*)
+			sshkeys="$keysopt";;
+	esac
+	if [ -n "$sshkeys" ] && ! echo "$sshkeys" | grep -q ^ssh-; then
+		echo "Could not find any keys in '$resp'" >&2
+		exit 1
+	fi
+fi
 
+if [ -n "$sshkeys" ] && [ "$sshkeys" != "none" ]; then
+	mkdir -p "$ROOT"/home/$username/.ssh
+	echo "$sshkeys" > "$ROOT"/home/$username/.ssh/authorized_keys
+fi
