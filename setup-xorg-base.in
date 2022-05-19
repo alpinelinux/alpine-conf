@@ -24,7 +24,7 @@ done
 shift $(($OPTIND - 1))
 
 # enable community repo
-if ! grep -q '^[^#].*/community$' "$ROOT"/etc/apk/repositories; then
+if [ -f "$ROOT"/etc/apk/repositories ] && ! grep -q '^[^#].*/community$' "$ROOT"/etc/apk/repositories; then
 	repo=$(grep '^[^#].*/main$' /etc/apk/repositories | sed 's:/main$:/community:')
 	escaped_repo=$(echo $repo | sed -e 's:/:\\/:g' -e 's:\.:\\.:g')
 	sed -i -e "/^[^#].*\/main$/a $repo" \
