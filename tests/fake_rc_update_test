@@ -1,0 +1,99 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	rc_update_usage \
+	rc_update_add \
+	rc_update_add_quiet \
+	rc_update_del \
+	rc_update_del_quiet \
+	rc_update_runlevel
+
+rc_update_usage_body() {
+	test_usage rc-update
+}
+
+rc_update_add_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"service foo added to runlevel default" \
+		-e empty \
+		rc-update add foo
+	test -L etc/runlevels/default/foo || atf_fail "symlink not created"
+
+	atf_check -s exit:0 \
+		-o match:"foo already installed" \
+		-e empty \
+		rc-update add foo
+}
+
+rc_update_add_quiet_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-update add --quiet foo
+	test -L etc/runlevels/default/foo || atf_fail "symlink not created"
+
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-update add --quiet foo
+}
+
+rc_update_del_body() {
+	init_env
+	rc-update --quiet add foo
+	atf_check -s exit:0 \
+		-o match:"service foo removed from runlevel default" \
+		-e empty \
+		rc-update del foo
+
+	if test -L etc/runlevels/default/foo; then
+		atf_fail "symlink not removed"
+	fi
+
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"is not in the runlevel" \
+		rc-update del foo
+}
+
+rc_update_del_quiet_body() {
+	init_env
+	rc-update --quiet add foo
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-update del --quiet foo
+
+	if test -L etc/runlevels/default/foo; then
+		atf_fail "symlink not removed"
+	fi
+
+	atf_check -s exit:1 \
+		-o empty \
+		-e empty \
+		rc-update del --quiet foo
+}
+
+rc_update_runlevel_body() {
+	init_env
+
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		rc-update add --quiet foo sysinit
+
+	test -L etc/runlevels/sysinit/foo || atf_fail "symlink not created in sysinit"
+
+	atf_check -s exit:0 \
+		-o match:"service foo removed from runlevel sysinit" \
+		-e empty \
+		rc-update delete foo sysinit
+
+	if test -L etc/runlevels/sysinit/foo; then
+		atf_fail "symlink not removed"
+	fi
+}
+

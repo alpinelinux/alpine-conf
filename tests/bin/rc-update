@@ -1,0 +1,67 @@
+#!/bin/sh
+
+prog=$0
+usage() {
+	echo "usage: rc-update [--quiet] add|del|delete SVC RUNLEVEL"
+	exit $1
+}
+
+msg() {
+	if ! [ -n "$quiet" ]; then
+		echo "$@"
+	fi
+}
+
+OPTS=$(getopt -l quiet,help -o "qh" -n $prog -- "$@") || usage "1" >&2
+
+quiet=
+eval set -- "$OPTS"
+for opt; do
+	case "$opt" in
+		-h|--help)
+			usage 0
+			;;
+		--quiet)
+			quiet=1
+			;;
+		--)
+			shift
+			break
+			;;
+		*) usage "1" >&2
+			;;
+	esac
+	shift
+done
+
+cmd="$1"
+svc="$2"
+runlevel="${3:-default}"
+
+if [ -z "$cmd" ] || [ -z "$svc" ]; then
+	usage "1" >&2
+fi
+
+case "$cmd" in
+	add)
+		if [ -L "$ROOT"/etc/runlevels/$runlevel/$svc ]; then
+			msg " * rc-update: $svc already installed in runlevel \`$runlevel'; skipping"
+			exit 0
+		fi
+		mkdir -p "$ROOT"/etc/runlevels/$runlevel
+		ln -sf ../../init.d/$svc "$ROOT"/etc/runlevels/$runlevel/$svc
+		msg " * service $svc added to runlevel $runlevel"
+		;;
+	del|delete)
+		if ! [ -L "$ROOT"/etc/runlevels/$runlevel/$svc ]; then
+			msg " * rc-update: service \`$svc' is not in the runlevel \`$runlevel'" >&2
+			exit 1
+		fi
+		rm "$ROOT"/etc/runlevels/$runlevel/$svc
+		msg " * service foo removed from runlevel $runlevel"
+		;;
+	*) usage "1" >&2
+		;;
+esac
+
+
