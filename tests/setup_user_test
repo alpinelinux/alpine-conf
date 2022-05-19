@@ -5,7 +5,9 @@ init_tests \
 	setup_user_usage \
 	setup_user_fullname \
 	setup_user_interactive \
-	setup_user_interactive_fullname
+	setup_user_interactive_fullname \
+	setup_user_groups_commas \
+	setup_user_groups_spaces
 
 setup_user_usage_body() {
 	test_usage setup-user
@@ -56,3 +58,22 @@ setup_user_interactive_fullname_body() {
 		setup-user -f "Joe User" -k none
 }
 
+setup_user_groups_commas_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"addgroup testuser wheel" \
+		-o match:"addgroup testuser audio" \
+		-o match:"addgroup testuser video" \
+		-e empty \
+		setup-user -g wheel,audio,video testuser
+}
+
+setup_user_groups_spaces_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"addgroup testuser wheel" \
+		-o match:"addgroup testuser audio" \
+		-o match:"addgroup testuser video" \
+		-e empty \
+		setup-user -g "wheel audio video" testuser
+}

@@ -6,13 +6,14 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-user [-h] [-f FULLNAME] [-k SSHKEY] [USERNAME]
+		usage: setup-user [-h] [-f FULLNAME] [-g GROUPS] [-k SSHKEY] [USERNAME]
 
 		Create user account
 
 		options:
 		 -h  Show this help
 		 -f  Set full name for user
+		 -g  Comma or space separated list of groups to add user to
 		 -k  ssh key or URL to ssh key (eg. https://gitlab.alpinelinux.org/user.keys)
 		     or 'none' for no key
 
@@ -21,10 +22,11 @@ usage() {
 	exit $1
 }
 
-while getopts "f:hk:" opt; do
+while getopts "f:g:hk:" opt; do
 	case $opt in
 		h) usage 0;;
 		f) fullname="$OPTARG";;
+		g) groups="$OPTARG";;
 		k) keysopt="$OPTARG";;
 		'?') usage "1" >&2;;
 	esac
@@ -97,4 +99,10 @@ fi
 if [ -n "$sshkeys" ] && [ "$sshkeys" != "none" ]; then
 	mkdir -p "$ROOT"/home/$username/.ssh
 	echo "$sshkeys" > "$ROOT"/home/$username/.ssh/authorized_keys
+fi
+
+if [ -n "$groups" ] && [ "$groups" != "none" ]; then
+	for i in $(echo $groups | tr ',' ' '); do
+		$MOCK addgroup "$username" "$i" || exit
+	done
 fi
