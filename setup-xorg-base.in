@@ -1,16 +1,39 @@
 #!/bin/sh
 
+usage() {
+	cat <<-__EOF__
+		usage: setup-xorg-base [-h] [PKG..]
+
+		Set up system to use Xorg
+
+		options:
+		 -h  Show this help
+
+		Installs xorg-server, enables community repository, enable udev and
+		install the pagkages PKG if specified.
+	__EOF__
+	exit $1
+}
+
+while getopts "d:n:h" opt; do
+	case $opt in
+		h) usage 0;;
+		'?') usage "1" >&2;;
+	esac
+done
+shift $(($OPTIND - 1))
+
 # enable community repo
-if ! grep -q '^[^#].*/community$' /etc/apk/repositories; then
+if ! grep -q '^[^#].*/community$' "$ROOT"/etc/apk/repositories; then
 	repo=$(grep '^[^#].*/main$' /etc/apk/repositories | sed 's:/main$:/community:')
 	escaped_repo=$(echo $repo | sed -e 's:/:\\/:g' -e 's:\.:\\.:g')
 	sed -i -e "/^[^#].*\/main$/a $repo" \
 		-e "/^#${escaped_repo}$/d" \
-		/etc/apk/repositories \
+		"$ROOT"/etc/apk/repositories \
 		&& echo ">> Enabling community repository"
-	apk update
+	$MOCK apk update
 fi
 
-apk add xorg-server xf86-input-libinput eudev mesa "$@"
+$MOCK apk add xorg-server xf86-input-libinput eudev mesa "$@"
 
 setup-devd udev
