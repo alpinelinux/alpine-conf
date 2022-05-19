@@ -71,8 +71,8 @@ setup_mapfile() {
 		[ -f "$conf" ] && sed -i '/^KEYMAP=/d' "$conf"
 		echo "KEYMAP=/etc/keymap/$name" >> "$conf"
 		# we actually load the keymap now
-		$MOCK rc-service loadkmap restart
-		$MOCK rc-update -q add loadkmap boot
+		rc-service loadkmap restart
+		rc-update -q add loadkmap boot
 		goodbye 0
 	fi
 }
