@@ -23,23 +23,23 @@ setup_ntp_invalid_body() {
 setup_ntp_busybox_body() {
 	init_env
 	atf_check -s exit:0 \
-		-o match:"rc-update add ntpd default" \
-		-o match:"rc-service ntpd start" \
+		-o match:"service ntpd added" \
+		-o match:"Starting ntpd" \
 		setup-ntp busybox
 }
 
 setup_ntp_chrony_body() {
 	init_env
 	atf_check -s exit:0 \
-		-o match:"rc-update add chronyd default" \
-		-o match:"rc-service chronyd start" \
+		-o match:"service chronyd added" \
+		-o match:"Starting chronyd" \
 		setup-ntp chrony
 }
 
 setup_ntp_openntpd_body() {
 	init_env
 	atf_check -s exit:0 \
-		-o match:"rc-update add openntpd default" \
-		-o match:"rc-service openntpd start" \
+		-o match:"service openntpd added" \
+		-o match:"Starting openntpd" \
 		setup-ntp openntpd
 }
