@@ -4,7 +4,8 @@
 init_tests \
 	setup_desktop_usage \
 	setup_desktop_unsupported \
-	setup_desktop_xfce
+	setup_desktop_xfce \
+	setup_desktop_gnome
 
 setup_desktop_usage_body() {
 	test_usage setup-desktop
@@ -25,5 +26,14 @@ setup_desktop_xfce_body() {
 		-o match:"Starting udev" \
 		-e match:"WARNING: You need to create a user account" \
 		setup-desktop xfce
+}
+
+setup_desktop_gnome_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"apk add.*gnome" \
+		-o match:"Starting udev" \
+		-e match:"WARNING: You need to create a user account" \
+		setup-desktop gnome
 }
 
