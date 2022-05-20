@@ -29,6 +29,13 @@ if [ $# -gt 1 ]; then
 	usage "1" >&2
 fi
 
+if [ $# -eq 0 ]; then
+	users=$(awk -F: '{if ($3<65000 && $3 >= 1000) print $1}' "$ROOT"/etc/passwd 2>/dev/null)
+	if [ -z "$users" ]; then
+		setup-user -g "audio,video,netdev"
+	fi
+fi
+
 de="$1"
 
 valid_desktops="xfce gnome plasma none"
@@ -119,8 +126,6 @@ esac
 
 users=$(awk -F: '{if ($3<65000 && $3 >= 1000) print $1}' "$ROOT"/etc/passwd 2>/dev/null)
 if [ -z "$users" ]; then
-	echo "WARNING: You need to create a user account. Please run:" >&2
-	echo "" >&2
-	echo "  adduser -g 'Fistname Lastname' <username>" >&2
+	echo "WARNING: You need to create a user account. Please run: setup-user" >&2
 	echo "" >&2
 fi
