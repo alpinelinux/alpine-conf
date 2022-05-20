@@ -11,6 +11,7 @@ usage() {
 		Create user account
 
 		options:
+		 -a  Cerate admin user. Add to wheel group and set up doas
 		 -h  Show this help
 		 -f  Set full name for user
 		 -g  Comma or space separated list of groups to add user to
@@ -22,8 +23,9 @@ usage() {
 	exit $1
 }
 
-while getopts "f:g:hk:" opt; do
+while getopts "af:g:hk:" opt; do
 	case $opt in
+		a) admin=1;;
 		h) usage 0;;
 		f) fullnameopt="$OPTARG";;
 		g) groups="$OPTARG";;
@@ -112,3 +114,11 @@ if [ -n "$groups" ] && [ "$groups" != "none" ]; then
 		$MOCK addgroup "$username" "$i" || exit
 	done
 fi
+
+if [ -n "$admin" ]; then
+	$MOCK apk add doas
+	mkdir -p "$ROOT"/etc/doas.d
+	echo "permit persist :wheel" >> "$ROOT"/etc/doas.d/doas.conf
+	$MOCK addgroup "$username" "wheel" || exit
+fi
+
