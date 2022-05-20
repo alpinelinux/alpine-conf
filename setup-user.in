@@ -75,7 +75,7 @@ done
 
 if [ -n "$interactive" ] && [ -z "$keysopt" ]; then
 	while true; do
-		ask "Enter ssh key or URL for $username (or 'none')"
+		ask "Enter ssh key or URL for $username (or 'none')" none
 		case "$resp" in
 			none) break;;
 			https://*|http://*) sshkeys=$(wget -q -O- $resp | grep ^ssh-);;
@@ -104,6 +104,7 @@ fi
 if [ -n "$sshkeys" ] && [ "$sshkeys" != "none" ]; then
 	mkdir -p "$ROOT"/home/$username/.ssh
 	echo "$sshkeys" > "$ROOT"/home/$username/.ssh/authorized_keys
+	$MOCK chown -R $username:$username "$ROOT"/home/$username/.ssh
 fi
 
 if [ -n "$groups" ] && [ "$groups" != "none" ]; then
