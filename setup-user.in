@@ -25,7 +25,7 @@ usage() {
 while getopts "f:g:hk:" opt; do
 	case $opt in
 		h) usage 0;;
-		f) fullname="$OPTARG";;
+		f) fullnameopt="$OPTARG";;
 		g) groups="$OPTARG";;
 		k) keysopt="$OPTARG";;
 		'?') usage "1" >&2;;
@@ -42,32 +42,36 @@ else
 	interactive=1
 fi
 
-if [ -n "$interactive" ] && [ -z "$fullname" ]; then
-	ask "Enter full name for user account (or 'skip')"
-	case "$resp" in
-		skip) exit 0;;
-		*) fullname="$resp";;
-	esac
-fi
-
-if [ -n "$interactive" ] && [ -z "$username" ]; then
-	while true; do
-		ask "Enter username for $fullname" \
-			$(echo "$fullname" | sed -E 's/^(.).*\s+(.*)/\1\2/' | tr '[:upper:]' '[:lower:]')
-		username="$resp"
+while true; do
+	fullname="$fullnameopt"
+	if [ -n "$interactive" ] && [ -z "$username" ]; then
 		if [ -n "$fullname" ]; then
-			$MOCK adduser -g "$fullname" $nopassword "$username" && break
+			suggest=${fullname:+$(echo "$fullname" | sed -E 's/^(.).*\s+(.*)/\1\2/' | tr '[:upper:]' '[:lower:]')}
 		else
-			$MOCK adduser $nopassword "$username" && break
+			suggest=no
 		fi
-	done
-else
-	if [ -n "$fullname" ]; then
-		$MOCK adduser -g "$fullname" $nopassword "$username"
-	else
-		$MOCK adduser $nopassword "$username"
+		ask "Setup a user? (enter a lower-case loginname, or 'no')" $suggest
+		case "$resp" in
+			no) exit 0;;
+			*) username="$resp";;
+		esac
 	fi
-fi
+
+	if [ -n "$interactive" ] && [ -z "$fullnameopt" ]; then
+		ask "Full name for user $username" ${lastfullname:-$username}
+		fullname="$resp"
+		lastfullname="$resp"
+	fi
+
+	if [ -n "$fullname" ]; then
+		$MOCK adduser -g "$fullname" $nopassword "$username" && break
+	else
+		$MOCK adduser $nopassword "$username" && break
+	fi
+	if ! [ -n "$interactive" ]; then
+		exit 1
+	fi
+done
 
 if [ -n "$interactive" ] && [ -z "$keysopt" ]; then
 	while true; do

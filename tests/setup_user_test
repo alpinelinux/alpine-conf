@@ -4,6 +4,7 @@
 init_tests \
 	setup_user_usage \
 	setup_user_fullname \
+	setup_user_interactive_no \
 	setup_user_interactive \
 	setup_user_interactive_fullname \
 	setup_user_interactive_singlename \
@@ -31,15 +32,26 @@ setup_user_fullname_body() {
 		setup-user -f "Joe User" testuser
 }
 
+setup_user_interactive_no_body() {
+	init_env
+	(
+		echo "no"
+	) | atf_check -s exit:0 \
+		-o match:"Setup a user" \
+		-o not-match:"adduser.*" \
+		-e empty \
+		setup-user
+}
+
 setup_user_interactive_body() {
 	init_env
 	(
-		echo "Joe User"
 		echo "testuser"
+		echo "Joe User"
 		echo "none"
 	) | atf_check -s exit:0 \
-		-o match:"Enter full name" \
-		-o match:"Enter username" \
+		-o match:"Setup a user" \
+		-o match:"Full name for user testuser" \
 		-o not-match:"adduser.* -D .*testuser" \
 		-o match:"adduser.* -g Joe User .*testuser" \
 		-e empty \
@@ -51,8 +63,8 @@ setup_user_interactive_fullname_body() {
 	(
 		echo ""
 	) | atf_check -s exit:0 \
-		-o not-match:"Enter full name" \
-		-o match:"Enter username.*[juser]" \
+		-o match:"Setup a user.*\[juser\]" \
+		-o not-match:"Full name for user juser" \
 		-o not-match:"adduser.* -D .*" \
 		-o match:"adduser.* -g Joe User .*juser" \
 		-e empty \
@@ -64,8 +76,8 @@ setup_user_interactive_singlename_body() {
 	(
 		echo ""
 	) | atf_check -s exit:0 \
-		-o not-match:"Enter full name" \
-		-o match:"Enter username.*[joe]" \
+		-o match:"Setup a user.*\[joe\]" \
+		-o not-match:"Full name for user" \
 		-o not-match:"adduser.* -D .*" \
 		-o match:"adduser.* -g Joe .*joe" \
 		-e empty \
