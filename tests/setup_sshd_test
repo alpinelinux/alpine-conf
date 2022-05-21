@@ -49,13 +49,13 @@ setup_sshd_interactive_body() {
 	(
 		echo "openssh"
 		echo "no"
-	) | atf_check -s exit:0 \
+	) >answers
+	atf_check -s exit:0 \
 		-e empty \
-		-o match:"Which SSH server" \
-		-o match:"^apk add .* openssh" \
-		-o match:"^rc-update add sshd" \
-		-o match:"^rc-service sshd start" \
-		setup-sshd
+		-o match:"Which ssh server" \
+		-o match:"Allow root ssh login" \
+		-o match:"apk add.* openssh" \
+		setup-sshd < answers
 	grep '^PermitRootLogin no$' etc/ssh/sshd_config || atf_fail "did not set PermitRootLogin"
 }
 

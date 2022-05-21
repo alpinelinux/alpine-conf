@@ -35,13 +35,12 @@ setup_user_fullname_body() {
 
 setup_user_interactive_no_body() {
 	init_env
-	(
-		echo "no"
-	) | atf_check -s exit:0 \
+	echo "no" >answers
+	atf_check -s exit:0 \
 		-o match:"Setup a user" \
 		-o not-match:"adduser.*" \
 		-e empty \
-		setup-user
+		setup-user <answers
 }
 
 setup_user_interactive_body() {
@@ -50,39 +49,38 @@ setup_user_interactive_body() {
 		echo "testuser"
 		echo "Joe User"
 		echo "none"
-	) | atf_check -s exit:0 \
+	) >answers
+	atf_check -s exit:0 \
 		-o match:"Setup a user" \
 		-o match:"Full name for user testuser" \
 		-o not-match:"adduser.* -D .*testuser" \
 		-o match:"adduser.* -g Joe User .*testuser" \
 		-e empty \
-		setup-user
+		setup-user <answers
 }
 
 setup_user_interactive_fullname_body() {
 	init_env
-	(
-		echo ""
-	) | atf_check -s exit:0 \
+	echo "" >answers
+	atf_check -s exit:0 \
 		-o match:"Setup a user.*\[juser\]" \
 		-o not-match:"Full name for user juser" \
 		-o not-match:"adduser.* -D .*" \
 		-o match:"adduser.* -g Joe User .*juser" \
 		-e empty \
-		setup-user -f "Joe User" -k none
+		setup-user -f "Joe User" -k none <answers
 }
 
 setup_user_interactive_singlename_body() {
 	init_env
-	(
-		echo ""
-	) | atf_check -s exit:0 \
+	echo "" >answers
+	atf_check -s exit:0 \
 		-o match:"Setup a user.*\[joe\]" \
 		-o not-match:"Full name for user" \
 		-o not-match:"adduser.* -D .*" \
 		-o match:"adduser.* -g Joe .*joe" \
 		-e empty \
-		setup-user -f "Joe" -k none
+		setup-user -f "Joe" -k none <answers
 }
 
 setup_user_groups_commas_body() {
