@@ -76,12 +76,30 @@ while true; do
 done
 
 if [ -n "$interactive" ] && [ -z "$keysopt" ]; then
+	suggest=none
 	while true; do
-		ask "Enter ssh key or URL for $username (or 'none')" none
+		ask "Enter ssh key or URL for $username (or 'none')" $suggest
 		case "$resp" in
-			none) break;;
-			https://*|http://*) sshkeys=$(wget -q -O- $resp | grep ^ssh-);;
-			*) sshkeys="$resp";;
+			al)
+				suggest="https://gitlab.alpinelinux.org/$username.keys"
+				continue
+				;;
+			gl)
+				suggest="https://gitlab.com/$username.keys"
+				continue
+				;;
+			gh)
+				suggest="https://github.com/$username.keys"
+				continue
+				;;
+			none)
+				break
+				;;
+			https://*|http://*)
+				sshkeys=$(wget -q -O- $resp | grep ^ssh-)
+				;;
+			*)	sshkeys="$resp"
+				;;
 		esac
 		if echo "$sshkeys" | grep -q ^ssh-; then
 			break
