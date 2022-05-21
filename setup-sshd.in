@@ -27,10 +27,21 @@ Valid options are:
 
   prohibit-password  root will be able to login with ssh key but not with
                      password
-
-  KEYURL             ssh key will be feetched from the KEYURL and added to
-                     /root/.ssh/authorized_keys
 __EOF__
+}
+
+set_sshd_config() {
+	local key="$1" value="$2"
+	sed -i -E -e "s/^#?\s*$key.*/$key $value/" \
+		"$ROOT"/etc/ssh/sshd_config 2>/dev/null
+	if ! grep -q -w "^$key" "$ROOT"/etc/ssh/sshd_config; then
+		echo "$key $value"  >> "$ROOT"/etc/ssh/sshd_config
+	fi
+}
+
+get_sshd_config() {
+	local key="$1" value="$2"
+	awk -v key="$key" '$1 == key {print $2}' "$ROOT"/etc/ssh/sshd_config
 }
 
 authorized_key="$SSH_KEY"
@@ -46,11 +57,11 @@ shift $(( $OPTIND - 1 ))
 
 case "$1" in
 	openssh|dropbear|none) sshdchoice="$1" ;;
-	"") ;;
+	"") interactive=1;;
 	*) usage "1" >&2;;
 esac
 
-while ! isin "$sshdchoice" openssh dropbear none; do
+while [ -n "$interactive" ] && ! isin "$sshdchoice" openssh dropbear none; do
 	ask "Which ssh server? ('openssh', 'dropbear' or 'none')" openssh
 	sshdchoice="$resp"
 done
@@ -68,7 +79,7 @@ $MOCK apk add --quiet $pkgs
 
 if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ]; then
 	suggest=prohibit-password
-	while true; do
+	while [ -n "$interactive" ]; do
 		ask "Allow root ssh login? ('?' for help)" "$suggest"
 		case "$resp" in
 			'?')
@@ -88,10 +99,7 @@ if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ]; then
 				continue
 				;;
 			yes|no|prohibit-password)
-				sed -i -E -e "s/^#?\s*PermitRootLogin.*/PermitRootLogin $resp/" "$ROOT"/etc/ssh/sshd_config
-				if ! grep -q ^PermitRootLogin "$ROOT"/etc/ssh/sshd_config; then
-					echo "PermitRootLogin $resp"  >> "$ROOT"/etc/ssh/sshd_config
-				fi
+				set_sshd_config PermitRootLogin "$resp"
 				break
 				;;
 			http://*|https://*)
@@ -103,7 +111,34 @@ if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ]; then
 				;;
 		esac
 	done
+	suggest=none
+	while [ -n "$interactive" ] && [ "$(get_sshd_config PermitRootLogin)" != "no" ]; do
+		ask "Enter ssh key or URL for root (or 'none')" "$suggest"
+		case "$resp" in
+			"al "*)
+				suggest="https://gitlab.alpinelinux.org/${resp#* }.keys"
+				continue
+				;;
+			"gl "*)
+				suggest="https://gitlab.com/${resp#* }.keys"
+				continue
+				;;
+			"gh "*)
+				suggest="https://github.com/${resp#* }.keys"
+				continue
+				;;
+			http://*|https://*)
+				authorized_key="$(wget -qO- "$resp")" || {
+					echo "Failed to fetch key from '$resp'"
+					continue
+				}
+				break
+				;;
+		esac
+	done
 fi
+
+#		ask "Enter ssh key or URL for $username (or 'none')" none
 
 svc=
 case "$sshdchoice" in
