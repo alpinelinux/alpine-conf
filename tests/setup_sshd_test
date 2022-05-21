@@ -46,7 +46,10 @@ setup_sshd_interactive_body() {
 	init_env
 	mkdir -p etc/ssh
 	echo "PermitRootLogin foobar" > etc/ssh/sshd_config
-	printf "%s\n%s\n" openssh no | atf_check -s exit:0 \
+	(
+		echo "openssh"
+		echo "no"
+	) | atf_check -s exit:0 \
 		-e empty \
 		-o match:"Which SSH server" \
 		-o match:"^apk add .* openssh" \

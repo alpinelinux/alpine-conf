@@ -35,7 +35,7 @@ case "$1" in
 esac
 
 while ! isin "$sshdchoice" openssh dropbear none; do
-	ask "Which SSH server? ('openssh', 'dropbear' or 'none')" openssh
+	ask "Which ssh server? ('openssh', 'dropbear' or 'none')" openssh
 	sshdchoice="$resp"
 done
 
@@ -52,7 +52,7 @@ $MOCK apk add --quiet $pkgs
 
 if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ]; then
 	while true; do
-		ask "Allow root ssh login? ('yes', 'no', 'prohibit-password' or KEYURL) [prohibit-password]" prohibit-password
+		ask "Allow root ssh login? ('yes', 'no', 'prohibit-password' or KEYURL)" prohibit-password
 		case "$resp" in
 			yes|no|prohibit-password)
 				sed -i -E -e "s/^#?\s*PermitRootLogin.*/PermitRootLogin $resp/" "$ROOT"/etc/ssh/sshd_config
