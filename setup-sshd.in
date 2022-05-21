@@ -77,7 +77,9 @@ fi
 
 $MOCK apk add --quiet $pkgs
 
-if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ]; then
+users=$(awk -F: '{if ($3<65000 && $3 >= 1000) print $1}' \
+	"$ROOT"/etc/passwd 2>/dev/null)
+if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ] && [ -z "$users" ]; then
 	suggest=prohibit-password
 	while [ -n "$interactive" ]; do
 		ask "Allow root ssh login? ('?' for help)" "$suggest"
