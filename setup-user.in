@@ -11,7 +11,7 @@ usage() {
 		Create user account
 
 		options:
-		 -a  Cerate admin user. Add to wheel group and set up doas
+		 -a  Create admin user. Add to wheel group and set up doas
 		 -h  Show this help
 		 -f  Set full name for user
 		 -g  Comma or space separated list of groups to add user to
