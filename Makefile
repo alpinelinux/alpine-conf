@@ -116,6 +116,6 @@ Kyuafile:
 	echo "test_suite('alpine-conf')" >> $@
 	echo "include('tests/Kyuafile')" >> $@
 
-test: $(SCRIPTS) $(BIN_FILES) tests/Kyuafile Kyuafile
+check: $(SCRIPTS) $(BIN_FILES) tests/Kyuafile Kyuafile
 	kyua test || (kyua report --verbose && exit 1)
 

@@ -3,7 +3,7 @@ test-job:
   stage: test
   script:
     - apk add make gcc musl-dev kyua
-    - make -j $(nproc) test
+    - make -j $(nproc) check
   tags:
     - docker-alpine
     - x86_64
