@@ -867,7 +867,7 @@ setup_partitions() {
 			*) echo "$start,$line"; start= ;;
 			esac
 		done
-	) | sfdisk --quiet --label $DISKLABEL $diskdev
+	) | sfdisk --quiet --label $DISKLABEL $diskdev || return 1
 
 	# create device nodes if not exist
 	mdev -s
