@@ -60,13 +60,13 @@ init_tmpdir() {
 }
 
 pkg_inst() {
-	eecho "WARNING: pkg_inst is deprecated. Use 'apk add --quiet' in script"
-	[ -z "$NOCOMMIT" ] && apk add --quiet $*
+	eecho "WARNING: pkg_inst is deprecated. Use '\$MOCK apk add --quiet' in script"
+	$MOCK apk add --quiet $*
 }
 
 pkg_deinst() {
-	eecho "WARNING: pkg_deinst is deprecated. Use 'apk del --quiet' in script"
-	[ -z "$NOCOMMIT" ] && apk del --quiet $*
+	eecho "WARNING: pkg_deinst is deprecated. Use '\$MOCK apk del --quiet' in script"
+	$MOCK apk del --quiet $*
 }
 
 default_read() {
@@ -78,7 +78,7 @@ default_read() {
 
 
 cfg_add() {
-	[ -z "$NOCOMMIT" ] && lbu_add "$@"
+	$MOCK lbu_add "$@"
 }
 
 # return true if given value is Y, y, Yes, yes YES etc

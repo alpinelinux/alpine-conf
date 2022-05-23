@@ -154,7 +154,7 @@ grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
 	$PREFIX/sbin/setup-dns ${DNSOPTS}
 
 # set root password
-if [ -z "$NOCOMMIT" ] && [ -z "$empty_root_password" ]; then
+if [ -z "$empty_root_password" ]; then
 	while ! passwd ; do
 		echo "Please retry."
 	done
