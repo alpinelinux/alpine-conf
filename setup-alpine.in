@@ -12,6 +12,13 @@ is_qemu() {
 		|| strings /sys/firmware/dmi/tables/DMI 2>/dev/null | grep -q QEMU
 }
 
+is_virtual_console() {
+	case "$(readlink "$ROOT"/proc/self/fd/0)" in
+		/dev/tty[0-9]*) return 0;;
+	esac
+	return 1
+}
+
 usage() {
 	cat <<-__EOF__
 		usage: setup-alpine [-ahq] [-c FILE | -f FILE]
@@ -128,7 +135,9 @@ else
 fi
 
 if [ "$rc_sys" != LXC ]; then
-	$PREFIX/sbin/setup-keymap ${KEYMAPOPTS}
+	if is_virtual_console || [ -n "$KEYMAPOPTS" ]; then
+		$PREFIX/sbin/setup-keymap ${KEYMAPOPTS}
+	fi
 	$PREFIX/sbin/setup-hostname ${HOSTNAMEOPTS} && rc-service hostname --quiet restart
 	$PREFIX/sbin/setup-devd -C mdev # just to bootstrap
 fi
