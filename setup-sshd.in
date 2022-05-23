@@ -136,6 +136,9 @@ if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ] && [ -z "$users" ];
 				}
 				break
 				;;
+			none)
+				break
+				;;
 		esac
 	done
 fi
