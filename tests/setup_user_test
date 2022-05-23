@@ -8,6 +8,7 @@ init_tests \
 	setup_user_interactive \
 	setup_user_interactive_fullname \
 	setup_user_interactive_singlename \
+	setup_user_interactive_suggest_ssh \
 	setup_user_groups_commas \
 	setup_user_groups_spaces \
 	setup_user_admin
@@ -81,6 +82,26 @@ setup_user_interactive_singlename_body() {
 		-o match:"adduser.* -g Joe .*joe" \
 		-e empty \
 		setup-user -f "Joe" -k none <answers
+}
+
+setup_user_interactive_suggest_ssh_body() {
+	init_env
+	(	echo "testuser"
+		echo "FullName"
+		echo "al"
+		echo ""
+	)>answers
+	export WGETCONTENT='ssh-id from alpine'
+	atf_check -s exit:0 \
+		-o match:"Setup a user" \
+		-o match:"Full name for user" \
+		-o match:"Enter ssh key.*none" \
+		-o match:"Enter ssh key.*gitlab.alpinelinux.org.*testuser.keys" \
+		-o match:"adduser.* -g FullName .*testuser" \
+		-e empty \
+		setup-user <answers
+	grep "$WGETCONTENT" home/testuser/.ssh/authorized_keys \
+		|| atf_fail "ssh key not fetched from alpinelinux"
 }
 
 setup_user_groups_commas_body() {
