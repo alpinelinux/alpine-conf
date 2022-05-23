@@ -61,7 +61,7 @@ case "$USEANSWERFILE" in
 		# dynamically download answer file from URL (supports HTTP(S) and FTP)
 		# ensure the network is up, otherwise setup a temporary interface config
 		if ! rc-status networking --quiet status; then
-			$PREFIX/sbin/setup-interfaces -ar
+			setup-interfaces -ar
 		fi
 
 		temp="$(mktemp)"
@@ -136,33 +136,33 @@ fi
 
 if [ "$rc_sys" != LXC ]; then
 	if is_virtual_console || [ -n "$KEYMAPOPTS" ]; then
-		$PREFIX/sbin/setup-keymap ${KEYMAPOPTS}
+		setup-keymap ${KEYMAPOPTS}
 	fi
-	$PREFIX/sbin/setup-hostname ${HOSTNAMEOPTS} && rc-service hostname --quiet restart
-	$PREFIX/sbin/setup-devd -C mdev # just to bootstrap
+	setup-hostname ${HOSTNAMEOPTS} && rc-service hostname --quiet restart
+	setup-devd -C mdev # just to bootstrap
 fi
 
 [ -z "$SSH_CONNECTION" ] && rst_if=1
 if [ -n "$INTERFACESOPTS" ]; then
-	printf "$INTERFACESOPTS" | $PREFIX/sbin/setup-interfaces -i ${rst_if:+-r}
+	printf "$INTERFACESOPTS" | setup-interfaces -i ${rst_if:+-r}
 else
-	$PREFIX/sbin/setup-interfaces ${quick:+-a} ${rst_if:+-r}
+	setup-interfaces ${quick:+-a} ${rst_if:+-r}
 fi
 
 # setup up dns if no dhcp was configured
 grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
-	$PREFIX/sbin/setup-dns ${DNSOPTS}
+	setup-dns ${DNSOPTS}
 
 # set root password
 if [ -z "$empty_root_password" ]; then
-	while ! passwd ; do
+	while ! $MOCK passwd ; do
 		echo "Please retry."
 	done
 fi
 
 if [ -z "$quick" ]; then
 	# pick timezone
-	$PREFIX/sbin/setup-timezone ${TIMEZONEOPTS}
+	setup-timezone ${TIMEZONEOPTS}
 fi
 
 rc-update --quiet add networking boot
@@ -196,7 +196,7 @@ _hn=${_hn%%.*}
 sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn my.domain)} ${_hn} localhost.localdomain localhost/" /etc/hosts
 
 if [ -z "$quick" ]; then
-	$PREFIX/sbin/setup-proxy -q ${PROXYOPTS}
+	setup-proxy -q ${PROXYOPTS}
 fi
 # activate the proxy if configured
 if [ -r "$ROOT/etc/profile" ]; then
@@ -204,14 +204,14 @@ if [ -r "$ROOT/etc/profile" ]; then
 fi
 
 if ! is_qemu && [ "$rc_sys" != "LXC" ] && [ "$quick" != 1 ]; then
-	$PREFIX/sbin/setup-ntp ${NTPOPTS}
+	setup-ntp ${NTPOPTS}
 fi
 
-$PREFIX/sbin/setup-apkrepos ${APKREPOSOPTS}
+setup-apkrepos ${APKREPOSOPTS}
 
 # Now that network and apk are operational we can install another device manager
 if [ "$rc_sys" != LXC ] && [ -n "$DEVDOPTS" -a "$DEVDOPTS" != mdev ]; then
-	$PREFIX/sbin/setup-devd ${DEVDOPTS}
+	setup-devd ${DEVDOPTS}
 fi
 
 # lets stop here if in "quick mode"
@@ -219,8 +219,8 @@ if [ "$quick" = 1 ]; then
 	exit 0
 fi
 
-$PREFIX/sbin/setup-user ${USEROPTS:--a -g 'audio video netdev'}
-$PREFIX/sbin/setup-sshd ${SSHDOPTS}
+setup-user ${USEROPTS:--a -g 'audio video netdev'}
+setup-sshd ${SSHDOPTS}
 
 if is_xen_dom0; then
 	setup-xen-dom0
@@ -231,14 +231,14 @@ if [ "$rc_sys" = "LXC" ]; then
 fi
 
 DEFAULT_DISK=none \
-	$PREFIX/sbin/setup-disk -q ${DISKOPTS} || exit
+	setup-disk -q ${DISKOPTS} || exit
 
 diskmode=$(cat /tmp/alpine-install-diskmode.out 2>/dev/null)
 
 # setup lbu and apk cache unless installed sys on disk
 if [ "$diskmode" != "sys" ]; then
-	$PREFIX/sbin/setup-lbu ${LBUOPTS}
-	$PREFIX/sbin/setup-apkcache ${APKCACHEOPTS}
+	setup-lbu ${LBUOPTS}
+	setup-apkcache ${APKCACHEOPTS}
 	if [ -L /etc/apk/cache ]; then
 		apk cache sync
 	fi
