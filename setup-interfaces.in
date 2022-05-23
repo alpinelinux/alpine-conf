@@ -579,5 +579,5 @@ else
 fi
 
 if [ -n "$restart" ]; then
-	/etc/init.d/networking --quiet restart >/dev/null
+	rc-service networking --quiet restart >/dev/null
 fi

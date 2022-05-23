@@ -102,7 +102,7 @@ if [ -n "$address" ]; then
 fi
 
 rc-update -q add mini_httpd default
-/etc/init.d/mini_httpd restart
+rc-service mini_httpd restart
 # force update of dependency cache
 rc-update -q --update
 
