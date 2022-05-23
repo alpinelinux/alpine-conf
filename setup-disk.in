@@ -1205,14 +1205,28 @@ native_disk_install_lvm() {
 setup_crypt() {
 	local dev="$1" local dmname="$2"
 	mkdir -p /run/cryptsetup
-	echo "Preparing partition for encryption." >&2
-	echo "You will be prompted for your password at boot." >&2
-	echo "If you forget your password, your data will be lost." >&2
-	cryptsetup luksFormat --batch-mode --verify-passphrase \
-		--type luks2 "$dev" >&2 || return 1
-	echo "Enter password again to unlock disk for installation." >&2
-	cryptsetup open "$dev" "$dmname" >&2 || return 1
+	while true; do
+		echo "Preparing partition for encryption." >&2
+		echo "You will be prompted for your password at boot." >&2
+		echo "If you forget your password, your data will be lost." >&2
+		cryptsetup luksFormat --batch-mode --verify-passphrase \
+			--type luks2 "$dev" >&2
+		# Error codes are: 1 wrong parameters, 2 no permission (bad
+		# passphrase), 3 out of memory, 4 wrong device specified, 5 device
+		# already exists or device is busy.
+		# https://man7.org/linux/man-pages/man8/cryptsetup.8.html#RETURN_CODES
+		case $? in
+			2) continue;;
+			0) ;;
+			*) return 1;;
+		esac
+		echo "Enter password again to unlock disk for installation." >&2
+		cryptsetup open "$dev" "$dmname" >&2 \
+			&& break
+		echo "" >&2
+	done
 	echo "/dev/mapper/$dmname"
+	return 0
 }
 
 native_disk_install() {
