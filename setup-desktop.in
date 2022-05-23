@@ -6,7 +6,7 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-desktop [-h] [xfce|gnome]
+		usage: setup-desktop [-h] [gnome|plasma|xfce]
 
 		Install a standard desktop
 
