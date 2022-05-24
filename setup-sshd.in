@@ -57,7 +57,7 @@ shift $(( $OPTIND - 1 ))
 
 case "$1" in
 	openssh|dropbear|none) sshdchoice="$1" ;;
-	"") interactive=1;;
+	"") [ -z "$sshdchoice" ] && interactive=1;;
 	*) usage "1" >&2;;
 esac
 

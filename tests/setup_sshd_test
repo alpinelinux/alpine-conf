@@ -6,6 +6,7 @@ init_tests \
 	setup_sshd_empty \
 	setup_sshd_dropbear \
 	setup_sshd_openssh \
+	setup_sshd_openssh_c_compat \
 	setup_sshd_interactive_openssh_nologin \
 	setup_sshd_interactive_openssh_prohibitpass \
 	setup_sshd_interactive_openssh_nokey \
@@ -43,6 +44,17 @@ setup_sshd_openssh_body() {
 		-o match:"Starting sshd" \
 		setup-sshd -k 'https://example.com/user.keys' openssh
 	grep 'ssh-id FOOBAR' root/.ssh/authorized_keys || atf_fail "failed to wget ssh key"
+}
+
+setup_sshd_openssh_c_compat_body() {
+	init_env
+	atf_check -s exit:0 \
+		-e empty \
+		-o match:"^apk add .* openssh" \
+		-o match:"service sshd added" \
+		-o match:"Starting sshd" \
+		-o not-match:"Allow root ssh" \
+		setup-sshd -c openssh
 }
 
 setup_sshd_interactive_openssh_nologin_body() {
