@@ -1596,7 +1596,7 @@ if [ -z "$SWAP_SIZE" ]; then
 	SWAP_SIZE=$(find_swap_size $diskdevs)
 fi
 
-if [ -n "$USE_EFI" ] && [ -z "$BOOT_SIZE" ]; then
+if [ -n "$USE_EFI" ] && [ -z "$BOOT_SIZE" ]; then
 	blocksize=$(cat $(echo $diskdevs | sed -E -e 's:/dev/([^ ]+):/sys/block/\1/queue/physical_block_size:g') | sort -n | tail -n 1)
 	# calculate minimal FAT32 size
 	# for block size 512 minimal size is 32MB
