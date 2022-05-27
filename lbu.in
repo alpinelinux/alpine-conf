@@ -380,11 +380,14 @@ usage_list() {
 
 		usage: $PROGRAM list|ls
 	__EOF__
-	exit 1
+	exit $1
 }
 
 cmd_list() {
 	cmd_migrate_include_exclude
+	if [ "$1" = "-h" ]; then
+		usage_list 0
+	fi
 	_gen_filelist
 }
 
@@ -775,6 +778,9 @@ while getopts "adehlM:np:qrv" opt ; do
 		r)	REMOVE="-r"
 			;;
 		v)	VERBOSE="$VERBOSE -v"
+			;;
+		'?')
+			usage_$SUBCMD "1" >&2
 			;;
 	esac
 done

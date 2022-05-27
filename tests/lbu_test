@@ -11,7 +11,9 @@ init_tests \
 	lbu_exclude_usage \
 	lbu_ex_usage \
 	lbu_delete_usage \
-	lbu_diff_usage
+	lbu_diff_usage \
+	lbu_list_usage \
+	lbu_ls_usage
 
 lbu_usage_body() {
 	test_usage lbu
@@ -63,5 +65,17 @@ lbu_delete_usage_body() {
 
 lbu_diff_usage_body() {
 	test_usage "lbu diff"
+}
+
+lbu_list_usage_body() {
+	test_usage "lbu list"
+}
+
+lbu_ls_usage_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"usage: lbu list" \
+		-e empty \
+		lbu ls -h
 }
 
