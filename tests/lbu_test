@@ -2,9 +2,27 @@
 
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
-	lbu_usage
+	lbu_usage \
+	lbu_include_usage \
+	lbu_inc_usage \
+	lbu_add_usage
 
 lbu_usage_body() {
 	test_usage lbu
 }
 
+lbu_include_usage_body() {
+	test_usage "lbu include"
+}
+
+lbu_inc_usage_body() {
+	test_usage "lbu inc"
+}
+
+lbu_add_usage_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"usage: lbu include" \
+		-e empty \
+		lbu add -h
+}

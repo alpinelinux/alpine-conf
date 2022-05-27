@@ -232,18 +232,18 @@ usage_include() {
 		  -r	Remove specified file(s) from include list instead of adding.
 		  -v	Verbose mode.
 	__EOF__
-	exit 1
+	exit $1
 }
 
 cmd_include() {
 	cmd_migrate_include_exclude
 	if [ "$LIST" ] ; then
-		[ $# -gt 0 ] && usage_include
+		[ $# -gt 0 ] && usage_include "1" >&2
 		show_include
 		return
 	fi
 
-	[ $# -lt 1 ] && usage_include
+	[ $# -lt 1 ] && usage_include "1" >&2
 	if [ "$REMOVE" ] ; then
 		list_delete + "$@"
 	else
@@ -761,7 +761,7 @@ while getopts "adehlM:np:qrv" opt ; do
 			;;
 		e)	[ -z "$ENCRYPTION" ] && ENCRYPTION="$DEFAULT_CIPHER"
 			;;
-		h)	usage_$SUBCMD
+		h)	usage_$SUBCMD 0
 			;;
 		l)	LIST="-l"
 			;;
