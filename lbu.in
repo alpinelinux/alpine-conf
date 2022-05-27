@@ -522,18 +522,18 @@ usage_exclude() {
 		  -r	Remove specified file(s) from exclude list instead of adding.
 		  -v	Verbose mode.
 	__EOF__
-	exit 1
+	exit $1
 }
 
 cmd_exclude() {
 	cmd_migrate_include_exclude
 	if [ "$LIST" ] ; then
-		[ $# -gt 0 ] && usage_exclude
+		[ $# -gt 0 ] && usage_exclude "1" >&2
 		show_exclude
 		return
 	fi
 
-	[ $# -lt 1 ] && usage_exclude
+	[ $# -lt 1 ] && usage_exclude "1" >&2
 	if [ "$REMOVE" ] ; then
 		list_delete - "$@"
 	else
