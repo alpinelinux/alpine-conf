@@ -19,16 +19,15 @@ atf_init_test_cases() {
 }
 
 test_usage() {
-	local prog="$1"
 	init_env
 	atf_check -s exit:0 \
-		-o match:"^usage: $prog" \
+		-o match:"^usage: $@" \
 		-e empty \
-		$prog -h
+		$@ -h
 
 	atf_check -s exit:1 \
 		-o empty \
-		-e match:"^usage: $prog" \
-		$prog -INVALID
+		-e match:"^usage: $@" \
+		$@ -INVALID
 }
 
