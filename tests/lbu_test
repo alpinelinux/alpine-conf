@@ -1,0 +1,10 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	lbu_usage
+
+lbu_usage_body() {
+	test_usage lbu
+}
+

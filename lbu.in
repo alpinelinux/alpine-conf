@@ -56,7 +56,7 @@ usage() {
 		 -q	Quiet mode.
 		 -v	Verbose mode.
 	__EOF__
-	exit 1
+	exit $1
 }
 
 cleanup() {
@@ -731,7 +731,7 @@ cmd=$(echo "$PROGRAM" | cut -s -d_ -f2)
 PROGRAM=$(echo "$PROGRAM" | cut -d_ -f1)
 if [ -z "$cmd" ] ; then
 	cmd="$1"
-	[ -z "$cmd" ] && usage
+	[ -z "$cmd" ] && usage "1" >&2
 	shift
 fi
 
@@ -747,7 +747,8 @@ case "$cmd" in
 	revert)			SUBCMD="revert";;
 	diff)			SUBCMD="diff";;
 	migrate_include_exclude) SUBCMD="migrate_include_exclude";;
-	*)			usage;;
+	-h)			usage 0;;
+	*)			usage "1" >&2;;
 esac
 
 # parse common args
