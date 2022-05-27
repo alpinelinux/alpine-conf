@@ -418,7 +418,7 @@ usage_commit() {
 
 		The environment variables can also be set in $LBU_CONF
 	__EOF__
-	exit 1
+	exit $1
 }
 
 cmd_commit() {
@@ -434,11 +434,11 @@ cmd_commit() {
 	if [ -z "$mnt" ]; then
 		# find what media to use
 		media="${1:-$LBU_MEDIA}"
-		[ -z "$media" ] && usage_commit
+		[ -z "$media" ] && usage_commit "1" >&2
 
-		# mount media unles its already mounted
+		# mount media unless its already mounted
 		mnt=/media/$media
-		[ -d "$mnt" ] || usage
+		[ -d "$mnt" ] || usage "1" >&2
 		mount_once_rw "$mnt" || die "failed to mount $mnt"
 	fi
 

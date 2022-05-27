@@ -5,7 +5,9 @@ init_tests \
 	lbu_usage \
 	lbu_include_usage \
 	lbu_inc_usage \
-	lbu_add_usage
+	lbu_add_usage \
+	lbu_commit_usage \
+	lbu_ci_usage
 
 lbu_usage_body() {
 	test_usage lbu
@@ -25,4 +27,16 @@ lbu_add_usage_body() {
 		-o match:"usage: lbu include" \
 		-e empty \
 		lbu add -h
+}
+
+lbu_commit_usage_body() {
+	test_usage "lbu commit"
+}
+
+lbu_ci_usage_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"usage: lbu commit" \
+		-e empty \
+		lbu ci -h
 }
