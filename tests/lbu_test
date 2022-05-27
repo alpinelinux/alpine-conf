@@ -10,7 +10,8 @@ init_tests \
 	lbu_ci_usage \
 	lbu_exclude_usage \
 	lbu_ex_usage \
-	lbu_delete_usage
+	lbu_delete_usage \
+	lbu_diff_usage
 
 lbu_usage_body() {
 	test_usage lbu
@@ -58,5 +59,9 @@ lbu_delete_usage_body() {
 		-o match:"usage: lbu exclude" \
 		-e empty \
 		lbu delete -h
+}
+
+lbu_diff_usage_body() {
+	test_usage "lbu diff"
 }
 

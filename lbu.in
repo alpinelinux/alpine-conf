@@ -673,13 +673,13 @@ usage_diff() {
 
 		usage: $PROGRAM diff [<media>]
 	__EOF__
-	exit 1
+	exit $1
 }
 
 cmd_diff() {
 	local diff_opts=
 	LBU_MEDIA=${1:-"$LBU_MEDIA"}
-	[ -z "$LBU_MEDIA" ] && [ -z "$LBU_BACKUPDIR" ] && usage_diff
+	[ -z "$LBU_MEDIA" ] && [ -z "$LBU_BACKUPDIR" ] && usage_diff "1" >&2
 	local tmp
 	init_tmpdir tmp
 	mkdir -p "$tmp/a" "$tmp/b"
