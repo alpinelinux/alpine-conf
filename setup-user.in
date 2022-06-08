@@ -109,7 +109,7 @@ if [ -n "$interactive" ] && [ -z "$keysopt" ]; then
 else
 	case "$keysopt" in
 		https://*|http://*)
-			sshkeys=$(wget -q -O- "$sshkeys" | grep ^ssh-);;
+			sshkeys=$(wget -q -O- "$keysopt" | grep ^ssh-);;
 		none)
 			sshkeys="" ;;
 		*)
