@@ -115,6 +115,9 @@ deflayout="$1"
 defvariant="$2"
 while true; do
 	if [ -n "$deflayout" ]; then
+		if [ "$deflayout" = "none" ]; then
+			goodbye 0
+		fi
 		layout="$deflayout"
 		unset deflayout
 	else
