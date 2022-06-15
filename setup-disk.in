@@ -1539,14 +1539,16 @@ if [ $# -gt 0 ]; then
 		diskdevs="$diskdevs /dev/${j//!//}"
 	done
 else
-	ask_disk "Which disk(s) would you like to use? (or '?' for help or 'none')" \
-		diskselect_help $disks
-	if [ "$resp" != none ]; then
-		for i in $resp; do
-			diskdevs="$diskdevs /dev/$i"
-		done
-	else
-		DISK_MODE="none"
+	if [ "$DISK_MODE" != none ]; then
+		ask_disk "Which disk(s) would you like to use? (or '?' for help or 'none')" \
+			diskselect_help $disks
+		if [ "$resp" != none ]; then
+			for i in $resp; do
+				diskdevs="$diskdevs /dev/$i"
+			done
+		else
+			DISK_MODE="none"
+		fi
 	fi
 fi
 
