@@ -6,7 +6,7 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-user [-h] [-f FULLNAME] [-g GROUPS] [-k SSHKEY] [USERNAME]
+		usage: setup-user [-h] [-a] [-u] [-f FULLNAME] [-g GROUPS] [-k SSHKEY] [USERNAME]
 
 		Create user account
 
@@ -25,7 +25,7 @@ usage() {
 	exit $1
 }
 
-while getopts "af:g:hk:" opt; do
+while getopts "af:g:hk:u" opt; do
 	case $opt in
 		a) admin=1;;
 		h) usage 0;;
@@ -143,6 +143,6 @@ if [ -n "$admin" ]; then
 	$MOCK addgroup "$username" "wheel" || exit
 fi
 
-if [-n "$forceunlock" ]; then
+if [ -n "$forceunlock" ]; then
 	$MOCK passwd -u "$username" 2> /dev/null
 fi
