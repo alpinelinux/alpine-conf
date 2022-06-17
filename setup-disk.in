@@ -1468,6 +1468,8 @@ while getopts "hek:Lm:o:qrs:v" opt; do
 done
 shift $(( $OPTIND - 1))
 
+[ "$DISK_MODE" = "none" ] && exit 0
+
 if is_rpi; then
 	: ${BOOTLOADER:=raspberrypi-bootloader}
 	BOOTFS=vfat
