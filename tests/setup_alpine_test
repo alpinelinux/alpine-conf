@@ -3,7 +3,8 @@
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
 	setup_alpine_usage \
-	setup_alpine_quick
+	setup_alpine_quick \
+	setup_alpine_create_answerfile
 
 setup_alpine_usage_body() {
 	test_usage setup-alpine
@@ -17,3 +18,22 @@ setup_alpine_quick_body() {
 		-e empty \
 		setup-alpine -q
 }
+
+setup_alpine_create_answerfile_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"Answer file answers has been created"  \
+		setup-alpine -c answers
+
+	mkdir -p usr/share/zoneinfo/
+	touch usr/share/zoneinfo/UTC
+
+	atf_check -s exit:0 \
+		-o match:"Starting hostname" \
+		-o match:"Starting mdev" \
+		-o match:"Added mirror" \
+		-o match:"adduser" \
+		-o match:"apk add" \
+		setup-alpine -f answers
+}
+
