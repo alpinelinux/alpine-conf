@@ -17,7 +17,7 @@ fi
 
 EXCLUDE_LIST="$sysconfdir"/exclude
 INCLUDE_LIST="$sysconfdir"/include
-LBU_LIST="/etc/apk/protected_paths.d/lbu.list"
+LBU_LIST="${ROOT}etc/apk/protected_paths.d/lbu.list"
 
 
 DEFAULT_CIPHER="aes-256-cbc"

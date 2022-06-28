@@ -6,6 +6,7 @@ init_tests \
 	lbu_include_usage \
 	lbu_inc_usage \
 	lbu_add_usage \
+	lbu_add_delete \
 	lbu_commit_usage \
 	lbu_ci_usage \
 	lbu_exclude_usage \
@@ -33,6 +34,27 @@ lbu_add_usage_body() {
 		-o match:"usage: lbu include" \
 		-e empty \
 		lbu add -h
+}
+
+lbu_add_delete_body() {
+	init_env
+	mkdir -p root/.ssh
+	atf_check -s exit:0 \
+		-o match:"Adding root/.ssh to" \
+		-e empty \
+		lbu add -v root/.ssh
+
+	atf_check -s exit:0 \
+		-o match:"root/.ssh" \
+		cat etc/apk/protected_paths.d/lbu.list
+
+	atf_check -s exit:0 \
+		-o match:"Removing root/.ssh from" \
+		-e empty \
+		lbu delete -v root/.ssh
+
+	grep 'root/.ssh' etc/apk/protected_paths.d/lbu.list \
+		|| atf_fail "root/.ssh was not removed"
 }
 
 lbu_commit_usage_body() {
