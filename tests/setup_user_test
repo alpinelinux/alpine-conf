@@ -11,7 +11,8 @@ init_tests \
 	setup_user_interactive_suggest_ssh \
 	setup_user_groups_commas \
 	setup_user_groups_spaces \
-	setup_user_admin
+	setup_user_admin \
+	setup_user_keys_opt
 
 setup_user_usage_body() {
 	test_usage setup-user
@@ -133,3 +134,15 @@ setup_user_admin_body() {
 		grep wheel etc/doas.d/doas.conf
 
 }
+
+setup_user_keys_opt_body() {
+	init_env
+	export WGETCONTENT='ssh-id from alpine'
+	atf_check -s exit:0 \
+		-o match:"adduser.* -D .*testuser" \
+		setup-user -k https://gitlab.alpinelinux.org/user.keys testuser
+	grep "$WGETCONTENT" home/testuser/.ssh/authorized_keys \
+		|| atf_fail "ssh key not fetched from alpinelinux"
+}
+
+
