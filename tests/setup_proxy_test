@@ -4,7 +4,8 @@
 init_tests \
 	setup_proxy_usage \
 	setup_proxy_url \
-	setup_proxy_none
+	setup_proxy_none \
+	setup_proxy_interactive_none
 
 setup_proxy_usage_body() {
 	test_usage setup-proxy
@@ -35,3 +36,18 @@ setup_proxy_none_body() {
 	fi
 }
 
+setup_proxy_interactive_none_body() {
+	init_env
+
+	mkdir -p etc/profile.d
+	touch etc/profile.d/proxy.sh
+
+	echo none | atf_check -s exit:0 \
+		 -o match:"HTTP/FTP proxy URL" \
+		 -e empty \
+		 setup-proxy
+
+	if test -e etc/profile.d/proxy.sh; then
+		 atf_fail "etc/profile.d/proxy.sh was not removed"
+	fi
+}

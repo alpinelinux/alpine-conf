@@ -41,7 +41,7 @@ suggest=${http_proxy:-none}
 while [ $# -eq 0 ]; do
 	case "$proxyurl" in
 		http://*|https://*) break;;
-		none) proxyurl= ; break;;
+		none) break;;
 	esac
 	ask "HTTP/FTP proxy URL? (e.g. 'http://proxy:8080', or 'none')" $suggest
 	proxyurl=$resp
