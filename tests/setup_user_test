@@ -12,7 +12,8 @@ init_tests \
 	setup_user_groups_commas \
 	setup_user_groups_spaces \
 	setup_user_admin \
-	setup_user_keys_opt
+	setup_user_keys_opt \
+	setup_user_unlock
 
 setup_user_usage_body() {
 	test_usage setup-user
@@ -145,4 +146,10 @@ setup_user_keys_opt_body() {
 		|| atf_fail "ssh key not fetched from alpinelinux"
 }
 
-
+setup_user_unlock_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"passwd -u testuser" \
+		-e empty \
+		setup-user -u testuser
+}
