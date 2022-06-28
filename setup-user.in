@@ -144,5 +144,5 @@ if [ -n "$admin" ]; then
 fi
 
 if [ -n "$forceunlock" ]; then
-	$MOCK passwd -u "$username" 2> /dev/null
+	$MOCK passwd -u "$username" || exit
 fi
