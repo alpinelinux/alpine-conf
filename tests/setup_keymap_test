@@ -2,9 +2,17 @@
 
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
-	setup_keymap_usage
+	setup_keymap_usage \
+	setup_keymap_none
 
 setup_keymap_usage_body() {
 	test_usage setup-keymap
+}
+
+setup_keymap_none_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"apk add.*keymap" \
+		setup-keymap none
 }
 
