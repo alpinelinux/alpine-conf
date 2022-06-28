@@ -63,8 +63,13 @@ while true; do
 	shift
 done
 
+if [ $# -eq 0 ]; then
+	usage "1" >&2
+fi
+
 for url; do
 	case "$url" in
+		"") msg "bad address"; exit 1;;
 		*fail*) msg "bad address"; exit 1;;
 		*404*) msg "wget: server returned error: HTTP/1.1 404 Not Found"; exit 1;;
 	esac
