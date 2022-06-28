@@ -42,10 +42,11 @@ setup_proxy_interactive_none_body() {
 	mkdir -p etc/profile.d
 	touch etc/profile.d/proxy.sh
 
-	echo none | atf_check -s exit:0 \
+	echo none > answers
+	atf_check -s exit:0 \
 		 -o match:"HTTP/FTP proxy URL" \
 		 -e empty \
-		 setup-proxy
+		 setup-proxy < answers
 
 	if test -e etc/profile.d/proxy.sh; then
 		 atf_fail "etc/profile.d/proxy.sh was not removed"
