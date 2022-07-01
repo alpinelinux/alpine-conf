@@ -5,15 +5,10 @@
 # May be distributed under GPL2 or MIT
 
 VERSION=@VERSION@
-sysconfdir=@sysconfdir@
 
-if [ ! -f ${libalpine:="./libalpine.sh"} ]; then
-	libalpine=/usr/share/lbu/libalpine.sh
-	if [ ! -f "$libalpine" ]; then
-		libalpine=/lib/libalpine.sh
-	fi
-fi
-. $libalpine || exit 1
+PREFIX=@PREFIX@
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
 
 EXCLUDE_LIST="$sysconfdir"/exclude
 INCLUDE_LIST="$sysconfdir"/include
