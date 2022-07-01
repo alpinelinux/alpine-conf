@@ -2,7 +2,10 @@
 
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
-	libalpine_isin
+	libalpine_isin \
+	libalpine_available_ifaces \
+	libalpine_available_ifaces_bond \
+	libalpine_available_ifaces_bridge
 
 libalpine=$(atf_get_srcdir)/../libalpine.sh
 
@@ -13,3 +16,40 @@ libalpine_isin_body() {
 	isin "with space" foo "with space" "other space" || atf_fail 'isin "with space" foo "with space" "other space'
 }
 
+libalpine_available_ifaces_body() {
+	init_env
+	mkdir -p sys/class/net/lo sys/class/net/eth0
+	echo 1 >sys/class/net/lo/ifindex
+	echo 2 >sys/class/net/eth0/ifindex
+	atf_check \
+		-o match:"lo eth0" \
+		sh -c ". $libalpine; available_ifaces"
+}
+
+libalpine_available_ifaces_bond_body() {
+	init_env
+	mkdir -p sys/class/net/lo \
+		sys/class/net/eth0/master/bonding \
+		sys/class/net/bond0
+	echo 1 >sys/class/net/lo/ifindex
+	echo 2 >sys/class/net/eth0/ifindex
+	echo 3 >sys/class/net/bond0/ifindex
+
+	atf_check \
+		-o match:"lo bond0" \
+		sh -c ". $libalpine; available_ifaces"
+}
+
+libalpine_available_ifaces_bridge_body() {
+	init_env
+	mkdir -p sys/class/net/lo \
+		sys/class/net/eth0/brport \
+		sys/class/net/br0
+	echo 1 >sys/class/net/lo/ifindex
+	echo 2 >sys/class/net/eth0/ifindex
+	echo 3 >sys/class/net/br0/ifindex
+
+	atf_check \
+		-o match:"lo br0" \
+		sh -c ". $libalpine; available_ifaces"
+}
