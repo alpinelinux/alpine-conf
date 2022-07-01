@@ -69,9 +69,9 @@ while true; do
 	fi
 
 	if [ -n "$fullname" ]; then
-		$MOCK adduser -g "$fullname" $nopassword "$username" && break
+		adduser -g "$fullname" $nopassword "$username" && break
 	else
-		$MOCK adduser $nopassword "$username" && break
+		adduser $nopassword "$username" && break
 	fi
 	if ! [ -n "$interactive" ]; then
 		exit 1

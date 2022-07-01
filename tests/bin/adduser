@@ -1,0 +1,92 @@
+#!/bin/sh
+
+prog=${0##*/}
+usage() {
+	cat <<EOF
+BusyBox v1.35.0 (2022-06-21 14:15:10 UTC) multi-call binary.
+
+Usage: adduser [OPTIONS] USER [GROUP]
+
+Create new user, or add USER to GROUP
+
+	-h DIR		Home directory
+	-g GECOS	GECOS field
+	-s SHELL	Login shell
+	-G GRP		Group
+	-S		Create a system user
+	-D		Don't assign a password
+	-H		Don't create home directory
+	-u UID		User id
+	-k SKEL		Skeleton directory (/etc/skel)
+EOF
+}
+
+OPTS=$(getopt -l help -o "h:g:s:G:SDHu:k:" -n $prog -- "$@") || {
+	usage >&2
+	exit 1
+}
+
+eval set -- "$OPTS"
+while true; do
+	opt="$1"
+	case "$opt" in
+		--help)
+			usage >&2
+			exit 0
+			;;
+		-h)
+			shift
+			homedir="$1"
+			;;
+		-g)
+			shift
+			gecos="$1"
+			;;
+		-s)
+			shift
+			shell="$1"
+			;;
+		-G)
+			shift
+			shell="$1"
+			;;
+		-S)
+			systemuser=1
+			;;
+		-D)
+			omitpassword=1
+			;;
+		-H)
+			omithomedir=1
+			;;
+		-u)
+			shift
+			uid="$1"
+			;;
+		-k)
+			shift
+			skel="$1"
+			;;
+		--)
+			shift
+			break
+			;;
+		*) usage "1" >&2
+			;;
+	esac
+	shift
+done
+
+if [ $# -eq 0 ]; then
+	usage >&2
+	exit 1
+fi
+
+if [ "$ADDUSER_EXIST" = "$1" ]; then
+	echo "adduser: user '$1' in use" >&2
+	exit 1
+fi
+
+eval set -- "$OPTS"
+echo "adduser $@"
+
