@@ -27,7 +27,7 @@ while getopts "hc:" opt; do
 done
 shift $(( $OPTIND - 1 ))
 
-resp=$1
+: ${resp:=$1}
 
 while [ $# -eq 0 ] && ! isin "$resp" busybox openntpd chrony none abort; do
 	ask "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none')" chrony

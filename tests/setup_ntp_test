@@ -6,7 +6,9 @@ init_tests \
 	setup_ntp_invalid \
 	setup_ntp_busybox \
 	setup_ntp_chrony \
-	setup_ntp_openntpd
+	setup_ntp_openntpd \
+	setup_ntp_none \
+	setup_ntp_none_backwards_compat
 
 setup_ntp_usage_body() {
 	test_usage setup-ntp
@@ -43,3 +45,16 @@ setup_ntp_openntpd_body() {
 		-o match:"Starting openntpd" \
 		setup-ntp openntpd
 }
+
+setup_ntp_none_body() {
+	init_env
+	atf_check -s exit:0 \
+		setup-ntp none
+}
+
+setup_ntp_none_backwards_compat_body() {
+	init_env
+	atf_check -s exit:0 \
+		setup-ntp -c none
+}
+
