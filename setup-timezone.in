@@ -77,6 +77,10 @@ if [ -z "$ZONE" ]; then
 	ZONE="$1"
 fi
 
+if [ "$ZONE" = "none" ]; then
+	exit 0
+fi
+
 if $INSTALL_TZDATA; then
 	pkg=tzdata
 	apkdel=
