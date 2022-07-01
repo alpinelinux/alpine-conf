@@ -55,6 +55,10 @@ while true; do
 		else
 			suggest=no
 		fi
+		# dont suggest something that has failed before
+		if [ "$suggest" = "$failed_username" ]; then
+			suggest=
+		fi
 		ask "Setup a user? (enter a lower-case loginname, or 'no')" $suggest
 		case "$resp" in
 			no) exit 0;;
@@ -76,6 +80,8 @@ while true; do
 	if ! [ -n "$interactive" ]; then
 		exit 1
 	fi
+	failed_username="$username"
+	username=
 done
 
 if [ -n "$interactive" ] && [ -z "$keysopt" ]; then
