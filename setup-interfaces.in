@@ -50,7 +50,7 @@ unconfigured_isin() {
 }
 
 iface_exists() {
-	test -e /sys/class/net/$1
+	test -e "$ROOT"/sys/class/net/$1
 }
 
 get_default_addr() {
@@ -114,7 +114,7 @@ is_bridge() {
 }
 
 is_wifi() {
-	test -d /sys/class/net/$1/phy80211
+	test -d "$ROOT"/sys/class/net/$1/phy80211
 }
 
 find_essids() {
@@ -295,7 +295,7 @@ config_iface() {
 }
 
 is_bridge() {
-	[ -e /sys/class/net/$1/bridge ] || [ -e $1.bridge_ports ]
+	[ -e "$ROOT"/sys/class/net/$1/bridge ] || [ -e $1.bridge_ports ]
 }
 
 is_bond_master() {
@@ -540,7 +540,7 @@ prompt_for_interfaces() {
 auto_setup() {
 	local iface
 	for iface in $(available_ifaces); do
-		if [ "$(cat /sys/class/net/$iface/operstate)" = "up" ]; then
+		if [ "$(cat "$ROOT"/sys/class/net/$iface/operstate)" = "up" ]; then
 			break
 		fi
 	done

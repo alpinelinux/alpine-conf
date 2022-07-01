@@ -12,6 +12,11 @@ setup_alpine_usage_body() {
 
 setup_alpine_quick_body() {
 	init_env
+	mkdir -p sys/class/net/lo sys/class/net/eth0
+	echo 1 >sys/class/net/lo/ifindex
+	echo 2 >sys/class/net/eth0/ifindex
+	echo down >sys/class/net/lo/operstate
+	echo down >sys/class/net/eth0/operstate
 	atf_check -s exit:0 \
 		-o match:"openrc boot" \
 		-o match:"openrc default" \
