@@ -28,6 +28,9 @@ setup_alpine_create_answerfile_body() {
 	mkdir -p usr/share/zoneinfo/
 	touch usr/share/zoneinfo/UTC
 
+	sed -i -e 's/^USERSSHKEY=.*/USERSSHKEY="ssh-rsa blahbla user@example.com"/' \
+		answers
+
 	atf_check -s exit:0 \
 		-o match:"Starting hostname" \
 		-o match:"Starting mdev" \
@@ -35,5 +38,7 @@ setup_alpine_create_answerfile_body() {
 		-o match:"adduser" \
 		-o match:"apk add" \
 		setup-alpine -f answers
+	grep "ssh-rsa blahbla user@example.com" home/juser/.ssh/authorized_keys \
+		|| atf_fail "ssh key not set for juser"
 }
 

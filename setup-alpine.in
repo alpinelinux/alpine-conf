@@ -113,7 +113,8 @@ if [ -n "$CREATEANSWERFILE" ]; then
 		APKREPOSOPTS="-1"
 
 		# Create admin user
-		USEROPTS="-a -u -g audio,video,netdev -k https://example.com/juser.keys juser"
+		USEROPTS="-a -u -g audio,video,netdev juser"
+		USERSSHKEY="https://example.com/juser.keys"
 
 		# Install Openssh
 		SSHDOPTS=openssh
@@ -231,7 +232,7 @@ if [ "$quick" = 1 ]; then
 	exit 0
 fi
 
-setup-user ${USEROPTS:--a -g 'audio video netdev'}
+setup-user ${USERSSHKEY+-k "$USERSSHKEY"} ${USEROPTS:--a -g 'audio video netdev'}
 setup-sshd ${SSHDOPTS}
 
 if is_xen_dom0; then
