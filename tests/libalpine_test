@@ -1,0 +1,15 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	libalpine_isin
+
+libalpine=$(atf_get_srcdir)/../libalpine.sh
+
+libalpine_isin_body() {
+	. "$libalpine"
+	isin a a b c || atf_fail "isin a a b c"
+	! isin foo bar baz a a b c || atf_fail" isin foo bar baz a a b c"
+	isin "with space" foo "with space" "other space" || atf_fail 'isin "with space" foo "with space" "other space'
+}
+
