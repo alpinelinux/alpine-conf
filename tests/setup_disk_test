@@ -2,15 +2,23 @@
 
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
-	setup_disk_usage
+	setup_disk_usage \
+	setup_disk_mode_none \
+	setup_disk_none \
 
 setup_disk_usage_body() {
 	test_usage setup-disk
 }
 
-setup_disk_usage_body() {
+setup_disk_mode_none_body() {
 	init_env
 	atf_check -s exit:0 \
 		setup-disk -m none
+}
+
+setup_disk_none_body() {
+	init_env
+	atf_check -s exit:0 \
+		setup-disk none
 }
 
