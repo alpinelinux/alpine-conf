@@ -217,7 +217,7 @@ unpack_apkovl() {
 usage_include() {
 	cat <<-__EOF__
 		$PROGRAM $VERSION
-		Add filename(s) to include list ($sysconfdir/include)
+		Add filename(s) to include list ($LBU_LIST)
 
 		usage: $PROGRAM include|inc|add [-rv] <file> ...
 		       $PROGRAM include|inc|add [-v] -l
@@ -510,7 +510,7 @@ cmd_commit() {
 usage_exclude() {
 	cat <<-__EOF__
 		$PROGRAM $VERSION
-		Add filename(s) to exclude list ($sysconfdir/exclude)
+		Add filename(s) to exclude list ($LBU_LIST)
 
 		usage: $PROGRAM exclude|ex|delete [-rv] <file> ...
 		       $PROGRAM exclude|ex|delete [-v] -l
