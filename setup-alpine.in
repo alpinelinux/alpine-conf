@@ -233,6 +233,11 @@ if [ "$quick" = 1 ]; then
 fi
 
 setup-user ${USERSSHKEY+-k "$USERSSHKEY"} ${USEROPTS:--a -g 'audio video netdev'}
+for i in "$ROOT"home/*; do
+	if [ -d "$i" ]; then
+		lbu add $i
+	fi
+done
 setup-sshd ${SSHDOPTS}
 
 if is_xen_dom0; then

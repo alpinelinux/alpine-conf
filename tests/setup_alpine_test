@@ -45,5 +45,8 @@ setup_alpine_create_answerfile_body() {
 		setup-alpine -f answers
 	grep "ssh-rsa blahbla user@example.com" home/juser/.ssh/authorized_keys \
 		|| atf_fail "ssh key not set for juser"
+	grep home/juser etc/apk/protected_paths.d/lbu.list \
+		|| atf_fail "home/juser was not added to lbu.list"
 }
+
 
