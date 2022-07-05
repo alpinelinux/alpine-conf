@@ -3,7 +3,8 @@
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
 	setup_interfaces_usage \
-	setup_interfaces_interactive_dhcp
+	setup_interfaces_interactive_dhcp \
+	setup_interfaces_interactive_vlan
 
 setup_interfaces_usage_body() {
 	test_usage setup-interfaces
@@ -32,5 +33,23 @@ setup_interfaces_interactive_dhcp_body() {
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0" \
+		setup-interfaces <answers
+}
+
+setup_interfaces_interactive_vlan_body() {
+	init_env
+	create_fake_ifaces lo eth0
+	(
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo eth0.5
+		# Ip address for eth0.5? (or 'dhcp', 'none', '?') [dhcp]
+		echo dhcp
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo done
+		# Do you want to do any manual network configuration? (y/n) [n]
+		echo n
+	)>answers
+	atf_check -s exit:0 \
+		-o match:"apk add.*vlan" \
 		setup-interfaces <answers
 }
