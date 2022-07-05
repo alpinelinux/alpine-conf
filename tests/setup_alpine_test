@@ -4,7 +4,8 @@
 init_tests \
 	setup_alpine_usage \
 	setup_alpine_quick \
-	setup_alpine_create_answerfile
+	setup_alpine_create_answerfile \
+	setup_alpine_kvm_clock
 
 setup_alpine_usage_body() {
 	test_usage setup-alpine
@@ -49,4 +50,33 @@ setup_alpine_create_answerfile_body() {
 		|| atf_fail "home/juser was not added to lbu.list"
 }
 
+setup_alpine_kvm_clock_body() {
+	init_env
 
+	mkdir -p sys/class/net/lo sys/class/net/eth0
+	echo 1 >sys/class/net/lo/ifindex
+	echo 2 >sys/class/net/eth0/ifindex
+	echo down >sys/class/net/lo/operstate
+	echo down >sys/class/net/eth0/operstate
+
+	mkdir -p sys/devices/system/clocksource/clocksource0
+	echo kvm-clock > sys/devices/system/clocksource/clocksource0/current_clocksource
+
+	echo "none" > answers
+	KEYMAPOPTS=none \
+		HOSTNAMEOPTS=alpine \
+		INTERFACESOPTS=done \
+		DNSOPTS=none \
+		TIMEZONEOPTS=none \
+		PROXYOPTS=none \
+		APKREPOSOPTS=none \
+		USEROPTS=none \
+		SSHDOPTS=none \
+		DISKOPTS=none \
+		LBUOPTS=none \
+		APKCACHEOPTS=none \
+		\
+		atf_check -s exit:0 \
+		-o not-match:"Which NTP client to run" \
+		setup-alpine -e < answers
+}
