@@ -2,9 +2,35 @@
 
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
-	setup_interfaces_usage
+	setup_interfaces_usage \
+	setup_interfaces_interactive_dhcp
 
 setup_interfaces_usage_body() {
 	test_usage setup-interfaces
 }
 
+create_fake_ifaces() {
+	local n=1
+	for i; do
+		mkdir -p sys/class/net/$i
+		echo $n > sys/class/net/$i/ifindex
+		echo down >sys/class/net/$i/operstate
+		n=$((n+1))
+	done
+}
+
+setup_interfaces_interactive_dhcp_body() {
+	init_env
+	create_fake_ifaces lo eth0
+	(
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo eth0
+		# Ip address for eth0? (or 'dhcp', 'none', '?') [dhcp]
+		echo dhcp
+		# Do you want to do any manual network configuration? (y/n) [n]
+		echo n
+	)>answers
+	atf_check -s exit:0 \
+		-o match:"Available interfaces are: eth0" \
+		setup-interfaces <answers
+}
