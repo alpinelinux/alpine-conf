@@ -504,7 +504,11 @@ prompt_for_interfaces() {
 			echo -e "\tvlan-raw-device $raw_device" >> interfaces
 		fi
 		case "$iface" in
-			*.[0-9]*|vlan[0-9]*) PKGS="$PKGS vlan";;
+			*.[0-9]*|vlan[0-9]*)
+				if ! [ -f "$ROOT"usr/libexec/ifupdown-ng/link ]; then
+					PKGS="$PKGS vlan"
+				fi
+				;;
 		esac
 		case $type in
 		manual)
