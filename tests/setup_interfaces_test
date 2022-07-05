@@ -6,7 +6,9 @@ init_tests \
 	setup_interfaces_interactive_dhcp \
 	setup_interfaces_interactive_vlan \
 	setup_interfaces_interactive_vlan_ng \
-	setup_interfaces_interactive_vlan0_ng
+	setup_interfaces_interactive_vlan0_ng \
+	setup_interfaces_interactive_br0_ng \
+	setup_interfaces_interactive_bond0_ng
 
 setup_interfaces_usage_body() {
 	test_usage setup-interfaces
@@ -100,5 +102,53 @@ setup_interfaces_interactive_vlan0_ng_body() {
 	atf_check -s exit:0 \
 		-o match:"Available raw devices are: eth0" \
 		-o not-match:"apk add.*vlan" \
+		setup-interfaces <answers
+}
+
+setup_interfaces_interactive_br0_ng_body() {
+	init_env
+	create_fake_ifaces lo eth0
+
+	mkdir -p usr/libexec/ifupdown-ng
+	touch usr/libexec/ifupdown-ng/bridge
+
+	(
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo br0
+		# Which port(s) do you want add to bridge br0? (or 'done') [eth0]
+		echo eth0
+		# Ip address for vlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo dhcp
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo done
+		# Do you want to do any manual network configuration? (y/n) [n]
+		echo n
+	)>answers
+	atf_check -s exit:0 \
+		-o match:"Available bridge ports are: eth0" \
+		-o not-match:"apk add.*bridge" \
+		setup-interfaces <answers
+}
+
+setup_interfaces_interactive_bond0_ng_body() {
+	init_env
+	create_fake_ifaces lo eth0
+
+	mkdir -p usr/libexec/ifupdown-ng
+	touch usr/libexec/ifupdown-ng/bond
+
+	(
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo bond0
+		# Which slave(s) do you want add to bond0? (or 'done') [eth0]
+		echo eth0
+		# Ip address for bond0? (or 'dhcp', 'none', '?') [dhcp]
+		echo dhcp
+		# Do you want to do any manual network configuration? (y/n) [n]
+		echo n
+	)>answers
+	atf_check -s exit:0 \
+		-o match:"Available interfaces are: eth0" \
+		-o not-match:"apk add.*bonding" \
 		setup-interfaces <answers
 }

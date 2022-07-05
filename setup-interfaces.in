@@ -493,11 +493,15 @@ prompt_for_interfaces() {
 		echo "auto $iface" >> interfaces
 		echo "iface $iface inet $type" >> interfaces
 		if [ -n "$bridge_ports" ]; then
-			PKGS="$PKGS bridge"
+			if ! [ -f "$ROOT"usr/libexec/ifupdown-ng/bridge ]; then
+				PKGS="$PKGS bridge"
+			fi
 			echo -e "\tbridge-ports $bridge_ports" >> interfaces
 		fi
 		if [ -n "$bond_slaves" ]; then
-			PKGS="$PKGS bonding"
+			if ! [ -f "$ROOT"usr/libexec/ifupdown-ng/bond ]; then
+				PKGS="$PKGS bonding"
+			fi
 			echo -e "\tbond-slaves $bond_slaves" >> interfaces
 		fi
 		if [ -n "$raw_device" ]; then
