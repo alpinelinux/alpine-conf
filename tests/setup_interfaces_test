@@ -8,7 +8,8 @@ init_tests \
 	setup_interfaces_interactive_vlan_ng \
 	setup_interfaces_interactive_vlan0_ng \
 	setup_interfaces_interactive_br0 \
-	setup_interfaces_interactive_bond0
+	setup_interfaces_interactive_bond0 \
+	setup_interfaces_interactive_wlan0
 
 setup_interfaces_usage_body() {
 	test_usage setup-interfaces
@@ -150,5 +151,29 @@ setup_interfaces_interactive_bond0_body() {
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0" \
 		-o match:"apk add.*bonding" \
+		setup-interfaces <answers
+}
+
+setup_interfaces_interactive_wlan0_body() {
+	init_env
+	create_fake_ifaces lo eth0 wlan2
+	mkdir -p sys/class/net/wlan2/phy80211
+
+	(
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo wlan2
+		# Type the wireless network name to connect to:
+		echo Telenor0366rar
+		# Type the "Telenor0366rar" network Pre-Shared Key (will not echo):
+		echo 0123456789
+		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo dhcp
+		# Do you want to do any manual network configuration? (y/n) [n]
+		echo n
+	)>answers
+	atf_check -s exit:0 \
+		-o match:"Available interfaces are: eth0 wlan2" \
+		-o match:"Type the \"Telenor0366rar\" network Pre-Shared Key" \
+		-o match:"Ip address for wlan2" \
 		setup-interfaces <answers
 }

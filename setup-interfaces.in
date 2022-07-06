@@ -58,7 +58,7 @@ get_default_addr() {
 	if pidof dhcpcd > /dev/null && [ -f "$ROOT/var/lib/dhcpc/dhcpcd-$1.info" ]; then
 		echo dhcp
 	elif iface_exists $1; then
-		ip addr show $1 | awk '/inet / {print $2}' | head -n 1 | sed 's:/.*::'
+		$MOCK ip addr show $1 | awk '/inet / {print $2}' | head -n 1 | sed 's:/.*::'
 	fi
 }
 
@@ -72,7 +72,7 @@ get_default_mask() {
 
 get_default_gateway() {
 	if iface_exists $1; then
-		ip route show dev $1 | awk '/^default/ {print $3}'
+		$MOCK ip route show dev $1 | awk '/^default/ {print $3}'
 	fi
 }
 
@@ -121,7 +121,7 @@ find_essids() {
 	local iface=$1
 	export essids_list=wlans
 	# Supports only open or PSK
-	ip link set dev "$iface" up
+	$MOCK ip link set dev "$iface" up
 	iwlist $iface scanning | awk -F: '
 		/ESSID/ { gsub(/"/, "", $2); essid=$2 }
 		/Authentication Suites/ { gsub(/^ +/, "", $2); printf "%s/%s\n", essid, $2 }
@@ -136,7 +136,8 @@ find_essids() {
 
 config_wpa_supp() {
 	local iface="$1" essid="$2" auth_type="$3" psk="$4"
-	local conffile=/etc/wpa_supplicant/wpa_supplicant.conf
+	local conffile="$ROOT"/etc/wpa_supplicant/wpa_supplicant.conf
+	mkdir -p "${conffile%/*}"
 	if [ "$auth_type" = "WPA-PSK" ]; then
 		(umask 0077 && wpa_passphrase "$essid" "$psk" | sed -e '/^\t#psk=.*/d' >> "$conffile")
 	else
@@ -147,10 +148,11 @@ network={
 }
 EOF
 	fi
-	if grep -q ^wpa_supplicant_args= /etc/conf.d/wpa_supplicant; then
+	mkdir -p "$ROOT/etc/conf.d"
+	if grep -q ^wpa_supplicant_args= "$ROOT"/etc/conf.d/wpa_supplicant 2>/dev/null; then
 		sed -i -e "s/^wpa_supplicant_args=.*/wpa_supplicant_args=\"-i $iface\"/" /etc/conf.d/wpa_supplicant
 	else
-		printf 'wpa_supplicant_args="-i%s"\n' "$iface" >> /etc/conf.d/wpa_supplicant
+		printf 'wpa_supplicant_args="-i%s"\n' "$iface" >> "$ROOT"/etc/conf.d/wpa_supplicant
 	fi
 	rc-update --quiet add wpa_supplicant boot
 	rc-service wpa_supplicant start

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+cat<<EOF
+network={
+	ssid="Telenor0366rar"
+	#psk="0123456789"
+	psk=87ffb01b74e1ebecab3bf1588668728f2eb78440e3a757460012bb71943c22d9
+}
+EOF
