@@ -180,7 +180,7 @@ if [ -z "$quick" ]; then
 fi
 
 rc-update --quiet add networking boot
-rc-update --quiet add urandom boot
+rc-update --quiet add seedrng boot || rc-update --quiet add urandom boot
 svc_list="cron crond"
 if [ -d /sys/firmware/acpi ]; then
 	# Only enable acpid for systems with ACPI
