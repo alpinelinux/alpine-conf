@@ -7,8 +7,8 @@ init_tests \
 	setup_interfaces_interactive_vlan \
 	setup_interfaces_interactive_vlan_ng \
 	setup_interfaces_interactive_vlan0_ng \
-	setup_interfaces_interactive_br0_ng \
-	setup_interfaces_interactive_bond0_ng
+	setup_interfaces_interactive_br0 \
+	setup_interfaces_interactive_bond0
 
 setup_interfaces_usage_body() {
 	test_usage setup-interfaces
@@ -105,7 +105,7 @@ setup_interfaces_interactive_vlan0_ng_body() {
 		setup-interfaces <answers
 }
 
-setup_interfaces_interactive_br0_ng_body() {
+setup_interfaces_interactive_br0_body() {
 	init_env
 	create_fake_ifaces lo eth0
 
@@ -126,11 +126,11 @@ setup_interfaces_interactive_br0_ng_body() {
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available bridge ports are: eth0" \
-		-o not-match:"apk add.*bridge" \
+		-o match:"apk add.*bridge" \
 		setup-interfaces <answers
 }
 
-setup_interfaces_interactive_bond0_ng_body() {
+setup_interfaces_interactive_bond0_body() {
 	init_env
 	create_fake_ifaces lo eth0
 
@@ -149,6 +149,6 @@ setup_interfaces_interactive_bond0_ng_body() {
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0" \
-		-o not-match:"apk add.*bonding" \
+		-o match:"apk add.*bonding" \
 		setup-interfaces <answers
 }
