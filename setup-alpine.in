@@ -237,7 +237,12 @@ for i in "$ROOT"home/*; do
 		lbu add $i
 	fi
 done
+
 setup-sshd ${SSHDOPTS}
+root_keys="$ROOT"/root/.ssh/authorized_keys
+if [ -f "$root_keys" ]; then
+	lbu add "$root_keys"
+fi
 
 if is_xen_dom0; then
 	setup-xen-dom0
