@@ -34,20 +34,24 @@ setup_alpine_create_answerfile_body() {
 	mkdir -p usr/share/zoneinfo/
 	touch usr/share/zoneinfo/UTC
 
-	sed -i -e 's/^USERSSHKEY=.*/USERSSHKEY="ssh-rsa blahbla user@example.com"/' \
-		answers
+	echo 'USERSSHKEY="ssh-rsa blahbla user@example.com"/' >> answers
+	echo 'ROOTSSHKEY="ssh-rsa blahbla user@example.com"' >> answers
 
 	atf_check -s exit:0 \
 		-o match:"Starting hostname" \
 		-o match:"Starting mdev" \
 		-o match:"Added mirror" \
 		-o match:"adduser" \
-		-o match:"apk add" \
+		-o match:"apk add.*openssh" \
 		setup-alpine -f answers
 	grep "ssh-rsa blahbla user@example.com" home/juser/.ssh/authorized_keys \
 		|| atf_fail "ssh key not set for juser"
+	grep "ssh-rsa blahbla user@example.com" root/.ssh/authorized_keys \
+		|| atf_fail "ssh key not set for root"
 	grep home/juser etc/apk/protected_paths.d/lbu.list \
 		|| atf_fail "home/juser was not added to lbu.list"
+	grep root/.ssh etc/apk/protected_paths.d/lbu.list \
+		|| atf_fail "root/.ssh was not added to lbu.list"
 }
 
 setup_alpine_kvm_clock_body() {

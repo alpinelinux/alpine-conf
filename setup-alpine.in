@@ -113,10 +113,13 @@ if [ -n "$CREATEANSWERFILE" ]; then
 
 		# Create admin user
 		USEROPTS="-a -u -g audio,video,netdev juser"
-		USERSSHKEY="https://example.com/juser.keys"
+		#USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@examle.com"
+		#USERSSHKEY="https://example.com/juser.keys"
 
 		# Install Openssh
 		SSHDOPTS=openssh
+		#ROOTSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@examle.com"
+		#ROOTSSHKEY="https://example.com/juser.keys"
 
 		# Use openntpd
 		# NTPOPTS="openntpd"
@@ -238,7 +241,7 @@ for i in "$ROOT"home/*; do
 	fi
 done
 
-setup-sshd ${SSHDOPTS}
+setup-sshd ${ROOTSSHKEY+-k "$ROOTSSHKEY"} ${SSHDOPTS}
 root_keys="$ROOT"/root/.ssh/authorized_keys
 if [ -f "$root_keys" ]; then
 	lbu add "$root_keys"
