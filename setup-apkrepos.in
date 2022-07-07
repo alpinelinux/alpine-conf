@@ -153,7 +153,7 @@ usage() {
 	exit $1
 }
 
-community_prefix="# "
+community_prefix="#"
 add_fastest=false
 add_first=false
 add_random=false
