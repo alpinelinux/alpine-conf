@@ -10,7 +10,8 @@ init_tests \
 	setup_sshd_interactive_openssh_nologin \
 	setup_sshd_interactive_openssh_prohibitpass \
 	setup_sshd_interactive_openssh_nokey \
-	setup_sshd_interactive_openssh_user_exist
+	setup_sshd_interactive_openssh_user_exist \
+	setup_sshd_openssh_ssh_key
 
 setup_sshd_usage_body() {
 	test_usage setup-sshd
@@ -136,5 +137,15 @@ setup_sshd_interactive_openssh_user_exist_body() {
 		-o not-match:"Enter ssh key" \
 		-o match:"apk add.* openssh" \
 		setup-sshd < answers
+}
+
+setup_sshd_openssh_ssh_key_body() {
+	init_env
+	SSH_KEY="ssh-rsa foobar user@example.com" atf_check -s exit:0 \
+		-o match:"apk add.*openssh" \
+		-e empty \
+		setup-sshd openssh
+	grep "ssh-rsa foobar user@example.com" root/.ssh/authorized_keys \
+		|| atf_fail "did not add ssh key"
 }
 
