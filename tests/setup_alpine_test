@@ -34,7 +34,7 @@ setup_alpine_create_answerfile_body() {
 	mkdir -p usr/share/zoneinfo/
 	touch usr/share/zoneinfo/UTC
 
-	echo 'USERSSHKEY="ssh-rsa blahbla user@example.com"/' >> answers
+	echo 'USERSSHKEY="ssh-rsa blahbla user@example.com"' >> answers
 	echo 'ROOTSSHKEY="ssh-rsa blahbla user@example.com"' >> answers
 
 	atf_check -s exit:0 \

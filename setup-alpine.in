@@ -113,12 +113,12 @@ if [ -n "$CREATEANSWERFILE" ]; then
 
 		# Create admin user
 		USEROPTS="-a -u -g audio,video,netdev juser"
-		#USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@examle.com"
+		#USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
 		#USERSSHKEY="https://example.com/juser.keys"
 
 		# Install Openssh
 		SSHDOPTS=openssh
-		#ROOTSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@examle.com"
+		#ROOTSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
 		#ROOTSSHKEY="https://example.com/juser.keys"
 
 		# Use openntpd
