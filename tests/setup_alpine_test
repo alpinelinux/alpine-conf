@@ -44,14 +44,14 @@ setup_alpine_create_answerfile_body() {
 		-o match:"adduser" \
 		-o match:"apk add.*openssh" \
 		setup-alpine -f answers
-	grep "ssh-rsa blahbla user@example.com" home/juser/.ssh/authorized_keys \
+	grep -x "ssh-rsa blahbla user@example.com" home/juser/.ssh/authorized_keys \
 		|| atf_fail "ssh key not set for juser"
-	grep "ssh-rsa blahbla user@example.com" root/.ssh/authorized_keys \
+	grep -x "ssh-rsa blahbla user@example.com" root/.ssh/authorized_keys \
 		|| atf_fail "ssh key not set for root"
-	grep home/juser etc/apk/protected_paths.d/lbu.list \
-		|| atf_fail "home/juser was not added to lbu.list"
-	grep root/.ssh/authorized_keys etc/apk/protected_paths.d/lbu.list \
-		|| atf_fail "root/.ssh/authorized_keys was not added to lbu.list"
+	for file in home/juser root/.ssh/authorized_keys; do
+		grep -x "+.*$file" etc/apk/protected_paths.d/lbu.list \
+			|| atf_fail "$file was not added to lbu.list"
+	done
 }
 
 setup_alpine_kvm_clock_body() {
