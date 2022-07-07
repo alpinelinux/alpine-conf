@@ -50,8 +50,8 @@ setup_alpine_create_answerfile_body() {
 		|| atf_fail "ssh key not set for root"
 	grep home/juser etc/apk/protected_paths.d/lbu.list \
 		|| atf_fail "home/juser was not added to lbu.list"
-	grep root/.ssh etc/apk/protected_paths.d/lbu.list \
-		|| atf_fail "root/.ssh was not added to lbu.list"
+	grep root/.ssh/authorized_keys etc/apk/protected_paths.d/lbu.list \
+		|| atf_fail "root/.ssh/authorized_keys was not added to lbu.list"
 }
 
 setup_alpine_kvm_clock_body() {
