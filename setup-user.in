@@ -131,9 +131,13 @@ else
 fi
 
 if [ -n "$sshkeys" ] && [ "$sshkeys" != "none" ]; then
-	mkdir -p "$ROOT"/home/$username/.ssh
-	echo "$sshkeys" > "$ROOT"/home/$username/.ssh/authorized_keys
-	$MOCK chown -R $username:$username "$ROOT"/home/$username/.ssh
+	ssh_directory="$ROOT"/home/$username/.ssh
+	(
+		umask 077
+		mkdir -p "$ssh_directory"
+		echo "$sshkeys" > "$ssh_directory"/authorized_keys
+	)
+	$MOCK chown -R $username:$username "$ssh_directory"
 fi
 
 if [ -n "$groups" ] && [ "$groups" != "none" ]; then
