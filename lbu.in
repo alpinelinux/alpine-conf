@@ -277,7 +277,7 @@ usage_package() {
 		If <dirname> nor <filename> is not specified, a package named
 		<hostname>.apkovl.tar.gz will be created in current work directory.
 	__EOF__
-	exit 1
+	exit $1
 }
 
 _gen_filelist() {
