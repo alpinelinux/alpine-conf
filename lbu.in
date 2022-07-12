@@ -5,6 +5,7 @@
 # May be distributed under GPL2 or MIT
 
 VERSION=@VERSION@
+sysconfdir=@sysconfdir@
 
 PREFIX=@PREFIX@
 : ${LIBDIR=$PREFIX/lib}
