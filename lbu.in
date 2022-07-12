@@ -617,7 +617,7 @@ usage_status() {
 		  -a	Compare all files, not just since last commit.
 		  -v	Also show include and exclude lists.
 	__EOF__
-	exit 1
+	exit $1
 }
 
 cmd_status() {
