@@ -18,9 +18,9 @@ LBU_LIST="${ROOT}etc/apk/protected_paths.d/lbu.list"
 
 DEFAULT_CIPHER="aes-256-cbc"
 
-LBU_CONF="$sysconfdir"/lbu.conf
-LBU_PREPACKAGE="$sysconfdir"/pre-package.d
-LBU_POSTPACKAGE="$sysconfdir"/post-package.d
+LBU_CONF="${ROOT}$sysconfdir"/lbu.conf
+LBU_PREPACKAGE="${ROOT}$sysconfdir"/pre-package.d
+LBU_POSTPACKAGE="${ROOT}$sysconfdir"/post-package.d
 
 if [ -f "$LBU_CONF" ]; then
 	. "$LBU_CONF"
