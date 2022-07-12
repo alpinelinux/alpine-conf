@@ -584,11 +584,12 @@ usage_revert() {
 		The revision should be one of the files listed by 'lbu list-backup'.
 
 	__EOF__
+	exit $1
 }
 
 cmd_revert() {
 	local media=${2:-"$LBU_MEDIA"}
-	[ -z "$media" ] && usage_revert
+	[ -z "$media" ] && usage_revert "1" >&2
 	local mnt="/media/$media"
 	local revertto="$mnt/$1"
 	local current="$mnt/$(hostname).apkovl.tar.gz"

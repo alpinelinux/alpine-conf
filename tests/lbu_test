@@ -18,7 +18,8 @@ init_tests \
 	lbu_list_backup_usage \
 	lbu_lb_usage \
 	lbu_package_usage \
-	lbu_pkg_usage
+	lbu_pkg_usage \
+	lbu_revert_usage
 
 lbu_usage_body() {
 	test_usage lbu
@@ -127,5 +128,9 @@ lbu_pkg_usage_body() {
 		-o match:"usage: lbu package" \
 		-e empty \
 		lbu pkg -h
+}
+
+lbu_revert_usage_body() {
+	test_usage "lbu revert"
 }
 
