@@ -117,8 +117,10 @@ setup_user_interactive_suggest_ssh_body() {
 		-o match:"adduser.* -g FullName .*testuser" \
 		-e empty \
 		setup-user <answers
-	grep "$WGETCONTENT" home/testuser/.ssh/authorized_keys \
+	grep -x "$WGETCONTENT" home/testuser/.ssh/authorized_keys \
 		|| atf_fail "ssh key not fetched from alpinelinux"
+	atf_check -o match:"^600$" \
+		stat -c "%a" home/testuser/.ssh/authorized_keys
 }
 
 setup_user_groups_commas_body() {
@@ -157,8 +159,10 @@ setup_user_keys_opt_body() {
 	atf_check -s exit:0 \
 		-o match:"adduser.* -D .*testuser" \
 		setup-user -k https://gitlab.alpinelinux.org/user.keys testuser
-	grep "$WGETCONTENT" home/testuser/.ssh/authorized_keys \
+	grep -x  "$WGETCONTENT" home/testuser/.ssh/authorized_keys \
 		|| atf_fail "ssh key not fetched from alpinelinux"
+	atf_check -o match:"^600$" \
+		stat -c "%a" home/testuser/.ssh/authorized_keys
 }
 
 setup_user_unlock_body() {
