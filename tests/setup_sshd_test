@@ -44,7 +44,12 @@ setup_sshd_openssh_body() {
 		-o match:"service sshd added" \
 		-o match:"Starting sshd" \
 		setup-sshd -k 'https://example.com/user.keys' openssh
-	grep 'ssh-id FOOBAR' root/.ssh/authorized_keys || atf_fail "failed to wget ssh key"
+	grep -x 'ssh-id FOOBAR' root/.ssh/authorized_keys \
+		|| atf_fail "failed to wget ssh key"
+
+	# check that permissions are set properly
+	atf_check -o match:"^600$" \
+		stat -c '%a' root/.ssh/authorized_keys
 }
 
 setup_sshd_openssh_c_compat_body() {
@@ -147,5 +152,9 @@ setup_sshd_openssh_ssh_key_body() {
 		setup-sshd openssh
 	grep "ssh-rsa foobar user@example.com" root/.ssh/authorized_keys \
 		|| atf_fail "did not add ssh key"
+
+	# check that permissions are set properly
+	atf_check -o match:"^600$" \
+		stat -c '%a' root/.ssh/authorized_keys
 }
 
