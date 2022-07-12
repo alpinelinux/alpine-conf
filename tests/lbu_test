@@ -25,6 +25,7 @@ init_tests \
 	lbu_st_usage \
 	lbu_package \
 	lbu_package_encrypted \
+	lbu_package_pre_post_hooks
 
 lbu_usage_body() {
 	test_usage lbu
@@ -185,13 +186,18 @@ lbu_package_body() {
 		tar -ztf $(hostname).apkovl.tar.gz
 }
 
-lbu_package_encrypted_body() {
-	atf_require_prog openssl
-	init_env
-	sysconfdir=$(grep "^sysconfdir=" $(atf_get_srcdir)/../lbu | cut -d= -f2-)
+get_sysconfdir() {
+	sysconfdir=$(grep "^sysconfdir=" $(atf_get_srcdir)/../lbu \
+		| cut -d= -f2-)
 	if [ -z "$sysconfdir" ]; then
 		atf_fail "sysconfdir is not set"
 	fi
+}
+
+lbu_package_encrypted_body() {
+	atf_require_prog openssl
+	init_env
+	get_sysconfdir
 	mkdir -p "$PWD"/"$sysconfdir"
 	(
 		echo 'DEFAULT_CIPHER=aes-256-cbc'
@@ -207,4 +213,25 @@ lbu_package_encrypted_body() {
 	if ! [ -e "$(hostname).apkovl.tar.gz.aes-256-cbc" ]; then
 		atf_fail "ecrypted archive not created"
 	fi
+}
+
+lbu_package_pre_post_hooks_body() {
+	init_env
+	get_sysconfdir
+	create_fake_apk_audit
+
+	mkdir -p "$PWD/$sysconfdir/pre-package.d" \
+		"$PWD/$sysconfdir/post-package.d"
+	cat >"$PWD/$sysconfdir/pre-package.d/foo.sh"<<-EOF
+		#!/bin/sh
+		echo \$0
+	EOF
+	chmod +x "$PWD/$sysconfdir/pre-package.d/foo.sh"
+	ln -s ../pre-package.d/foo.sh  \
+		"$PWD/$sysconfdir/post-package.d/foo.sh"
+
+	atf_check \
+		-e match:"pre-package" \
+		-e match:"post-package" \
+		lbu package
 }
