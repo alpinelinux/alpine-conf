@@ -15,6 +15,8 @@ init_tests \
 	lbu_diff_usage \
 	lbu_list_usage \
 	lbu_ls_usage \
+	lbu_list_backup_usage \
+	lbu_lb_usage \
 	lbu_package_usage
 
 lbu_usage_body() {
@@ -100,6 +102,18 @@ lbu_ls_usage_body() {
 		-o match:"usage: lbu list" \
 		-e empty \
 		lbu ls -h
+}
+
+lbu_list_backup_usage_body() {
+	test_usage "lbu list-backup"
+}
+
+lbu_lb_usage_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"usage: lbu list-backup" \
+		-e empty \
+		lbu lb -h
 }
 
 lbu_package_usage_body() {

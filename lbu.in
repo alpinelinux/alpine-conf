@@ -558,7 +558,7 @@ usage_listbackup() {
 		usage: $PROGRAM list-backup [<media>]
 
 	__EOF__
-	exit 1
+	exit $1
 }
 
 cmd_listbackup() {
