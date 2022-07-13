@@ -164,7 +164,7 @@ essid_is_valid()  {
 
 wlan_is_psk() {
 	local essid="$1"
-	grep -q -x -F "$essid/PSK" "$essids_list"
+	awk -F/ -v essid="$essid" '$1==essid {print $2}' "$essids_list" | grep -q -F -w 'PSK'
 }
 
 config_iface() {
