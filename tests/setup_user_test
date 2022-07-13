@@ -119,6 +119,8 @@ setup_user_interactive_suggest_ssh_body() {
 		setup-user <answers
 	grep -x "$WGETCONTENT" home/testuser/.ssh/authorized_keys \
 		|| atf_fail "ssh key not fetched from alpinelinux"
+	atf_check -o match:"^700$" \
+		stat -c "%a" home/testuser/.ssh
 	atf_check -o match:"^600$" \
 		stat -c "%a" home/testuser/.ssh/authorized_keys
 }
@@ -161,6 +163,8 @@ setup_user_keys_opt_body() {
 		setup-user -k https://gitlab.alpinelinux.org/user.keys testuser
 	grep -x  "$WGETCONTENT" home/testuser/.ssh/authorized_keys \
 		|| atf_fail "ssh key not fetched from alpinelinux"
+	atf_check -o match:"^700$" \
+		stat -c "%a" home/testuser/.ssh
 	atf_check -o match:"^600$" \
 		stat -c "%a" home/testuser/.ssh/authorized_keys
 }

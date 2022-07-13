@@ -48,6 +48,8 @@ setup_sshd_openssh_body() {
 		|| atf_fail "failed to wget ssh key"
 
 	# check that permissions are set properly
+	atf_check -o match:"^700$" \
+		stat -c '%a' root/.ssh
 	atf_check -o match:"^600$" \
 		stat -c '%a' root/.ssh/authorized_keys
 }
@@ -154,6 +156,8 @@ setup_sshd_openssh_ssh_key_body() {
 		|| atf_fail "did not add ssh key"
 
 	# check that permissions are set properly
+	atf_check -o match:"^700$" \
+		stat -c '%a' root/.ssh
 	atf_check -o match:"^600$" \
 		stat -c '%a' root/.ssh/authorized_keys
 }
