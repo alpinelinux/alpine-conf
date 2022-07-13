@@ -5,7 +5,8 @@ init_tests \
 	libalpine_isin \
 	libalpine_available_ifaces \
 	libalpine_available_ifaces_bond \
-	libalpine_available_ifaces_bridge
+	libalpine_available_ifaces_bridge \
+	libalpine_askpass
 
 libalpine=$(atf_get_srcdir)/../libalpine.sh
 
@@ -52,4 +53,15 @@ libalpine_available_ifaces_bridge_body() {
 	atf_check \
 		-o match:"lo br0" \
 		sh -c ". $libalpine; available_ifaces"
+}
+
+libalpine_askpass_body() {
+	init_env
+	echo foo >answer
+	atf_check \
+		-o match:"enter password" \
+		-o match:"stty -echo" \
+		-o match:"stty echo" \
+		-o match:"resp=foo" \
+		sh -c ". $libalpine; askpass 'enter password'<answer; echo resp=\$resp"
 }

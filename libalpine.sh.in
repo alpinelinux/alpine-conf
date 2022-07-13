@@ -134,9 +134,9 @@ available_ifaces() {
 askpass() {
 	echo -n "$1 "
 	set -o noglob
-	stty -echo
+	$MOCK stty -echo
 	read -r resp
-	stty echo
+	$MOCK stty echo
 	set +o noglob
 	echo
 }
