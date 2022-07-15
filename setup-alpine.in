@@ -152,7 +152,7 @@ if [ "$rc_sys" != LXC ]; then
 	if is_virtual_console || [ -n "$KEYMAPOPTS" ]; then
 		setup-keymap ${KEYMAPOPTS}
 	fi
-	setup-hostname ${HOSTNAMEOPTS} && rc-service hostname --quiet restart
+	setup-hostname ${HOSTNAMEOPTS} && [ -z "$SSH_CONNECTION" ] && rc-service hostname --quiet restart
 	setup-devd -C mdev # just to bootstrap
 fi
 

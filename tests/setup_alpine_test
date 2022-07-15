@@ -5,7 +5,8 @@ init_tests \
 	setup_alpine_usage \
 	setup_alpine_quick \
 	setup_alpine_create_answerfile \
-	setup_alpine_kvm_clock
+	setup_alpine_kvm_clock \
+	setup_alpine_restart_network
 
 setup_alpine_usage_body() {
 	test_usage setup-alpine
@@ -23,6 +24,11 @@ setup_alpine_quick_body() {
 		-o match:"openrc default" \
 		-e empty \
 		setup-alpine -q
+
+	atf_check -s exit:0 \
+		rc-service --quiet hostname status
+	atf_check -s exit:0 \
+		rc-service --quiet networking status
 }
 
 setup_alpine_create_answerfile_body() {
@@ -83,4 +89,22 @@ setup_alpine_kvm_clock_body() {
 		atf_check -s exit:0 \
 		-o not-match:"Which NTP client to run" \
 		setup-alpine -e < answers
+}
+
+setup_alpine_restart_network_body() {
+	init_env
+	mkdir -p sys/class/net/lo sys/class/net/eth0
+	echo 1 >sys/class/net/lo/ifindex
+	echo 2 >sys/class/net/eth0/ifindex
+	echo down >sys/class/net/lo/operstate
+	echo down >sys/class/net/eth0/operstate
+
+	SSH_CONNECTION="::1 54984 ::1 22" atf_check -s exit:0 \
+		-o match:"openrc boot" \
+		-e empty \
+		setup-alpine -q
+	atf_check -s exit:3 \
+		rc-service --quiet hostname status
+	atf_check -s exit:3 \
+		rc-service --quiet networking status
 }
