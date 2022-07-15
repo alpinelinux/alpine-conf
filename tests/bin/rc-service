@@ -102,6 +102,15 @@ case "$action" in
 	restart)
 		$prog --ifstarted $svc stop && $prog $svc start
 		;;
+	status)
+		if [ -e "$ROOT"/run/started/$svc ]; then
+			msg " * status: started"
+			exit 0
+		else
+			msg " * status: stopped"
+			exit 3
+		fi
+		;;
 	*) usage 1
 esac
 

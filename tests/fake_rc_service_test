@@ -16,7 +16,9 @@ init_tests \
 	rc_service_ifstopped_start \
 	rc_service_ifstopped_stop \
 	rc_service_restart_stopped \
-	rc_service_restart_started
+	rc_service_restart_started \
+	rc_service_status_stopped \
+	rc_service_status_started
 
 test_started() {
 	test -e run/started/$1 || atf_fail "$1 was not started"
@@ -183,5 +185,22 @@ rc_service_restart_stopped_body() {
 		-e empty \
 		rc-service foo restart
 	test_started foo
+}
+
+rc_service_status_stopped_body() {
+	init_env
+	atf_check -s exit:3 \
+		-o match:"status: stopped" \
+		-e empty \
+		rc-service foo status
+}
+
+rc_service_status_started_body() {
+	init_env
+	rc-service --quiet foo start
+	atf_check -s exit:0 \
+		-o match:"status: started" \
+		-e empty \
+		rc-service foo status
 }
 
