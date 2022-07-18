@@ -19,7 +19,7 @@ setup_alpine_quick_body() {
 	echo 2 >sys/class/net/eth0/ifindex
 	echo down >sys/class/net/lo/operstate
 	echo down >sys/class/net/eth0/operstate
-	atf_check -s exit:0 \
+	SSH_CONNECTION= atf_check -s exit:0 \
 		-o match:"openrc boot" \
 		-o match:"openrc default" \
 		-e empty \
@@ -43,7 +43,7 @@ setup_alpine_create_answerfile_body() {
 	echo 'USERSSHKEY="ssh-rsa blahbla user@example.com"' >> answers
 	echo 'ROOTSSHKEY="ssh-rsa blahbla user@example.com"' >> answers
 
-	atf_check -s exit:0 \
+	SSH_CONNECTION= atf_check -s exit:0 \
 		-o match:"Starting hostname" \
 		-o match:"Starting mdev" \
 		-o match:"Added mirror" \
