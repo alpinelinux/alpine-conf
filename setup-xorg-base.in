@@ -52,6 +52,6 @@ if [ -f "$ROOT"/etc/apk/repositories ] && ! grep -q '^[^#].*/community$' "$ROOT"
 	$MOCK apk update
 fi
 
-$MOCK apk add xorg-server xf86-input-libinput eudev mesa "$@"
+$MOCK apk add xorg-server xf86-input-libinput eudev mesa-dri-gallium "$@"
 
 setup-devd udev
