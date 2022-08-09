@@ -11,9 +11,16 @@ setup_devd_usage_body() {
 	test_usage setup-devd
 }
 
+init_mdev() {
+	# make sure `rc-service --exist mdev` returns true
+	mkdir -p etc/init.d
+	touch etc/init.d/mdev
+	rc-service mdev start
+}
+
 setup_devd_mdev_body() {
 	init_env
-	rc-service mdev start
+	init_mdev
 	atf_check -s exit:0 \
 		-o empty \
 		-e empty \
@@ -22,17 +29,26 @@ setup_devd_mdev_body() {
 
 setup_devd_mdevd_body() {
 	init_env
-	rc-service mdev start
+	init_mdev
+
 	atf_check -s exit:0 \
 		-o match:"apk add.*mdevd" \
 		-o match:"Starting mdevd" \
 		-e empty \
 		setup-devd mdevd
+
+	atf_check \
+		-o match:"started" \
+		rc-service mdevd status
+
+	atf_check -s exit:3 \
+		-o match:"stopped" \
+		rc-service mdev status
 }
 
 setup_devd_udev_body() {
 	init_env
-	rc-service mdev start
+	init_mdev
 	atf_check -s exit:0 \
 		-o match:"apk add.*eudev" \
 		-o match:"Starting udev" \
@@ -41,4 +57,12 @@ setup_devd_udev_body() {
 		-o match:"Starting udev-postmount" \
 		-e empty \
 		setup-devd udev
+
+	atf_check \
+		-o match:"started" \
+		rc-service udev status
+
+	atf_check -s exit:3 \
+		-o match:"stopped" \
+		rc-service mdev status
 }
