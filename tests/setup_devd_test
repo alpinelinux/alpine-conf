@@ -16,6 +16,7 @@ init_mdev() {
 	mkdir -p etc/init.d
 	touch etc/init.d/mdev
 	rc-service mdev start
+	rc-service hwdrivers start
 }
 
 setup_devd_mdev_body() {
@@ -44,6 +45,10 @@ setup_devd_mdevd_body() {
 	atf_check -s exit:3 \
 		-o match:"stopped" \
 		rc-service mdev status
+
+	atf_check -s exit:3 \
+		-o match:"stopped" \
+		rc-service hwdrivers status
 }
 
 setup_devd_udev_body() {
@@ -65,4 +70,8 @@ setup_devd_udev_body() {
 	atf_check -s exit:3 \
 		-o match:"stopped" \
 		rc-service mdev status
+
+	atf_check -s exit:3 \
+		-o match:"stopped" \
+		rc-service hwdrivers status
 }
