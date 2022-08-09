@@ -47,7 +47,9 @@ enable_mdev () {
 
 disable_mdevd () {
 	if rc-service --exists mdevd ; then
+		rc-service --ifstarted --quiet hwdrivers stop
 		rc-service --ifstarted --quiet mdevd stop
+		rc-update delete --quiet hwdriver sysinit || :
 		rc-update delete --quiet mdevd-init sysinit 2>/dev/null || :
 		rc-update delete --quiet mdevd sysinit 2>/dev/null || :
 	fi
@@ -57,9 +59,11 @@ enable_mdevd () {
 	$MOCK apk add --quiet mdevd mdevd-openrc
 	rc-update add --quiet mdevd sysinit
 	rc-update add --quiet mdevd-init sysinit
+	rc-update add --quiet hwdrivers sysinit
 	rc-service --ifstopped mdevd start
 	if "$1" ; then
 		rc-service mdevd-init start
+		rc-service hwdrivers --ifstopped start
 	fi
 }
 
