@@ -37,8 +37,7 @@ disable_mdev () {
 }
 
 enable_mdev () {
-	# mdev openrc script is provided by busybox-initscripts which is assumed
-	# to be there
+	$MOCK apk add --quiet busybox-mdev-openrc
 	rc-update add --quiet mdev sysinit
 	rc-update add --quiet hwdrivers sysinit
 	rc-service mdev --ifstopped start

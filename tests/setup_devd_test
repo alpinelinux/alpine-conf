@@ -23,7 +23,7 @@ setup_devd_mdev_body() {
 	init_env
 	init_mdev
 	atf_check -s exit:0 \
-		-o empty \
+		-o match:"apk add.*busybox-mdev-openrc" \
 		-e empty \
 		setup-devd mdev
 }
