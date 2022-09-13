@@ -27,7 +27,7 @@ shift $(($OPTIND - 1))
 orig="$ROOT"/etc/apk/repositories
 if test -f "$orig"; then
 	echo '>> Enabling community repositories'
-	tmp="$orig".tmp:setup-xorg-base
+	tmp="$orig".setup-xorg-base.tmp
 	:> "$tmp"
 	while read line ; do
 		echo "$line"
