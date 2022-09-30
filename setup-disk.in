@@ -639,7 +639,11 @@ install_mounted_root() {
 	fi
 	modules="sd-mod,usb-storage,${root_fs}${raidmod}"
 	case "$initfs_features" in
-		*nvme*) modules="$modules,nvme";;
+		*nvme*)	modules="$modules,nvme"
+			if [ -e /sys/module/vmd ]; then
+				modules="$modules,vmd"
+			fi
+			;;
 	esac
 
 	# remove the installed db in case its there so we force re-install
