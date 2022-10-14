@@ -31,7 +31,7 @@ disable_mdev () {
 	if rc-service --exists mdev ; then
 		rc-service --ifstarted --quiet hwdrivers stop
 		rc-service --ifstarted --quiet mdev stop
-		rc-update delete --quiet hwdriver sysinit || :
+		rc-update delete --quiet hwdrivers sysinit || :
 		rc-update delete --quiet mdev sysinit || :
 	fi
 }
@@ -48,7 +48,7 @@ disable_mdevd () {
 	if rc-service --exists mdevd ; then
 		rc-service --ifstarted --quiet hwdrivers stop
 		rc-service --ifstarted --quiet mdevd stop
-		rc-update delete --quiet hwdriver sysinit || :
+		rc-update delete --quiet hwdrivers sysinit || :
 		rc-update delete --quiet mdevd-init sysinit 2>/dev/null || :
 		rc-update delete --quiet mdevd sysinit 2>/dev/null || :
 	fi
