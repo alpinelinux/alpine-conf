@@ -210,7 +210,7 @@ while ! $changed; do
 		MIRRORS=$(wget -qO- $MIRRORS_URL)
 	fi
 
-	show_mirror_list
+	show_mirror_list | more
 	ask_setup_method ${APKREPO_DEFAULT_ANSWER:-1}
 
 	case "$resp" in
