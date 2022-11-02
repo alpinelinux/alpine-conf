@@ -1138,13 +1138,15 @@ setup_root() {
 	mkfs.$ROOTFS $MKFS_OPTS_ROOT $mkfs_args "$root_dev"
 	mkdir -p "$SYSROOT"
 	mount -t $ROOTFS $root_dev "$SYSROOT" || return 1
-	if [ -n "$boot_dev" ] && ([ -z "$USE_EFI" ] || [ -n "$USE_CRYPT" ]); then
-		mkdir -p "$SYSROOT"/boot
-		mount -t $BOOTFS $boot_dev "$SYSROOT"/boot || return 1
-	fi
-	if [ -n "$boot_dev" ] && [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ]; then
-		mkdir -p "$SYSROOT"/boot/efi
-		mount -t $BOOTFS $boot_dev "$SYSROOT"/boot/efi || return 1
+	if [ -n "$boot_dev" ]; then
+		# use separate esp partirion with UEFI but without crypt
+		if [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ]; then
+			mkdir -p "$SYSROOT"/boot/efi
+			mount -t $BOOTFS $boot_dev "$SYSROOT"/boot/efi || return 1
+		else
+			mkdir -p "$SYSROOT"/boot
+			mount -t $BOOTFS $boot_dev "$SYSROOT"/boot || return 1
+		fi
 	fi
 
 	setup_mdadm_conf
