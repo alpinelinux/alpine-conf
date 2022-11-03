@@ -1610,10 +1610,22 @@ fi
 # reduce size of ESP partition
 if [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ] && [ -z "$BOOT_SIZE" ]; then
 	blocksize=$(cat $(echo $diskdevs | sed -E -e 's:/dev/([^ ]+):/sys/block/\1/queue/logical_block_size:g') | sort -n | tail -n 1)
+	size_blk=$(cat $(echo $diskdevs | sed -E -e 's:/dev/([^ ]+):/sys/block/\1/size:g') | sort -n | tail -n 1)
+	size_mb=$(( ${blocksize:-512} * ${size_blk:-0} >> 20 ))
+
+	if [ "$size_mb " -gt 8192 ]; then
+		BOOT_SIZE=512
+	elif [ "$size_mb" -gt 2048 ]; then
+		BOOT_SIZE=264
+	else
+		BOOT_SIZE=160
+	fi
+
 	# calculate minimal FAT32 size
 	# for block size 512 minimal size is 32MB
 	# for block size 4096, minimal size is 260M
-	BOOT_SIZE=$(( ${blocksize:-512} * 64 / 1000 + 2 ))
+	min_size=$(( ${blocksize:-512} * 64 / 1000 + 2 ))
+	BOOT_SIZE=$(( BOOT_SIZE < min_size ? min_size : BOOT_SIZE ))
 fi
 
 set -- $diskdevs
