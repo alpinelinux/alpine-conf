@@ -727,6 +727,30 @@ find_swap_size() {
 	echo $size
 }
 
+# figure out decent default EFI partition size in mega bytes
+find_efi_size() {
+	local diskdevs="$*"
+
+	local blocksize=$(cat "$(echo "$diskdevs" | sed -E 's:/dev/([^ ]+):/sys/block/\1/queue/logical_block_size:g')" \
+		| sort -n | tail -n 1 || echo 512)
+	local disksize_blk=$(cat "$(echo "$diskdevs" | sed -E 's:/dev/([^ ]+):/sys/block/\1/size:g')" \
+		| sort -n | tail -n 1 || echo 0)
+	local disksize_mb=$(( blocksize * disksize_blk / 1024 / 1024 ))
+
+	# calculate minimal FAT32 size
+	# for block size 512 minimal size is 32MB
+	# for block size 4096, minimal size is 260M
+	local min_size=$(( blocksize * 64 / 1000 + 2 ))
+
+	local size=160
+	if [ $disksize_mb -gt 8192 ]; then
+		size=512
+	elif [ $disksize_mb -gt 2048 ]; then
+		size=264
+	fi
+	echo $(( size > min_size ? size : min_size ))
+}
+
 has_mounted_part() {
 	local p
 	local sysfsdev="$(echo ${1#/dev/} | sed 's:/:!:g')"
@@ -1607,25 +1631,8 @@ if [ -z "$SWAP_SIZE" ]; then
 	SWAP_SIZE=$(find_swap_size $diskdevs)
 fi
 
-# reduce size of ESP partition
 if [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ] && [ -z "$BOOT_SIZE" ]; then
-	blocksize=$(cat $(echo $diskdevs | sed -E -e 's:/dev/([^ ]+):/sys/block/\1/queue/logical_block_size:g') | sort -n | tail -n 1)
-	size_blk=$(cat $(echo $diskdevs | sed -E -e 's:/dev/([^ ]+):/sys/block/\1/size:g') | sort -n | tail -n 1)
-	size_mb=$(( ${blocksize:-512} * ${size_blk:-0} >> 20 ))
-
-	if [ "$size_mb " -gt 8192 ]; then
-		BOOT_SIZE=512
-	elif [ "$size_mb" -gt 2048 ]; then
-		BOOT_SIZE=264
-	else
-		BOOT_SIZE=160
-	fi
-
-	# calculate minimal FAT32 size
-	# for block size 512 minimal size is 32MB
-	# for block size 4096, minimal size is 260M
-	min_size=$(( ${blocksize:-512} * 64 / 1000 + 2 ))
-	BOOT_SIZE=$(( BOOT_SIZE < min_size ? min_size : BOOT_SIZE ))
+	BOOT_SIZE=$(find_efi_size $diskdevs)
 fi
 
 set -- $diskdevs
