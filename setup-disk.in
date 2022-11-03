@@ -1613,7 +1613,7 @@ if [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ] && [ -z "$BOOT_SIZE" ]; then
 	# calculate minimal FAT32 size
 	# for block size 512 minimal size is 32MB
 	# for block size 4096, minimal size is 260M
-	BOOT_SIZE=$(( ${blocksize:-0} * 64 / 1000 + 2 ))
+	BOOT_SIZE=$(( ${blocksize:-512} * 64 / 1000 + 2 ))
 fi
 
 set -- $diskdevs
