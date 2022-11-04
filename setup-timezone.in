@@ -102,33 +102,32 @@ else
 	default_timezone=UTC
 fi
 
-
-while true; do
-	if [ -n "$ZONE" ]; then
-		setup_tz "$zroot"/"$ZONE"
-		break
-	fi
-
-	ask "Which timezone are you in? ('?' for list)" "$default_timezone"
-	timezone="$resp"
-	case "$timezone" in
-	"") continue;;
-	"?") show_tz_list; continue;;
-	esac
-
-	while [ -d "$zroot/$timezone" ]; do
-		ask "What sub-timezone of '$timezone' are you in? ('?' for list)"
-		zone="$resp"
-		case "$zone" in
-		"?") show_tz_list "$timezone"; continue;;
+if [ -n "$ZONE" ]; then
+	[ -f "$zroot/$ZONE" ] || die "'$ZONE' is not a valid timezone on this system"
+	setup_tz "$zroot"/"$ZONE"
+else
+	while true; do
+		ask "Which timezone are you in? ('?' for list)" "$default_timezone"
+		timezone="$resp"
+		case "$timezone" in
+		"") continue;;
+		"?") show_tz_list; continue;;
 		esac
-		default_timezone="$timezone"
-		timezone="$timezone/$zone"
-	done
 
-	if [ -f "$zroot/$timezone" ]; then
-		setup_tz "$zroot/$timezone"
-		break
-	fi
-	echo "'$timezone' is not a valid timezone on this system"
-done
+		while [ -d "$zroot/$timezone" ]; do
+			ask "What sub-timezone of '$timezone' are you in? ('?' for list)"
+			zone="$resp"
+			case "$zone" in
+			"?") show_tz_list "$timezone"; continue;;
+			esac
+			default_timezone="$timezone"
+			timezone="$timezone/$zone"
+		done
+
+		if [ -f "$zroot/$timezone" ]; then
+			setup_tz "$zroot/$timezone"
+			break
+		fi
+		echo "'$timezone' is not a valid timezone on this system"
+	done
+fi
