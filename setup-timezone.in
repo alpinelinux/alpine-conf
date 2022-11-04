@@ -91,6 +91,10 @@ fi
 
 $MOCK apk add --quiet $pkg
 
+if [ -n "$apkdel" ]; then
+	trap "$MOCK apk del --quiet $apkdel" EXIT HUP INT TERM
+fi
+
 if [ -L "${ROOT}"etc/zoneinfo/localtime ]; then
 	default_timezone=$(readlink "${ROOT}"etc/zoneinfo/localtime)
 	default_timezone=${timezone#*/zoneinfo/}
@@ -128,7 +132,3 @@ while true; do
 	fi
 	echo "'$timezone' is not a valid timezone on this system"
 done
-
-if [ -n "$apkdel" ]; then
-	$MOCK apk del --quiet $apkdel
-fi
