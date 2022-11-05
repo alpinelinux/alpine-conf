@@ -38,7 +38,7 @@ usage() {
 while getopts "aef:c:hq" opt ; do
 	case $opt in
 		a) ARCHIVE=yes;;
-		f) USEANSWERFILE="$OPTARG";;
+		f) USEANSWERFILE=$(realpath "$OPTARG");;
 		c) CREATEANSWERFILE="$OPTARG";;
 		e) empty_root_password=1;;
 		h) usage 0;;
