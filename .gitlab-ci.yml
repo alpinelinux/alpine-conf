@@ -1,4 +1,4 @@
-test-job:
+test-default:
   image: alpine:latest
   stage: test
   script:
@@ -8,3 +8,26 @@ test-job:
     - docker-alpine
     - x86_64
 
+test-dash:
+  extends: test-default
+  before_script:
+    - apk add dash
+    - ln -sf /usr/bin/dash /bin/sh
+
+test-oksh:
+  extends: test-default
+  before_script:
+    - apk add oksh
+    - ln -sf /bin/oksh /bin/sh
+
+test-yash:
+  extends: test-default
+  before_script:
+    - apk add yash
+    - ln -sf /usr/bin/yash /bin/sh
+
+test-zsh:
+  extends: test-default
+  before_script:
+    - apk add zsh
+    - ln -sf /bin/zsh /bin/sh
