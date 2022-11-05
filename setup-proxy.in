@@ -64,5 +64,9 @@ else
 fi
 
 if [ -z "$quiet" ] && [ "$proxyurl" != "none" ]; then
-	echo -e "\nTo make changes active please do login again or source $PROFILE\nwith \". $PROFILE\""
+	cat <<-__EOF__
+
+		To make changes active please do login again or source $PROFILE
+		with ". $PROFILE"
+	__EOF__
 fi

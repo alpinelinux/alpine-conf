@@ -30,7 +30,7 @@ add_random_mirror() {
 	local i=0
 	local random_mirror_index=$(( $RANDOM % $mirror_count ))
 
-	echo -n "Picking random mirror... "
+	printf %s "Picking random mirror... "
 	for mirror in $MIRRORS; do
 		if [ $i -eq $random_mirror_index ]; then
 			break
@@ -225,7 +225,7 @@ while ! $changed; do
 done
 
 if $changed; then
-	echo -n "Updating repository indexes... "
+	printf %s "Updating repository indexes... "
 	$MOCK apk update --quiet $apk_root_opt && echo "done."
 fi
 

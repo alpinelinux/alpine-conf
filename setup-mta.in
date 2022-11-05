@@ -64,7 +64,7 @@ while [ $# -eq 0 ] && [ "$res" != "221" ]; do
 	if ! ask_yesno "Test connection? (y/n)" y; then
 		break
 	fi
-	res=$(echo -e "quit\r\n" | nc $mailhub 25 | awk '/^221/ {print $1}')
+	res=$(printf "quit\r\n\n" | nc $mailhub 25 | awk '/^221/ {print $1}')
 	[ "x$res" = "x221" ] && echo "Connection to $mailhub is ok."
 done
 

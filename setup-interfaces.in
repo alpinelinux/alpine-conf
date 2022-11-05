@@ -496,14 +496,14 @@ prompt_for_interfaces() {
 		echo "iface $iface inet $type" >> interfaces
 		if [ -n "$bridge_ports" ]; then
 			PKGS="$PKGS bridge"
-			echo -e "\tbridge-ports $bridge_ports" >> interfaces
+			printf "\tbridge-ports %s\n" "$bridge_ports" >> interfaces
 		fi
 		if [ -n "$bond_slaves" ]; then
 			PKGS="$PKGS bonding"
-			echo -e "\tbond-slaves $bond_slaves" >> interfaces
+			printf "\tbond-slaves %s\n" "$bond_slaves" >> interfaces
 		fi
 		if [ -n "$raw_device" ]; then
-			echo -e "\tvlan-raw-device $raw_device" >> interfaces
+			printf "\tvlan-raw-device %s\n" "$raw_device" >> interfaces
 		fi
 		case "$iface" in
 			*.[0-9]*|vlan[0-9]*)
@@ -514,14 +514,14 @@ prompt_for_interfaces() {
 		esac
 		case $type in
 		manual)
-			echo -e "\tup ip link set \$IFACE up" >> interfaces
-			echo -e "\tdown ip link set \$IFACE down" >> interfaces
+			printf "\tup ip link set \$IFACE up\n" >> interfaces
+			printf "\tdown ip link set \$IFACE down\n" >> interfaces
 			;;
 		static)
-			echo -e "\taddress $address" >> interfaces
-			echo -e "\tnetmask $netmask" >> interfaces
+			printf "\taddress %s\n" "$address" >> interfaces
+			printf "\tnetmask %s\n" "$netmask" >> interfaces
 			[ "$gateway" ] \
-				&& echo -e "\tgateway $gateway" >> interfaces
+				&& printf "\tgateway %s\n" "$gateway" >> interfaces
 			;;
 		esac
 		echo "" >> interfaces

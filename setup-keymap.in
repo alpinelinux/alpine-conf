@@ -79,7 +79,7 @@ setup_mapfile() {
 
 select_variant() {
 	while true; do
-		echon "Available variants: "
+		printf %s "Available variants: "
 		show_variants "$layout"
 		if [ ! -f "$MAPDIR/$layout/$variant.bmap" ] ; then
 			variant=""

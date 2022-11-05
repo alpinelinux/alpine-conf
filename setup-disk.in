@@ -73,7 +73,8 @@ enumerate_fstab() {
 			else
 				fs_passno=2
 			fi
-			echo -e "$(uuid_or_device $fs_spec)\t${fs_file}\t${fs_vfstype}\t${fs_mntops} ${fs_freq} ${fs_passno}"
+			printf "%s\t%s\t%s\t%s %s %s\n" \
+				"$(uuid_or_device $fs_spec)" "$fs_file" "$fs_vfstype" "$fs_mntops" $fs_freq $fs_passno
 		done
 }
 
@@ -212,7 +213,7 @@ unpack_apkovl() {
 	fi
 	local count=0
 	# beep
-	echo -e "\007"
+	printf "\007"
 	while [ $count -lt 3 ]; do
 		openssl enc -d -$suffix -in "$ovl" | tar --numeric-owner \
 			-C "$dest" -zxv >$ovlfiles 2>/dev/null && return 0
@@ -590,7 +591,8 @@ install_mounted_root() {
 	if [ -n "$SWAP_DEVICES" ]; then
 		local swap_dev
 		for swap_dev in $SWAP_DEVICES; do
-			echo -e "$(uuid_or_device ${swap_dev})\tswap\tswap\tdefaults\t0 0" \
+			printf "%s\tswap\tswap\tdefaults\t0 0\n" \
+				"$(uuid_or_device $swap_dev)" \
 				>> "$mnt"/etc/fstab
 		done
 	fi
@@ -772,7 +774,7 @@ find_disks() {
 	local p=
 	# filter out ramdisks (major=1)
 	for p in $(awk '$1 != 1 && $1 ~ /[0-9]+/ {print $4}' /proc/partitions); do
-		is_available_disk $p && echo -n " $p"
+		is_available_disk $p && printf %s " $p"
 	done
 }
 
@@ -971,7 +973,7 @@ setup_lvm_volume_group() {
 	fi
 
 	if [ -n "$USE_CRYPT" ] && [ "$DISK_MODE" = "data" ]; then
-		echo -e "target=var\nsource='$lvmdev'" > /etc/conf.d/dmcrypt
+		printf "target=var\nsource='%s'\n" "$lvmdev" > /etc/conf.d/dmcrypt
 		lvmdev=$(setup_crypt $lvmdev var) || return 1
 		rc-update add dmcrypt boot
 	fi
@@ -993,7 +995,8 @@ setup_swap_dev() {
 	SWAP_DEVICES=
 	for swap_dev in "$@"; do
 		mkswap $swap_dev >/dev/null
-		echo -e "$(uuid_or_device $swap_dev)\tswap\t\tswap\tdefaults 0 0" >> /etc/fstab
+		printf "%s\tswap\t\tswap\tdefaults 0 0\n" \
+			"$(uuid_or_device $swap_dev)" >> /etc/fstab
 		SWAP_DEVICES="$SWAP_DEVICES $swap_dev"
 	done
 	swapon -a
@@ -1026,7 +1029,8 @@ setup_var() {
 	echo "Creating file systems..."
 	mkfs.$varfs $MKFS_OPTS_VAR $var_dev >/dev/null || return 1
 	sed -i -e '/[[:space:]]\/var[[:space:]]/d' /etc/fstab
-	echo -e "$(uuid_or_device ${var_dev})\t/var\t\t${varfs}\tdefaults 1 2" >> /etc/fstab
+	printf "%s\t/var\t\t%s\tdefaults 1 2\n" \
+		"$(uuid_or_device $var_dev)" "$varfs" >> /etc/fstab
 
 	mv /var /.var
 	mkdir /var
@@ -1120,7 +1124,7 @@ data_only_disk_install() {
 	fi
 
 	if [ -n "$USE_CRYPT" ]; then
-		echo -e "target=var\nsource='$var_dev'" > /etc/conf.d/dmcrypt
+		printf "target=var\nsource='%s'\n" "$var_dev" > /etc/conf.d/dmcrypt
 		var_dev=$(setup_crypt $var_dev var) || return 1
 		rc-update add dmcrypt boot
 	fi
@@ -1566,10 +1570,10 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 	fi
 
 	while true; do
-		echo -n "The following $disk_is_or_disks_are selected"
-		[ -n "$USE_CRYPT" ] && [ -z "$USE_LVM" ] && echo -n " (with encryption)"
-		[ -z "$USE_CRYPT" ] && [ -n "$USE_LVM" ] && echo -n " (with LVM)"
-		[ -n "$USE_CRYPT" ] && [ -n "$USE_LVM" ] && echo -n " (with LVM on LUKS)"
+		printf "The following %s selected" "$disk_is_or_disks_are"
+		[ -n "$USE_CRYPT" ] && [ -z "$USE_LVM" ] && printf %s " (with encryption)"
+		[ -z "$USE_CRYPT" ] && [ -n "$USE_LVM" ] && printf %s " (with LVM)"
+		[ -n "$USE_CRYPT" ] && [ -n "$USE_LVM" ] && printf %s " (with LVM on LUKS)"
 		echo ":"
 		show_disk_info $diskdevs
 		_crypt=$([ -z "$USE_CRYPT" ] && [ -z "$USE_LVM" ] && echo ", 'crypt'")

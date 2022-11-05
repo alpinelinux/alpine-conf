@@ -8,22 +8,6 @@ PROGRAM=$(basename $0)
 [ "${ROOT}" = "${ROOT%/}" ] && ROOT="${ROOT}/"
 [ "${ROOT}" = "${ROOT#/}" ] && ROOT="${PWD}/${ROOT}"
 
-echon () {
-	if [ X"$ECHON" = X ]; then
-		# Determine how to "echo" without newline: "echo -n"
-		# or "echo ...\c"
-		if [ X$(echo -n) = X-n ]; then
-			ECHON=echo
-			NNL="\c"
-			# "
-		else
-			ECHON="echo -n"
-			NNL=""
-		fi
-	fi
-	$ECHON "$*$NNL"
-}
-
 # echo if in verbose mode
 vecho() {
 	if [ -n "$VERBOSE" ]; then
@@ -110,7 +94,7 @@ available_ifaces() {
 	sorted_ifindexes=$(
 		for i in "$ROOT"/sys/class/net/*/ifindex; do
 			[ -e "$i" ] || continue
-			echo -e "$(cat $i)\t$i";
+			printf "%s\t%s\n" "$(cat $i)" $i;
 		done | sort -n | awk '{print $2}')
 	for i in $sorted_ifindexes; do
 		ifpath=${i%/*}
@@ -132,7 +116,7 @@ available_ifaces() {
 #    *Don't* echo input.
 #    *Don't* interpret "\" as escape character.
 askpass() {
-	echo -n "$1 "
+	printf %s "$1 "
 	set -o noglob
 	$MOCK stty -echo
 	read -r resp
@@ -176,7 +160,7 @@ rmel() {
 
 	shift
 	for _b; do
-		[ "$_a" != "$_b" ] && echo -n "$_b "
+		[ "$_a" != "$_b" ] && printf %s "$_b "
 	done
 }
 
@@ -210,8 +194,8 @@ ask() {
 	local _question=$1 _default=$2
 
 	while :; do
-		echo -n "$_question "
-		[ -z "$_default" ] || echo -n "[$_default] "
+		printf %s "$_question "
+		[ -z "$_default" ] || printf "[%s] " "$_default"
 		_ask && : ${resp:=$_default} && break
 	done
 }
@@ -275,8 +259,8 @@ ask_which() {
 
 		: ${_dyndef:=$1}
 		echo "Available ${_name}s are: $_dynlist."
-		echo -n "Which one $_query? (or 'done') "
-		[ -n "$_dyndef" ] && echo -n "[$_dyndef] "
+		printf "Which one %s? (or 'done') " "$_query"
+		[ -n "$_dyndef" ] && printf "[%s] " "$_dyndef"
 		_ask || continue
 		[ -z "$resp" ] && resp="$_dyndef"
 
