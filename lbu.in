@@ -783,7 +783,7 @@ while getopts "adehlM:np:qrv" opt ; do
 done
 shift $(expr $OPTIND - 1)
 
-trap exit_clean SIGINT SIGTERM
+trap exit_clean INT TERM
 cmd_$SUBCMD "$@"
 retcode=$?
 
