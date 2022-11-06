@@ -63,7 +63,7 @@ select_layout() {
 }
 
 setup_mapfile() {
-	local name=$(basename "$1")
+	local name="$(basename "$1")"
 	local conf="$ROOT/etc/conf.d/loadkmap"
 	mkdir -p "$ROOT/etc/keymap"
 	mkdir -p "$ROOT/etc/conf.d/"

@@ -40,7 +40,7 @@ find_fstab_mount_point() {
 
 # figure out mount point
 find_mount_point() {
-	local dir=$(find_fstab_mount_point "$1")
+	local dir="$(find_fstab_mount_point "$1")"
 	if [ -d "$dir" ] && [ "$dir" != "/" ]; then
 		echo $dir
 		return

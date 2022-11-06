@@ -87,7 +87,7 @@ is_dasd() {
 setup_zipl() {
 	local mnt="$1" root="$2" modules="$3" kernel_opts="$4"
 	local parameters="root=$root modules=$modules $kernel_opts"
-	local dasd=$(echo $eckd_dasd $fba_dasd | tr ' ' ',')
+	local dasd="$(echo $eckd_dasd $fba_dasd | tr ' ' ',')"
 	local s390x_net="$(get_bootopt s390x_net)"
 	[ -n "$dasd" ] && parameters="$parameters dasd=$dasd"
 	[ -n "$s390x_net" ] && parameters="$parameters s390x_net=$s390x_net"
@@ -108,7 +108,7 @@ setup_zipl() {
 
 setup_partitions_eckd() {
 	local blocks_per_track=12 tracks_per_cylinder=15 boot_track= swap_track=
-	local diskdev=$1 boot_size=$2 swap_size=$3 sys_type=$4
+	local diskdev="$1" boot_size="$2" swap_size="$3" sys_type="$4"
 	boot_track=$(($boot_size * 1024 / 4 / blocks_per_track))
 	[ "$swap_size" != 0 ] && swap_track=$(($swap_size * 1024 / 4 / blocks_per_track + boot_track + 1))
 	local conf="$(mktemp)"

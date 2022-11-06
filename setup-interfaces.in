@@ -94,7 +94,7 @@ ipaddr_help() {
 }
 
 bridge_add_port() {
-	local bridge=$1 iface=
+	local bridge="$1" iface=
 	shift
 	for iface; do
 		echo $iface >> $bridge.bridge_ports
@@ -118,7 +118,7 @@ is_wifi() {
 }
 
 find_essids() {
-	local iface=$1
+	local iface="$1"
 	export essids_list=wlans
 	# Supports only open or PSK
 	$MOCK ip link set dev "$iface" up
@@ -168,12 +168,12 @@ wlan_is_psk() {
 }
 
 config_iface() {
-	local iface=$1
-	local prefix=$2
-	local default_address=$3
+	local iface="$1"
+	local prefix="$2"
+	local default_address="$3"
 	local address= netmask= gateway= bridge_ports=
 	local bridge
-	local conf=$prefix$iface.conf
+	local conf="$prefix$iface.conf"
 
 	if [ -n "$ask_bridge" ] && ! is_bridge $iface \
 			&& ask_yesno "Do you want to bridge the interface $iface? (y/n)" y; then
@@ -323,7 +323,7 @@ unconfigured_all_are() {
 }
 
 config_bridge() {
-	local bridge=$1 iflist= i= ports=
+	local bridge="$1" iflist= i= ports=
 	while ! unconfigured_all_done; do
 		set -- $(unconfigured_available)
 		[ $# -eq 0 ] && return 0;
@@ -348,7 +348,7 @@ config_bridge() {
 }
 
 bond_add_slave() {
-	local master=$1 slave=
+	local master="$1" slave=
 	shift
 	for slave; do
 		echo $slave >> $master.bond_slaves
@@ -364,7 +364,7 @@ bond_list_slaves() {
 }
 
 config_bond() {
-	local master=$1 slaves=
+	local master="$1" slaves=
 	while ! unconfigured_all_done; do
 		set -- $(unconfigured_available)
 		[ $# -eq 0 ] && return 0;
@@ -389,7 +389,7 @@ config_bond() {
 }
 
 config_vlan() {
-	local iface=$1 vid= raw_device=
+	local iface="$1" vid= raw_device=
 	case $iface in
 	*.*)	raw_device=${iface%.*}
 		vid=${iface#*.}

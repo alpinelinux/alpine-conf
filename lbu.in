@@ -83,7 +83,7 @@ mount_once() {
 
 # check if given dir is read-only
 is_ro() {
-	local tmpfile=$(mktemp -p "$1" 2>/dev/null)
+	local tmpfile="$(mktemp -p "$1" 2>/dev/null)"
 	[ -z "$tmpfile" ] && return 0
 	rm -f "$tmpfile"
 	return 1
@@ -100,8 +100,8 @@ mount_once_rw() {
 # create backupfile
 backup_apkovl() {
 	local outfile="$1"
-	local d=$( date -u -r "$outfile" "+%Y%m%d%H%M%S" )
-	local backup=$(echo "$outfile" | sed "s/\.apkovl\.tar\.gz/.$d.tar.gz/")
+	local d="$( date -u -r "$outfile" "+%Y%m%d%H%M%S" )"
+	local backup="$(echo "$outfile" | sed "s/\.apkovl\.tar\.gz/.$d.tar.gz/")"
 	vecho "Creating backup $backup"
 	if [ -z "$DRYRUN" ]; then
 		mv "$outfile" "$backup"
@@ -449,7 +449,7 @@ cmd_commit() {
 
 	# remove old config files
 	if [ -n "$DELETEOLDCONFIGS" ] ; then
-		local rmfiles=$(ls "$mnt/"*.apkovl.tar.gz* 2>/dev/null)
+		local rmfiles="$(ls "$mnt/"*.apkovl.tar.gz* 2>/dev/null)"
 		if [ -n "$rmfiles" ] ; then
 			if [ -n "$VERBOSE" ]; then
 				echo "Removing old apk overlay files:" >&2
@@ -562,7 +562,7 @@ usage_listbackup() {
 }
 
 cmd_listbackup() {
-	local media=${1:-"$LBU_MEDIA"}
+	local media="${1:-"$LBU_MEDIA"}"
 	local mnt="${LBU_BACKUPDIR:-/media/$media}"
 	[ -z "$media" ] && [ -z "$LBU_BACKUPDIR" ] && usage_listbackup
 
@@ -588,7 +588,7 @@ usage_revert() {
 }
 
 cmd_revert() {
-	local media=${2:-"$LBU_MEDIA"}
+	local media="${2:-"$LBU_MEDIA"}"
 	[ -z "$media" ] && usage_revert "1" >&2
 	local mnt="/media/$media"
 	local revertto="$mnt/$1"

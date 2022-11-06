@@ -25,8 +25,8 @@ cfgval() {
 }
 
 setcfg() {
-	local key=$1
-	local value=$2
+	local key="$1"
+	local value="$2"
 	mkdir -p "${conf%/*}"
 	sed -i "s/^\\(\\#\\)*$key=.*/$key=$value/" "$conf" 2>/dev/null
 	if ! grep -q "^$key=" "$conf" 2>/dev/null; then

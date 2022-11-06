@@ -61,7 +61,7 @@ find_dev() {
 on_usb_bus() {
 	local dev="$1"
 	[ -e /sys/block/$dev ] || return 1
-	local sysdev=$(readlink -f /sys/block/$dev/device)
+	local sysdev="$(readlink -f /sys/block/$dev/device)"
 	test "${sysdev##*/usb[0-9]}" != "$sysdev"
 }
 
@@ -72,7 +72,7 @@ vecho() {
 
 # check if given dir is read-only
 is_read_only() {
-	local tmpfile=$(mktemp -p "$1" 2>/dev/null)
+	local tmpfile="$(mktemp -p "$1" 2>/dev/null)"
 	[ -z "$tmpfile" ] && return 0
 	rm -f "$tmpfile"
 	return 1
@@ -80,7 +80,7 @@ is_read_only() {
 
 # find what disk this partition belongs to
 find_disk_dev() {
-	local i= sysfsname=${1#/dev/}
+	local i= sysfsname="${1#/dev/}"
 	sysfsname=${sysfsname//\/!}	# cciss/c0d0 -> cciss!c0d0
 	if [ -e /sys/block/$sysfsname ]; then
 		echo "/dev/${sysfsname//!/'/'}"
@@ -173,9 +173,9 @@ check_syslinux() {
 version_check() {
 	local new_dir="$1" old_dir="$2"
 	# check if its same version
-	local to_version=$(cat "$new_dir"/.alpine-release)
+	local to_version="$(cat "$new_dir"/.alpine-release)"
 	if [ -n "$upgrade" ] && [ -e "$old_dir"/.alpine-release ]; then
-		local from_version=$(cat "$old_dir"/.alpine-release)
+		local from_version="$(cat "$old_dir"/.alpine-release)"
 		if [ -z "$force" ] && [ -n "$to_version" ] && [ "$from_version" = "$to_version" ]; then
 			die "Source and target seems to have same version ($from_version). Aborting."
 		fi

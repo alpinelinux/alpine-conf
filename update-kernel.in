@@ -194,12 +194,12 @@ clean_up() {
 
 sign_modloop() {
 	local in="$1"
-	local abuild_conf=${ABUILD_CONF:-"/etc/abuild.conf"}
-	local abuild_home=${ABUILD_USERDIR:-"$HOME/.abuild"}
-	local abuild_userconf=${ABUILD_USERCONF:-"$abuild_home/abuild.conf"}
+	local abuild_conf="${ABUILD_CONF:-"/etc/abuild.conf"}"
+	local abuild_home="${ABUILD_USERDIR:-"$HOME/.abuild"}"
+	local abuild_userconf="${ABUILD_USERCONF:-"$abuild_home/abuild.conf"}"
 	[ -f "$abuild_userconf" ] && . "$abuild_userconf"
 	local privkey="$PACKAGER_PRIVKEY"
-	local pubkey=${PACKAGER_PUBKEY:-"${privkey}.pub"}
+	local pubkey="${PACKAGER_PUBKEY:-"${privkey}.pub"}"
 	MODLOOPSIG=${in##*/}.SIGN.RSA.${pubkey##*/}
 	echo "Signing: $in"
 	openssl dgst -sha1 -sign "$privkey" \
@@ -230,7 +230,7 @@ ROOT=$tmpdir/root
 BOOT=$ROOT/boot
 
 _apk() {
-	local cmd=$1
+	local cmd="$1"
 	shift
 
 	apk $cmd $QUIET_OPT -p $ROOT --arch "$ARCH" \
@@ -239,7 +239,7 @@ _apk() {
 }
 
 extra_pkgs() {
-	local res=$(_apk search -x $1)
+	local res="$(_apk search -x $1)"
 	if [ "$res" ]; then
 		echo $*
 	fi

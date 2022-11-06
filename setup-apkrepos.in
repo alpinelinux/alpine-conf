@@ -12,7 +12,7 @@ if [ "$ROOT" != "/" ]; then
 fi
 
 get_hostname_from_url() {
-	local n=${1#*://}
+	local n="${1#*://}"
 	echo ${n%%/*}
 }
 
@@ -28,7 +28,7 @@ ask_setup_method() {
 
 add_random_mirror() {
 	local i=0
-	local random_mirror_index=$(( $RANDOM % $mirror_count ))
+	local random_mirror_index="$(( $RANDOM % $mirror_count ))"
 
 	printf %s "Picking random mirror... "
 	for mirror in $MIRRORS; do
@@ -41,7 +41,7 @@ add_random_mirror() {
 }
 
 time_cmd() {
-	local start=$(cut -d ' ' -f1 /proc/uptime)
+	local start="$(cut -d ' ' -f1 /proc/uptime)"
 	$@ >&2 || return
 	awk -v start=$start -v end=$(cut -d ' ' -f1 /proc/uptime) \
 		'BEGIN {print end - start; exit}'
@@ -49,12 +49,12 @@ time_cmd() {
 
 find_fastest_mirror() {
 	local url=
-	local arch=$(apk --print-arch)
+	local arch="$(apk --print-arch)"
 	for url in $MIRRORS; do
 		# warm up the dns cache
 		nslookup $(get_hostname_from_url $url) >/dev/null 2>&1
-		local time=$(time_cmd wget --spider -q -T 5 -t 1 \
-			${url%/}/edge/main/$arch/APKINDEX.tar.gz)
+		local time="$(time_cmd wget --spider -q -T 5 -t 1 \
+			${url%/}/edge/main/$arch/APKINDEX.tar.gz)"
 		if [ -n "$time" ]; then
 			echo "$time $url"
 		fi
@@ -63,7 +63,7 @@ find_fastest_mirror() {
 
 add_fastest_mirror() {
 	echo "Finding fastest mirror... "
-	local fastest=$(find_fastest_mirror)
+	local fastest="$(find_fastest_mirror)"
 	if [ -z "$fastest" ]; then
 		echo "Warning! No mirror found"
 		return 1
@@ -87,7 +87,7 @@ show_mirror_list() {
 }
 
 add_from_list() {
-	local mirror_index=$1
+	local mirror_index="$1"
 	if [ $mirror_index -lt 1 ] || [ $mirror_index -gt $mirror_count ]; then
 		return 1
 	fi
@@ -97,7 +97,7 @@ add_from_list() {
 }
 
 get_alpine_release() {
-	local version=$(cat "${ROOT}"etc/alpine-release 2>/dev/null)
+	local version="$(cat "${ROOT}"etc/alpine-release 2>/dev/null)"
 	case "$version" in
 		*_git*|*_alpha*) release="edge";;
 		[0-9]*.[0-9]*.[0-9]*)
@@ -130,7 +130,7 @@ add_from_url() {
 }
 
 edit_repositories() {
-	local md5=$(md5sum $APKREPOS_PATH 2>/dev/null)
+	local md5="$(md5sum $APKREPOS_PATH 2>/dev/null)"
 	mkdir -p "${APKREPOS_PATH%/*}"
 	${EDITOR:-vi} "$APKREPOS_PATH"
 	# return true if file changed

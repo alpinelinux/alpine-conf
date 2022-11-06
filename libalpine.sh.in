@@ -34,7 +34,7 @@ die() {
 }
 
 init_tmpdir() {
-	local omask=$(umask)
+	local omask="$(umask)"
 	local __tmpd="/tmp/$PROGRAM-${$}-$(date +%s)-$RANDOM"
 	umask 077 || die "umask"
 	mkdir -p "$__tmpd" || exit 1
@@ -127,7 +127,7 @@ askpass() {
 
 # Ask for a password twice, saving the input in $_password
 askpassword() {
-	local _oifs=$IFS
+	local _oifs="$IFS"
 	IFS=
 	while :; do
 		askpass "Password for $1 account? (will not echo)"
@@ -145,7 +145,7 @@ askpassword() {
 
 # test the first argument against the remaining ones, return success on a match
 isin() {
-	local _a=$1 _b
+	local _a="$1" _b
 	shift
 	for _b; do
 		[ "$_a" = "$_b" ] && return 0
@@ -156,7 +156,7 @@ isin() {
 # remove all occurrences of first argument from list formed by
 # the remaining arguments
 rmel() {
-	local _a=$1 _b
+	local _a="$1" _b
 
 	shift
 	for _b; do
@@ -191,7 +191,7 @@ _ask() {
 # Allow the user to escape to shells ('!') or execute commands
 # ('!foo') before entering the input.
 ask() {
-	local _question=$1 _default=$2
+	local _question="$1" _default="$2"
 
 	while :; do
 		printf %s "$_question "
@@ -241,7 +241,7 @@ ask_yesno() {
 #
 # At exit $resp holds selected item, or 'done'
 ask_which() {
-	local _name=$1 _query=$2 _list=$3 _def=$4 _dynlist _dyndef
+	local _name="$1" _query="$2" _list="$3" _def="$4" _dynlist _dyndef
 
 	while :; do
 		# Put both lines in ask prompt, rather than use a
