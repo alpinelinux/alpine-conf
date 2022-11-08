@@ -29,7 +29,7 @@ show_tz_list() {
 	local path="$zroot/$1"
 	[ -d "$path" ] || return 1
 
-	for i in $(find $path -maxdepth 1); do
+	for i in $(find $path/ -maxdepth 1); do
 		case $i in
 		*.tab|*/) continue;;
 		esac
