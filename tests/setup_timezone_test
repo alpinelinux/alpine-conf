@@ -7,6 +7,7 @@ init_tests \
 	setup_timezone_install \
 	setup_timezone_z_compat \
 	setup_timezone_none \
+	setup_timezone_interactive
 
 setup_timezone_usage_body() {
 	test_usage setup-timezone
@@ -52,5 +53,20 @@ setup_timezone_none_body() {
 		-o empty \
 		-e empty \
 		setup-timezone none
+}
+
+setup_timezone_interactive_body() {
+	init_env
+	mkdir -p usr/share/zoneinfo/Europe
+	touch usr/share/zoneinfo/Europe/Oslo
+	( echo "Europe"
+	  echo "?"
+	  echo "Oslo"
+	) > answers
+	atf_check -s exit:0 \
+		-o match:"apk add .*tzdata" \
+		-o match:"apk del" \
+		-e empty \
+		setup-timezone < answers
 }
 
