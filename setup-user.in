@@ -38,6 +38,10 @@ while getopts "af:g:hk:u" opt; do
 done
 shift $(($OPTIND - 1))
 
+if [ -z "$admin$fullnameopt$groups$keysopt$forceunlock" ] && [ "$1" = "none" ]; then
+	exit 0
+fi
+
 if [ $# -gt 1 ]; then
 	usage "1" >&2
 elif [ $# -eq 1 ]; then

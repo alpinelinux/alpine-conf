@@ -3,6 +3,7 @@
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
 	setup_user_usage \
+	setup_user_none \
 	setup_user_fullname \
 	setup_user_interactive_no \
 	setup_user_interactive \
@@ -26,6 +27,14 @@ setup_user_body() {
 		-o match:"adduser -D testuser" \
 		-e empty \
 		setup-user testuser
+}
+
+setup_user_none_body () {
+	init_env
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		setup-user none
 }
 
 setup_user_fullname_body() {
