@@ -1541,7 +1541,7 @@ if [ $# -gt 0 ]; then
 	for i in "$@"; do
 		j=$(readlink -f "$i" | sed 's:^/dev/::; s:/:!:g')
 		if ! [ -e "$ROOT/sys/block/$j/device" ]; then
-			die "$i is not a suitable for partitioning"
+			die "$i is not a block device suitable for partitioning"
 		fi
 		diskdevs="$diskdevs /dev/${j//!//}"
 	done
