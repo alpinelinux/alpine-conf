@@ -1507,10 +1507,10 @@ if [ -d "$1" ]; then
 fi
 
 reset_var
-swapoff -a
+$MOCK swapoff -a
 
 # stop all volume groups in use
-vgchange --ignorelockingfailure -a n >/dev/null 2>&1
+$MOCK vgchange --ignorelockingfailure -a n >/dev/null 2>&1
 
 if [ -n "$USE_RAID" ]; then
 	stop_all_raid
