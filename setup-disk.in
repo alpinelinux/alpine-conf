@@ -105,11 +105,6 @@ crypt_required() {
 	return 1
 }
 
-is_vmware() {
-	grep -q VMware /proc/scsi/scsi 2>/dev/null \
-		|| grep -q VMware /proc/ide/hd*/model 2>/dev/null
-}
-
 # return true (0) if given device is lvm
 is_lvm() {
 	lvs "$1" >/dev/null 2>&1
