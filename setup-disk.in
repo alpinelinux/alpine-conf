@@ -1448,6 +1448,12 @@ case $kver in
 	*) KERNEL_FLAVOR=lts;;
 esac
 
+# for unit testing of individual functions
+if [ -n "$SETUP_DISK_TESTFUNC" ]; then
+	$SETUP_DISK_TESTFUNC "$@"
+	exit
+fi
+
 USE_CRYPT=
 DISK_MODE=
 USE_LVM=
