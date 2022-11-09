@@ -116,7 +116,7 @@ is_lvm() {
 }
 
 is_efi() {
-	[ -d "/sys/firmware/efi" ] && return 0
+	[ -d "$ROOT/sys/firmware/efi" ] && return 0
 	return 1
 }
 
@@ -128,7 +128,7 @@ is_rpi() {
 disk_from_part() {
 	local path="${1%/*}"
 	local dev="${1##*/}"
-	echo $path/$(basename "$(readlink -f "/sys/class/block/$dev/..")")
+	echo $path/$(basename "$(readlink -f "$ROOT/sys/class/block/$dev/..")")
 }
 
 # $1 partition type (swap,linux,raid,lvm,prep,esp)
@@ -355,7 +355,7 @@ setup_syslinux() {
 
 	# Check if we boot from raid so we can pass proper option to
 	# extlinux later.
-	if [ -e "/sys/block/${bootdev#/dev/}/md" ]; then
+	if [ -e "$ROOT/sys/block/${bootdev#/dev/}/md" ]; then
 		extlinux_raidopt="--raid"
 	fi
 
@@ -473,7 +473,7 @@ setup_raspberrypi_bootloader() {
 
 # detect which firmware packages to install, if any
 select_firmware_pkgs() {
-	local firmware_pkgs="$( (cd /sys/module/ && echo *) \
+	local firmware_pkgs="$( (cd "$ROOT"/sys/module/ && echo *) \
 		| xargs modinfo -F firmware 2>/dev/null \
 		| awk -F/ '{print $1 == $0 ? "linux-firmware-other" : "linux-firmware-"$1}' \
 		| sort -u)"
@@ -548,13 +548,13 @@ install_mounted_root() {
 		esac
 
 		local md="${dev#/dev/}"
-		[ -e "/sys/block/$md/md" ] || continue
+		[ -e "$ROOT/sys/block/$md/md" ] || continue
 
-		if is_nvme_dev /sys/block/$md/slaves/*; then
+		if is_nvme_dev "$ROOT/sys/block/$md/slaves"/*; then
 			initfs_features="${initfs_features% nvme} nvme"
 		fi
 		initfs_features="${initfs_features% raid} raid"
-		local level="$(cat /sys/block/$md/md/level)"
+		local level="$(cat "$ROOT/sys/block/$md/md/level")"
 		case "$level" in
 			raid1) raidmod="${raidmod%,raid1},raid1";;
 			raid[456]) raidmod="${raidmod%,raid456},raid456";;
@@ -605,7 +605,7 @@ install_mounted_root() {
 	if crypt_required <"$mnt"/etc/fstab; then
 		use_crypt=1
 		initfs_features="$initfs_features cryptsetup keymap"
-		if is_nvme_dev /sys/block/dm-*/slaves/*; then
+		if is_nvme_dev "$ROOT"/sys/block/dm-*/slaves/*; then
 			initfs_features="$initfs_features nvme"
 		fi
 	fi
@@ -709,7 +709,7 @@ find_swap_size() {
 	local disk= disksize=
 	for disk in $@; do
 		local sysfsdev="$(echo ${disk#/dev/} | sed 's:/:!:g')"
-		local sysfspath="/sys/block/$sysfsdev/size"
+		local sysfspath="$ROOT/sys/block/$sysfsdev/size"
 		# disksize = x * 512 / (1024 * 1024) = x / 2048
 		# maxsize = $disksize / 4 = x / (2048 * 4) = x / 8192
 		maxsize=$(awk '{ printf "%i", $0 / 8192 }' $sysfspath )
@@ -734,7 +734,7 @@ has_mounted_part() {
 	for p in $(awk '$1 ~ /^\/dev\// {gsub("/dev/", "", $1); gsub("/", "!", $1); print $1}' \
 			/proc/mounts); do
 		[ "$p" = "$sysfsdev" ] && return 0
-		[ -e /sys/block/$sysfsdev/$p ] && return 0
+		[ -e "$ROOT"/sys/block/$sysfsdev/$p ] && return 0
 	done
 	return 1
 }
@@ -753,19 +753,19 @@ is_available_disk() {
 	local b="$(echo $p | sed 's:/:!:g')"
 
 	# check if its a "root" block device and not a partition
-	[ -e /sys/block/$b ] || return 1
+	[ -e "$ROOT/sys/block/$b" ] || return 1
 
 	# check so it does not have mounted partitions
 	has_mounted_part $dev && return 1
 
 	# check so its not part of an md setup
-	if has_holders /sys/block/$b; then
+	if has_holders "$ROOT"/sys/block/$b; then
 		[ -n "$USE_RAID" ] && echo "Warning: $dev is part of a running raid" >&2
 		return 1
 	fi
 
 	# check so its not an md device
-	[ -e /sys/block/$b/md ] && return 1
+	[ -e "$ROOT"/sys/block/$b/md ] && return 1
 
 	return 0
 }
@@ -827,10 +827,10 @@ show_disk_info() {
 	for disk in $@; do
 		local dev="${disk#/dev/}"
 		d=$(echo $dev | sed 's:/:!:g')
-		vendor=$(cat /sys/block/$d/device/vendor 2>/dev/null)
-		model=$(cat /sys/block/$d/device/model 2>/dev/null)
-		busid=$(readlink -f /sys/block/$d/device 2>/dev/null)
-		size=$(awk '{gb = ($1 * 512)/1000000000; printf "%.1f GB\n", gb}' /sys/block/$d/size 2>/dev/null)
+		vendor=$(cat "$ROOT"/sys/block/$d/device/vendor 2>/dev/null)
+		model=$(cat "$ROOT"/sys/block/$d/device/model 2>/dev/null)
+		busid=$(readlink -f "$ROOT"/sys/block/$d/device 2>/dev/null)
+		size=$(awk '{gb = ($1 * 512)/1000000000; printf "%.1f GB\n", gb}' "$ROOT"/sys/block/$d/size 2>/dev/null)
 		if is_dasd $dev eckd; then
 			echo "  $dev	($size $vendor ${busid##*/})"
 		else
@@ -1543,7 +1543,7 @@ if [ $# -gt 0 ]; then
 	# check that they are
 	for i in "$@"; do
 		j=$(readlink -f "$i" | sed 's:^/dev/::; s:/:!:g')
-		if ! [ -e "/sys/block/$j/device" ]; then
+		if ! [ -e "$ROOT/sys/block/$j/device" ]; then
 			die "$i is not a suitable for partitioning"
 		fi
 		diskdevs="$diskdevs /dev/${j//!//}"
