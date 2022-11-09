@@ -727,7 +727,7 @@ has_mounted_part() {
 	local sysfsdev="$(echo ${1#/dev/} | sed 's:/:!:g')"
 	# parse /proc/mounts for mounted devices
 	for p in $(awk '$1 ~ /^\/dev\// {gsub("/dev/", "", $1); gsub("/", "!", $1); print $1}' \
-			/proc/mounts); do
+			"$ROOT"/proc/mounts 2>/dev/null); do
 		[ "$p" = "$sysfsdev" ] && return 0
 		[ -e "$ROOT"/sys/block/$sysfsdev/$p ] && return 0
 	done
@@ -745,31 +745,27 @@ has_holders() {
 
 is_available_disk() {
 	local dev="$1"
-	local b="$(echo $p | sed 's:/:!:g')"
-
-	# check if its a "root" block device and not a partition
-	[ -e "$ROOT/sys/block/$b" ] || return 1
 
 	# check so it does not have mounted partitions
 	has_mounted_part $dev && return 1
 
 	# check so its not part of an md setup
-	if has_holders "$ROOT"/sys/block/$b; then
+	if has_holders "$ROOT"/sys/block/$dev; then
 		[ -n "$USE_RAID" ] && echo "Warning: $dev is part of a running raid" >&2
 		return 1
 	fi
-
-	# check so its not an md device
-	[ -e "$ROOT"/sys/block/$b/md ] && return 1
 
 	return 0
 }
 
 find_disks() {
 	local p=
-	# filter out ramdisks (major=1)
-	for p in $(awk '$1 != 1 && $1 ~ /[0-9]+/ {print $4}' /proc/partitions); do
-		is_available_disk $p && printf %s " $p"
+	for p in "$ROOT"/sys/block/*/device; do
+		local dev="${p%/device}"
+		dev=${dev#*/sys/block/}
+		if is_available_disk "$dev"; then
+			printf %s " $dev"
+		fi
 	done
 }
 

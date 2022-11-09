@@ -5,6 +5,7 @@ init_tests \
 	setup_disk_usage \
 	setup_disk_mode_none \
 	setup_disk_none \
+	setup_disk_func_find_disks
 
 setup_disk_usage_body() {
 	test_usage setup-disk
@@ -20,5 +21,54 @@ setup_disk_none_body() {
 	init_env
 	atf_check -s exit:0 \
 		setup-disk none
+}
+
+fake_disk() {
+	mkdir -p sys/block/$1/device \
+		sys/block/$1/holders
+}
+
+fake_partition() {
+	mkdir -p sys/block/$1/$1$2/holders
+}
+
+fake_mount() {
+	mkdir -p proc
+	echo "$1" >> proc/mounts
+}
+
+fake_raid() {
+	local md="$1"
+	shift
+	for dev; do
+		for p in sys/block/*/$dev/holders sys/block/$dev/holders; do
+			if [ -d "$p" ]; then
+				touch "$p"/$md
+			fi
+		done
+	done
+}
+
+setup_disk_func_find_disks_body() {
+	init_env
+	fake_disk vda
+	fake_disk vdb
+	fake_partition vdb 1
+	fake_disk sda
+	fake_disk nvme0n1
+	fake_partition nvme0n1 p2
+
+	# simulate vda and vdb1 being part of md0 raid
+	fake_raid md0 vda vdb1
+
+	# simulate nvme0n1p2 being mounted
+	fake_mount '/dev/nvme0n1p2 /boot vfat rw,relatime,fmask=0022 0 0'
+
+	SETUP_DISK_TESTFUNC=find_disks USE_RAID=1 \
+		atf_check -s exit:0 \
+		-o match:"^ sda$" \
+		-e match:"vda is part of a running raid" \
+		-e match:"vdb is part of a running raid" \
+		setup-disk
 }
 
