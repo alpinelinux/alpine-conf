@@ -1543,7 +1543,7 @@ if [ $# -gt 0 ]; then
 		if ! [ -e "$ROOT/sys/block/$j/device" ]; then
 			die "$i is not a block device suitable for partitioning"
 		fi
-		diskdevs="$diskdevs /dev/${j//!//}"
+		diskdevs="$diskdevs $i"
 	done
 else
 	ask_disk "Which disk(s) would you like to use? (or '?' for help or 'none')" \
