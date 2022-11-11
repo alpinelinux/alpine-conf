@@ -257,7 +257,7 @@ if [ "$rc_sys" = "LXC" ]; then
 fi
 
 DEFAULT_DISK=none \
-	setup-disk -q ${DISKOPTS} || exit
+	setup-disk -w /tmp/alpine-install-diskmode.out -q ${DISKOPTS} || exit
 
 diskmode=$(cat /tmp/alpine-install-diskmode.out 2>/dev/null)
 

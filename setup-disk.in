@@ -1422,7 +1422,7 @@ ask_disk() {
 usage() {
 	cat <<-__EOF__
 		usage: setup-disk [-hLqrve] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAPSIZE]
-		                  [MOUNTPOINT | DISKDEV...]
+		                  [-w FILE] [MOUNTPOINT | DISKDEV...]
 
 		Install alpine on harddisk.
 
@@ -1444,6 +1444,7 @@ usage() {
 		 -r  Enable software raid1 with single disk
 		 -s  Use SWAPSIZE MB instead of autodetecting swap size (Use 0 to disable swap)
 		 -v  Be more verbose about what is happening
+		 -w  Write selected install mode to FILE
 
 		If BOOTLOADER is specified, the specified bootloader will be used.
 		If no bootloader is specified, the default bootloader is syslinux(extlinux)
@@ -1468,6 +1469,12 @@ usage() {
 	exit $1
 }
 
+write_disk_mode() {
+	if [ -n "$WRITE_DISK_MODE_FILE" ]; then
+		echo "$DISK_MODE" > "$WRITE_DISK_MODE_FILE"
+	fi
+}
+
 kver=$(uname -r)
 case $kver in
 	*-rc[0-9]*) KERNEL_FLAVOR=lts;;
@@ -1485,7 +1492,7 @@ USE_CRYPT=
 DISK_MODE=
 USE_LVM=
 # Parse args
-while getopts "hek:Lm:o:qrs:v" opt; do
+while getopts "hek:Lm:o:qrs:vw:" opt; do
 	case $opt in
 		e) USE_CRYPT="_crypt";;
 		h) usage 0;;
@@ -1497,6 +1504,7 @@ while getopts "hek:Lm:o:qrs:v" opt; do
 		r) USE_RAID=1;;
 		s) SWAP_SIZE="$OPTARG";;
 		v) VERBOSE=1;;
+		w) WRITE_DISK_MODE_FILE="$OPTARG";;
 		'?') usage "1" >&2;;
 	esac
 done
@@ -1535,6 +1543,7 @@ if [ -d "$1" ]; then
 	if [ -z "$USE_EFI" ] && [ "$ARCH" = "x86_64" -o "$ARCH" = x86 ]; then
 		echo "You might need fix the MBR to be able to boot" >&2
 	fi
+	write_disk_mode
 	exit 0
 fi
 
@@ -1652,6 +1661,8 @@ if [ -n "$USE_LVM" ] && ! grep -w -q device-mapper /proc/misc; then
 	modprobe dm-mod
 fi
 
+write_disk_mode
+
 # native disk install
 case "$DISK_MODE" in
 sys) native_disk_install$USE_LVM $diskdevs;;
@@ -1660,6 +1671,3 @@ none) exit 0;;
 *) die "Not a valid install mode: $DISK_MODE" ;;
 esac
 
-RC=$?
-echo "$DISK_MODE" > /tmp/alpine-install-diskmode.out
-exit $RC
