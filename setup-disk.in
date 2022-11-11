@@ -473,7 +473,9 @@ select_firmware_pkgs() {
 		| xargs modinfo -F firmware 2>/dev/null \
 		| awk -F/ '{print $1 == $0 ? "linux-firmware-other" : "linux-firmware-"$1}' \
 		| sort -u)"
-	echo ${firmware_pkgs:-linux-firmware-none}
+	# filter out non-existing packages like linux-firmware-b43
+	# https://gitlab.alpinelinux.org/alpine/alpine-conf/-/issues/10530
+	apk search --quiet --exact ${firmware_pkgs:-linux-firmware-none}
 }
 
 is_nvme_dev() {
