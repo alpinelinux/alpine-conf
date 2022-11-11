@@ -108,7 +108,7 @@ tests/Kyuafile: $(wildcard tests/*_test)
 	echo "syntax(2)" > $@
 	echo 'test_suite("alpine-conf")' >> $@
 	for i in $(notdir $(wildcard tests/*_test)); do \
-		echo "atf_test_program{name='$$i',timeout=1}" >> $@ ; \
+		echo "atf_test_program{name='$$i',timeout=2}" >> $@ ; \
 	done
 
 Kyuafile:
