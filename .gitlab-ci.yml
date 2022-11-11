@@ -2,7 +2,7 @@ test-default:
   image: alpine:latest
   stage: test
   script:
-    - apk add make gcc musl-dev kyua
+    - apk add make gcc musl-dev kyua sfdisk openssl
     - make -j $(nproc) check
   tags:
     - docker-alpine
