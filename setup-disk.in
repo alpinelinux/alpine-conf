@@ -462,6 +462,7 @@ rpi_gen_config() {
 # setup rpi bootloader
 setup_raspberrypi_bootloader() {
 	local mnt="$1" root="$2" modules="$3" kernel_opts="$4"
+	mkdir -p "$mnt"/boot
 	rpi_gen_config > "$mnt"/boot/config.txt
 	echo "root=$root modules=$modules $kernel_opts" > "$mnt"/boot/cmdline.txt
 }
