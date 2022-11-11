@@ -864,7 +864,7 @@ setup_partitions() {
 	) | sfdisk --quiet --label $DISKLABEL $diskdev || return 1
 
 	# create device nodes if not exist
-	mdev -s
+	$MOCK mdev -s
 }
 
 # set up optional raid and create filesystem on boot device.
