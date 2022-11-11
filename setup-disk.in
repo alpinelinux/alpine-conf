@@ -731,9 +731,9 @@ find_swap_size() {
 find_efi_size() {
 	local diskdevs="$*"
 
-	local blocksize=$(cat "$(echo "$diskdevs" | sed -E 's:/dev/([^ ]+):/sys/block/\1/queue/logical_block_size:g')" \
+	local blocksize=$(cat "$(echo "$diskdevs" | sed -E "s:/?dev/([^ ]+):$ROOT/sys/block/\1/queue/logical_block_size:g")" \
 		| sort -n | tail -n 1 || echo 512)
-	local disksize_blk=$(cat "$(echo "$diskdevs" | sed -E 's:/dev/([^ ]+):/sys/block/\1/size:g')" \
+	local disksize_blk=$(cat "$(echo "$diskdevs" | sed -E "s:/?dev/([^ ]+):$ROOT/sys/block/\1/size:g")" \
 		| sort -n | tail -n 1 || echo 0)
 	local disksize_mb=$(( blocksize * disksize_blk / 1024 / 1024 ))
 

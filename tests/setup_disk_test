@@ -8,6 +8,7 @@ init_tests \
 	setup_disk_func_find_disks \
 	setup_disk_func_setup_partitions_dos \
 	setup_disk_func_setup_partitions_gpt \
+	setup_disk_func_find_efi_size \
 	setup_disk_non_existing_block_dev
 
 setup_disk_usage_body() {
@@ -27,9 +28,19 @@ setup_disk_none_body() {
 }
 
 fake_disk() {
-	mkdir -p sys/block/$1/device \
-		sys/block/$1/holders
+	local dev="$1"
+	local size="${2:-1000}" # size in MiB
+	local blocksize="${3:-512}"
+
+	mkdir -p dev \
+		sys/block/$dev/device \
+		sys/block/$dev/holders \
+		sys/block/$dev/queue
+
+	echo $(( $size * 1000000 / $blocksize )) > sys/block/$dev/size
+	echo $(( $blocksize )) > sys/block/$dev/queue/logical_block_size
 }
+
 
 fake_partition() {
 	mkdir -p sys/block/$1/$1$2/holders
@@ -158,6 +169,25 @@ setup_disk_func_setup_partitions_gpt_body() {
 		atf_check -s exit:0 \
 		-o match:"dev/vda5" \
 		setup-disk dev/vda "lvm"
+}
+
+setup_disk_func_find_efi_size_body() {
+	init_env
+	# size:blocksize:expected
+	for i in 10000::512 4000::264 1000::160 \
+			10000:4096:512 4000:4096:264 1000:4096:264; do
+
+		local diskdata=${i%:*}
+		local disksize=${diskdata%:*}
+		local blocksize=${diskdata#*:}
+		local expected=${i##*:}
+
+		fake_disk vda $disksize $blocksize
+		SETUP_DISK_TESTFUNC=find_efi_size \
+			atf_check -s exit:0 \
+			-o match:"^$expected$" \
+			setup-disk /dev/vda
+	done
 }
 
 setup_disk_non_existing_block_dev_body() {
