@@ -1530,11 +1530,12 @@ esac
 
 if [ -d "$1" ]; then
 	# install to given mounted root
-	[ "$BOOTLOADER" = "syslinux" ] && apk add --quiet syslinux
-	[ "$BOOTLOADER" = "u-boot" ] && apk add --quiet u-boot
-	install_mounted_root "${1%/}" \
-		&& echo "You might need fix the MBR to be able to boot" >&2
-	exit $?
+	apk add --quiet $(select_bootloader_pkg)
+	install_mounted_root "${1%/}" || exit
+	if [ -z "$USE_EFI" ] && [ "$ARCH" = "x86_64" -o "$ARCH" = x86 ]; then
+		echo "You might need fix the MBR to be able to boot" >&2
+	fi
+	exit 0
 fi
 
 reset_var
