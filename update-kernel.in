@@ -226,14 +226,14 @@ fi
 [ "$ARCH" ] || ARCH=$(apk --print-arch)
 
 tmpdir=$(mktemp -dt $SCRIPT.XXXXXX)
-ROOT=$tmpdir/root
-BOOT=$ROOT/boot
+ROOTFS=$tmpdir/root
+BOOT=$ROOTFS/boot
 
 _apk() {
 	local cmd="$1"
 	shift
 
-	apk $cmd $QUIET_OPT -p $ROOT --arch "$ARCH" \
+	apk $cmd $QUIET_OPT -p $ROOTFS --arch "$ARCH" \
 		--keys-dir $KEYS_DIR \
 		--repositories-file "$REPOSITORIES_FILE" $*
 }
@@ -257,9 +257,9 @@ if [ "$BUILDDIR" ]; then
 
 	mkdir -p $BOOT
 	make -C "$BUILDDIR" $_install firmware_install modules_install \
-		INSTALL_MOD_PATH=$ROOT \
+		INSTALL_MOD_PATH=$ROOTFS \
 		INSTALL_PATH=$BOOT \
-		INSTALL_DTBS_PATH='$ROOT/usr/lib/linux-$(KERNELRELEASE)'
+		INSTALL_DTBS_PATH='$ROOTFS/usr/lib/linux-$(KERNELRELEASE)'
 else
 	if [ -z "$PACKAGES" ]; then
 		PACKAGES="$(extra_pkgs "dahdi-linux-$FLAVOR" dahdi-linux)
@@ -270,22 +270,22 @@ fi
 _apk add --no-scripts alpine-base $PACKAGES
 
 if [ -n "$APK_PUBKEY" ]; then
-	mkdir -p "$ROOT"/etc/apk/keys
-	cp "$APK_PUBKEY" "$ROOT"/etc/apk/keys/
+	mkdir -p "$ROOTFS"/etc/apk/keys
+	cp "$APK_PUBKEY" "$ROOTFS"/etc/apk/keys/
 fi
 
 KVER_FLAVOR=
 [ "$FLAVOR" = vanilla ] || KVER_FLAVOR=-$FLAVOR
-KVER=$(basename $(ls -d $ROOT/lib/modules/*"$KVER_FLAVOR"))
-DTBDIR=$ROOT/boot/dtbs-$FLAVOR
-[ -d "$DTBDIR" ] || DTBDIR=$ROOT/usr/lib/linux-$KVER
-[ -d "$DTBDIR" ] || DTBDIR=$ROOT/boot
-find $ROOT/lib/modules \
+KVER=$(basename $(ls -d $ROOTFS/lib/modules/*"$KVER_FLAVOR"))
+DTBDIR=$ROOTFS/boot/dtbs-$FLAVOR
+[ -d "$DTBDIR" ] || DTBDIR=$ROOTFS/usr/lib/linux-$KVER
+[ -d "$DTBDIR" ] || DTBDIR=$ROOTFS/boot
+find $ROOTFS/lib/modules \
 	   -name \*.ko.gz -exec gunzip {} + \
 	-o -name \*.ko.xz -exec unxz {} + \
 	-o -name \*.ko.zst -exec unzstd --rm {} + \
 	-o ! -name '' # don't fail if no files found. busybox find doesn't support -true
-depmod -b $ROOT "$KVER"
+depmod -b $ROOTFS "$KVER"
 
 
 STAGING=$tmpdir/boot
@@ -293,15 +293,15 @@ MODLOOP=$tmpdir/modloop
 MODIMG=modloop-$FLAVOR
 
 mkdir $MODLOOP $STAGING
-cp -a $ROOT/lib/modules $MODLOOP
+cp -a $ROOTFS/lib/modules $MODLOOP
 mkdir -p $MODLOOP/modules/firmware
-find $ROOT/lib/modules -type f -name "*.ko*" | xargs modinfo -k $KVER -F firmware | sort -u | while read FW; do
+find $ROOTFS/lib/modules -type f -name "*.ko*" | xargs modinfo -k $KVER -F firmware | sort -u | while read FW; do
 	# eventually expand $FW containing * wildcard in name
-	for _FW in $( basename "$ROOT/lib/firmware/$FW" ); do
-		if [ -e "$ROOT/lib/firmware/$_FW" ]; then
-			install -pD $ROOT/lib/firmware/$_FW $MODLOOP/modules/firmware/$_FW
+	for _FW in $( basename "$ROOTFS/lib/firmware/$FW" ); do
+		if [ -e "$ROOTFS/lib/firmware/$_FW" ]; then
+			install -pD $ROOTFS/lib/firmware/$_FW $MODLOOP/modules/firmware/$_FW
 			# copy also all potentially associated files
-			for _file in "$ROOT"/lib/firmware/"${_FW%.*}".*; do
+			for _file in "$ROOTFS"/lib/firmware/"${_FW%.*}".*; do
 				install -pD "$_file" "$MODLOOP/modules/firmware/${_file#*/lib/firmware/}"
 			done
 		fi
@@ -310,8 +310,8 @@ done
 
 # install extra firmware files in modloop (i.e. not detected by modinfo)
 for _xfw in $modloopfw; do
-	if [ -f "$ROOT/lib/firmware/$_xfw" ]; then
-		install -pD "$ROOT/lib/firmware/$_xfw" \
+	if [ -f "$ROOTFS/lib/firmware/$_xfw" ]; then
+		install -pD "$ROOTFS/lib/firmware/$_xfw" \
 			"$MODLOOP"/modules/firmware/"$_xfw"
 	else
 		echo "Warning: extra firmware \"$_xfw\" not found!"
@@ -319,15 +319,15 @@ for _xfw in $modloopfw; do
 done
 
 # wireless regulatory db
-if [ -e "$ROOT"/lib/modules/*/kernel/net/wireless/cfg80211.ko* ]; then
-	for _regdb in "$ROOT"/lib/firmware/regulatory.db*; do
+if [ -e "$ROOTFS"/lib/modules/*/kernel/net/wireless/cfg80211.ko* ]; then
+	for _regdb in "$ROOTFS"/lib/firmware/regulatory.db*; do
 		[ -e "$_regdb" ] && install -pD "$_regdb" "$MODLOOP"/modules/firmware/"${_regdb##*/}"
 	done
 fi
 
 # include bluetooth firmware in modloop
-if [ -e "$ROOT"/lib/modules/*/kernel/drivers/bluetooth/btbcm.ko* ]; then
-	for _btfw in "$ROOT"/lib/firmware/brcm/*.hcd; do
+if [ -e "$ROOTFS"/lib/modules/*/kernel/drivers/bluetooth/btbcm.ko* ]; then
+	for _btfw in "$ROOTFS"/lib/firmware/brcm/*.hcd; do
 		install -pD "$_btfw" \
 			"$MODLOOP"/modules/firmware/brcm/"${_btfw##*/}"
 	done
@@ -346,7 +346,7 @@ if [ -n "$MODLOOPSIGN" ]; then
 	MKINITFS_ARGS="$MKINITFS_ARGS -s $tmpdir/$MODLOOPSIG"
 fi
 
-mkinitfs $MKINITFS_ARGS -q -b $ROOT -F "$features base squashfs" \
+mkinitfs $MKINITFS_ARGS -q -b $ROOTFS -F "$features base squashfs" \
 	-o "$STAGING/initramfs-$FLAVOR" "$KVER"
 
 for file in System.map config vmlinuz; do
