@@ -9,7 +9,8 @@ init_tests \
 	setup_interfaces_interactive_vlan0_ng \
 	setup_interfaces_interactive_br0 \
 	setup_interfaces_interactive_bond0 \
-	setup_interfaces_interactive_wlan0
+	setup_interfaces_interactive_wlan0_psk \
+	setup_interfaces_interactive_wlan0_none
 
 setup_interfaces_usage_body() {
 	test_usage setup-interfaces
@@ -154,7 +155,7 @@ setup_interfaces_interactive_bond0_body() {
 		setup-interfaces <answers
 }
 
-setup_interfaces_interactive_wlan0_body() {
+setup_interfaces_interactive_wlan0_psk_body() {
 	init_env
 	create_fake_ifaces lo eth0 wlan2
 	mkdir -p sys/class/net/wlan2/phy80211
@@ -173,7 +174,35 @@ setup_interfaces_interactive_wlan0_body() {
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0 wlan2" \
+		-o match:"Lynx2C0CEA_5G" \
+		-o match:"Get-B3ED64" \
+		-o not-match:"x00" \
 		-o match:"Type the \"Telenor0366rar\" network Pre-Shared Key" \
 		-o match:"Ip address for wlan2" \
+		setup-interfaces <answers
+}
+
+setup_interfaces_interactive_wlan0_none_body() {
+	init_env
+	create_fake_ifaces lo eth0 wlan0
+	mkdir -p sys/class/net/wlan0/phy80211
+
+	(
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo wlan0
+		# Type the wireless network name to connect to:
+		echo Lynx2C0CEA_5G
+		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo dhcp
+		# Do you want to do any manual network configuration? (y/n) [n]
+		echo n
+	)>answers
+	atf_check -s exit:0 \
+		-o match:"Available interfaces are: eth0 wlan0" \
+		-o match:"Telenor0366rar" \
+		-o match:"Get-B3ED64" \
+		-o not-match:"x00" \
+		-o not-match:"Type the \"Lynx2C0CEA_5g\" network Pre-Shared Key" \
+		-o match:"Ip address for wlan0" \
 		setup-interfaces <answers
 }

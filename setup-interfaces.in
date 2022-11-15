@@ -122,10 +122,11 @@ find_essids() {
 	export essids_list=wlans
 	# Supports only open or PSK
 	$MOCK ip link set dev "$iface" up
-	iwlist $iface scanning | awk -F: '
-		/ESSID/ { gsub(/"/, "", $2); essid=$2 }
-		/Authentication Suites/ { gsub(/^ +/, "", $2); printf "%s/%s\n", essid, $2 }
-		'  | grep -v 802.1x | sort -u >"$essids_list"
+	(iw dev wlan0 scan; echo BSS) | awk -F": " '
+		/^BSS/ { if (ssid) { print ssid "/" auth }; ssid=""; auth="" }
+		$1 ~ /SSID/ { ssid=$2 }
+		$1 ~ /Authentication suites/ { auth=$2 }' \
+		| grep -E -v '(802.1x|\\x00)' | sort -u >"$essids_list"
 	if [ -s "$essids_list" ]; then
 		# we use / as separator since it is an illegal char in ssids
 		awk -F/ '{print $1}' "$essids_list"
@@ -197,7 +198,7 @@ config_iface() {
 		echo "raw_device=\"$raw_device\"" >> $conf
 	fi
 	if is_wifi $iface; then
-		$MOCK apk add --quiet --no-progress wireless-tools wpa_supplicant || return
+		$MOCK apk add --quiet --no-progress iw wpa_supplicant || return
 		local wifi_configured=false
 		while ! $wifi_configured; do
 			echo "Available wireless networks (scanning):"
