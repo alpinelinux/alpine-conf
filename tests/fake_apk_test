@@ -1,0 +1,24 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	fake_apk_add
+
+fake_apk_add_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"DEBUG: fake apk" \
+		apk add linux-rpi
+
+	test -f boot/vmlinuz-rpi || atf_fail "boot/vmlinuz-rpi was not created"
+
+	atf_check -s exit:0 \
+		-o match:"DEBUG: fake apk" \
+		apk add linux-firmware
+
+	atf_check \
+		-o match:"lib/firmware" \
+		-o match:"lib/modules" \
+		find
+}
+
