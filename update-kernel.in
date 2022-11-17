@@ -285,7 +285,7 @@ find $ROOTFS/lib/modules \
 	-o -name \*.ko.xz -exec unxz {} + \
 	-o -name \*.ko.zst -exec unzstd --rm {} + \
 	-o ! -name '' # don't fail if no files found. busybox find doesn't support -true
-depmod -b $ROOTFS "$KVER"
+$MOCK depmod -b $ROOTFS "$KVER"
 
 
 STAGING=$tmpdir/boot
@@ -339,14 +339,14 @@ case $ARCH in
 	x86|x86_64) mksfs="-Xbcj x86" ;;
 	*) mksfs=
 esac
-mksquashfs $MODLOOP "$STAGING/$MODIMG" -comp xz -exit-on-error $mksfs
+mksquashfs $MODLOOP "$STAGING/$MODIMG" $MKSQUASHFS_OPTS -comp xz -exit-on-error $mksfs
 
 if [ -n "$MODLOOPSIGN" ]; then
 	sign_modloop "$STAGING/$MODIMG"
 	MKINITFS_ARGS="$MKINITFS_ARGS -s $tmpdir/$MODLOOPSIG"
 fi
 
-mkinitfs $MKINITFS_ARGS -q -b $ROOTFS -F "$features base squashfs" \
+$MOCK mkinitfs $MKINITFS_ARGS -q -b $ROOTFS -F "$features base squashfs" \
 	-o "$STAGING/initramfs-$FLAVOR" "$KVER"
 
 for file in System.map config vmlinuz; do
