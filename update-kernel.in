@@ -215,7 +215,7 @@ if [ "$SUPERUSER" ] && [ -z "$FAKEROOTKEY" ]; then
 fi
 
 if [ -z "$features" ]; then
-	. /etc/mkinitfs/mkinitfs.conf
+	. "$ROOT"/etc/mkinitfs/mkinitfs.conf
 fi
 
 if [ -z "$FLAVOR" ]; then

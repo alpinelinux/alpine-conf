@@ -39,6 +39,8 @@ update_kernel_flavor_body() {
 update_kernel_firmware_body() {
 	atf_require_prog mksquashfs
 	init_env
+	mkdir -p etc/mkinitfs
+	touch etc/mkinitfs/mkinitfs.conf
 	mkdir out
 	MKSQUASHFS_OPTS="-info" atf_check -s exit:0 \
 		-o match:"apk add.*linux-firmware" \
