@@ -5,7 +5,8 @@ init_tests \
 	update_kernel_usage \
 	update_kernel_builddir_and_flavor \
 	update_kernel_arch \
-	update_kernel_flavor
+	update_kernel_flavor \
+	update_kernel_firmware
 
 update_kernel_usage_body() {
 	test_usage update-kernel
@@ -33,4 +34,15 @@ update_kernel_flavor_body() {
 		-o empty \
 		-e match:"Cannot specify flavor when updating the current kernel" \
 		update-kernel --flavor virt
+}
+
+update_kernel_firmware_body() {
+	atf_require_prog mksquashfs
+	init_env
+	mkdir out
+	MKSQUASHFS_OPTS="-info" atf_check -s exit:0 \
+		-o match:"apk add.*linux-firmware" \
+		-o match:"file .*brcmfmac.ko" \
+		-o match:"file .*brcm/brcmfmac43752-sdio.bin" \
+		update-kernel --verbose --flavor rpi out/
 }
