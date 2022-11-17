@@ -296,13 +296,16 @@ mkdir $MODLOOP $STAGING
 cp -a $ROOTFS/lib/modules $MODLOOP
 mkdir -p $MODLOOP/modules/firmware
 find $ROOTFS/lib/modules -type f -name "*.ko*" | xargs modinfo -k $KVER -F firmware | sort -u | while read FW; do
-	if [ -e "$ROOTFS/lib/firmware/$FW" ]; then
-		install -pD $ROOTFS/lib/firmware/$FW $MODLOOP/modules/firmware/$FW
+	for f in "$ROOTFS"/lib/firmware/$FW; do
+		if ! [ -e "$f" ]; then
+			continue
+		fi
+		install -pD "$f" $MODLOOP/modules/firmware/${f#*/lib/firmware}
 		# copy also all potentially associated files
-		for _file in "$ROOTFS"/lib/firmware/"${FW%.*}".*; do
+		for _file in "${f%.*}".*; do
 			install -pD "$_file" "$MODLOOP/modules/firmware/${_file#*/lib/firmware/}"
 		done
-	fi
+	done
 done
 
 # install extra firmware files in modloop (i.e. not detected by modinfo)

@@ -38,7 +38,8 @@ for pkg in $pkgs; do
 			touch "$rootfs"/lib/firmware/brcm/brcmfmac43456-sdio.raspberrypi,400.bin \
 				"$rootfs"/lib/firmware/brcm/brcmfmac43456-sdio.raspberrypi,400.clm_blob \
 				"$rootfs"/lib/firmware/brcm/brcmfmac43456-sdio.raspberrypi,400.txt \
-				"$rootfs"/lib/firmware/brcm/brcmfmac43752-sdio.bin
+				"$rootfs"/lib/firmware/brcm/brcmfmac43752-sdio.bin \
+				"$rootfs"/lib/firmware/brcm/brcmfmac43752-sdio.txt
 			;;
 		linux-*)
 			# simulate installing kernel

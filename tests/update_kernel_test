@@ -44,5 +44,7 @@ update_kernel_firmware_body() {
 		-o match:"apk add.*linux-firmware" \
 		-o match:"file .*brcmfmac.ko" \
 		-o match:"file .*brcm/brcmfmac43752-sdio.bin" \
+		-o match:"file .*brcm/brcmfmac43752-sdio.txt" \
+		-o match:"file .*brcmfmac.*sdio.raspberrypi*" \
 		update-kernel --verbose --flavor rpi out/
 }
