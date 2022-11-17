@@ -878,6 +878,9 @@ setup_partitions() {
 	shift
 	supported_part_label "$DISKLABEL" || return 1
 
+	# create clean disk label
+	echo "label: $DISKLABEL" | sfdisk --quiet $diskdev
+
 	# initialize MBR for syslinux only
 	if [ "$BOOTLOADER" = "syslinux" ] && [ -f "$MBR" ]; then
 		cat "$MBR" > $diskdev
@@ -891,7 +894,7 @@ setup_partitions() {
 			*) echo "$start,$line"; start= ;;
 			esac
 		done
-	) | sfdisk --quiet --label $DISKLABEL $diskdev || return 1
+	) | sfdisk --quiet --wipe-partitions always --label $DISKLABEL $diskdev || return 1
 
 	# create device nodes if not exist
 	$MOCK mdev -s
