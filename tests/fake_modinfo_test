@@ -1,0 +1,30 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	fake_modinfo
+
+fake_modinfo_body() {
+	init_env
+	kver=5.15.79-0
+	flavor=virt
+	mkdir -p "lib/modules/$kver-$flavor"/kernel/drivers/net/wireless/broadcom/brcm80211/brcmfmac
+	cat >"lib/modules/$kver-$flavor"/kernel/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko <<-EOF
+		vermagic:       $kver-$flavor SMP preempt mod_unload modversions aarch64
+		firmware:       brcm/brcmfmac*-sdio.*.bin
+		firmware:       brcm/brcmfmac*-sdio.*.txt
+		firmware:       brcm/brcmfmac43752-sdio.clm_blob
+		firmware:       brcm/brcmfmac43752-sdio.bin
+	EOF
+	atf_check -s exit:0 \
+		-o match:"vermagic:" \
+		-o match:"firmware:" \
+		modinfo "lib/modules/$kver-$flavor"/kernel/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko
+
+	atf_check -s exit:0 \
+		-o not-match:"vermagic:" \
+		-o not-match:"firmware:" \
+		-o match:"brcm/brcmfmac43752-sdio.clm_blob" \
+		modinfo -k 1.0 -F firmware "lib/modules/$kver-$flavor"/kernel/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko
+}
+

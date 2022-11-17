@@ -1,0 +1,23 @@
+#!/bin/sh
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+		-k)
+			shift
+			kver="$1"
+			;;
+		-F)
+			shift
+			field="$1"
+			;;
+		*)
+			if [ -n "$field" ]; then
+				awk -v field="$field:" '$1==field {print $2}' "$1"
+			else
+				cat "$1"
+			fi
+			;;
+	esac
+	shift
+done
+
