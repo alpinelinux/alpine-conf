@@ -300,7 +300,7 @@ find $ROOTFS/lib/modules -type f -name "*.ko*" | xargs modinfo -k $KVER -F firmw
 		if ! [ -e "$f" ]; then
 			continue
 		fi
-		install -pD "$f" $MODLOOP/modules/firmware/${f#*/lib/firmware}
+		install -pD "$f" "$MODLOOP/modules/firmware/${f#*/lib/firmware}"
 		# copy also all potentially associated files
 		for _file in "${f%.*}".*; do
 			install -pD "$_file" "$MODLOOP/modules/firmware/${_file#*/lib/firmware/}"

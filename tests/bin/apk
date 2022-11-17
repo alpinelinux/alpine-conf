@@ -39,7 +39,10 @@ for pkg in $pkgs; do
 				"$rootfs"/lib/firmware/brcm/brcmfmac43456-sdio.raspberrypi,400.clm_blob \
 				"$rootfs"/lib/firmware/brcm/brcmfmac43456-sdio.raspberrypi,400.txt \
 				"$rootfs"/lib/firmware/brcm/brcmfmac43752-sdio.bin \
-				"$rootfs"/lib/firmware/brcm/brcmfmac43752-sdio.txt
+				"$rootfs"/lib/firmware/brcm/brcmfmac43752-sdio.txt \
+				"$rootfs"/lib/firmware/brcm/"brcmfmac43455-sdio.Raspberry Pi Foundation-Raspberry Pi Compute Module 4.txt" \
+				"$rootfs"/lib/firmware/brcm/brcmfmac43455-sdio.bin \
+				"$rootfs"/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob
 			;;
 		linux-*)
 			# simulate installing kernel
