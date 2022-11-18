@@ -3,7 +3,8 @@
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
 	setup_lbu_usage \
-	setup_lbu_label
+	setup_lbu_label \
+	setup_lbu_uuid
 
 setup_lbu_usage_body() {
 	test_usage setup-lbu
@@ -20,6 +21,25 @@ setup_lbu_label_body() {
 
 	atf_check -s exit:0 \
 		-o match:"LABEL=APKOVL.*ro" \
+		cat etc/fstab
+}
+
+setup_lbu_uuid_body() {
+	init_env
+	mkdir -p proc media/mmcblk0p1
+	echo "/dev/mmcblk0p1 /media/mmcblk0p1 vfat ro,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,errors=remount-ro 0 0" > proc/mounts
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		setup-lbu mmcblk0p1
+	atf_check \
+		-o match:"LBU_MEDIA=mmcblk0p1" \
+		cat etc/lbu/lbu.conf
+
+	test -d media/mmcblk0p1 || atf_fail "directory /media/mmcblk0p1 was not created"
+
+	atf_check -s exit:0 \
+		-o match:"^UUID=" \
 		cat etc/fstab
 }
 

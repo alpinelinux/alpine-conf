@@ -97,6 +97,9 @@ set_media() {
 			echo "$media: Could not find filesystem type" >&2
 			exit 1
 		fi
+		if [ -n "$UUID" ]; then
+			UUID="UUID=$UUID"
+		fi
 		# use LABEL= if it was specifically selected, otherwise use UUID
 		case "$media" in
 			LABEL=*|UUID=*) UUID="$media";;
