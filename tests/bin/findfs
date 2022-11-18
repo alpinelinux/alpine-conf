@@ -1,0 +1,10 @@
+#!/bin/sh
+
+case "$1" in
+	LABEL=APKOVL)
+		echo /dev/vda1
+		;;
+	UUID=AAAA-BBBB)
+		echo /dev/mmcblk0p1
+		;;
+esac

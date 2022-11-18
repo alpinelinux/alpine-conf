@@ -1,0 +1,11 @@
+#!/bin/sh
+
+case "$1" in
+	/dev/vda1)
+		echo "$1:" 'TYPE="vfat" LABEL="APKOVL"'
+		;;
+	/dev/mmcblk0p1)
+		echo "$1:" 'TYPE="vfat" UUID="AAAA-BBBB"'
+		;;
+esac
+
