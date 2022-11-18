@@ -54,7 +54,7 @@ setup_alpine_create_answerfile_body() {
 		|| atf_fail "ssh key not set for juser"
 	grep -x "ssh-rsa blahbla user@example.com" root/.ssh/authorized_keys \
 		|| atf_fail "ssh key not set for root"
-	for file in home/juser root/.ssh/authorized_keys; do
+	for file in home/juser root; do
 		grep -x "+.*$file" etc/apk/protected_paths.d/lbu.list \
 			|| atf_fail "$file was not added to lbu.list"
 	done

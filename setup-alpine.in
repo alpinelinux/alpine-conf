@@ -245,7 +245,7 @@ done
 setup-sshd ${ROOTSSHKEY+-k "$ROOTSSHKEY"} ${SSHDOPTS}
 root_keys="$ROOT"/root/.ssh/authorized_keys
 if [ -f "$root_keys" ]; then
-	lbu add "$root_keys"
+	lbu add "$ROOT"/root
 fi
 
 if is_xen_dom0; then
