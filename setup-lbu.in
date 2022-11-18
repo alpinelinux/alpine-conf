@@ -23,26 +23,26 @@ usage() {
 get_filesystem_type() {
 	local mountpoint="$1"
 	shift
-	awk "\$2==\"$mountpoint\" {print \$3}" "$@"
+	awk "\$2==\"$mountpoint\" {print \$3}" "$@" 2>/dev/null
 }
 
 get_dev() {
 	local mountpoint="$1"
 	shift
-	awk "\$2==\"$mountpoint\" {print \$1}" "$@"
+	awk "\$2==\"$mountpoint\" {print \$1}" "$@" 2>/dev/null
 }
 
 is_in_fstab() {
-	test -n "$(get_filesystem_type $1 /etc/fstab)"
+	test -n "$(get_filesystem_type $1 "$ROOT"/etc/fstab)"
 }
 
 is_mounted() {
-	test -n "$(get_filesystem_type $1 /proc/mounts)"
+	test -n "$(get_filesystem_type $1 "$ROOT"/proc/mounts)"
 }
 
 is_iso9660() {
 	local fs
-	for fs in $(get_filesystem_type $1 /proc/mounts /etc/fstab); do
+	for fs in $(get_filesystem_type $1 "$ROOT"/proc/mounts "$ROOT"/etc/fstab); do
 		if [ "$fs" = "iso9660" ]; then
 			return 0
 		fi
@@ -78,17 +78,13 @@ set_media() {
 		echo "LBU_MEDIA=$media" >> "${ROOT}"etc/lbu/lbu.conf
 	fi
 
-	if [ -n "$ROOT" ] && [ "$ROOT" != "/" ]; then
-		return
-	fi
-
 	# append to fstab if its missing
 	if ! is_in_fstab $mnt; then
 		case "$media" in
 			LABEL=*|UUID=*)
 				dev=$(findfs $media)
 				;;
-			*)	dev=$(get_dev $mnt /proc/mounts)
+			*)	dev=$(get_dev $mnt "$ROOT"/proc/mounts)
 				;;
 		esac
 		if [ -z "$dev" ]; then
@@ -105,7 +101,8 @@ set_media() {
 		case "$media" in
 			LABEL=*|UUID=*) UUID="$media";;
 		esac
-		printf "%s\t%s\t%s\tnoauto,ro 0 0\n" "${UUID:-$dev}" "$mnt" "$TYPE" >> /etc/fstab
+		mkdir -p "$ROOT"/etc
+		printf "%s\t%s\t%s\tnoauto,ro 0 0\n" "${UUID:-$dev}" "$mnt" "$TYPE" >> "$ROOT"/etc/fstab
 	fi
 
 	# hack in case we have alpine_dev mounted on /media/usbdisk but
@@ -129,6 +126,9 @@ shift $(($OPTIND - 1))
 
 # check if MEDIA option was given
 if [ -n "$1" ]; then
+	if [ "$1" = "none" ]; then
+		exit
+	fi
 	set_media "$1"
 	exit
 fi

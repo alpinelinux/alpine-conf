@@ -17,5 +17,9 @@ setup_lbu_label_body() {
 		setup-lbu LABEL=APKOVL
 	grep -q 'LBU_MEDIA=LABEL=APKOVL' etc/lbu/lbu.conf || atf_fail "LBU_MEDIA not set in etc/lbu/lbu.conf"
 	test -d media/LABEL=APKOVL || atf_fail "directory /media/LABEL=APKOVL was not created"
+
+	atf_check -s exit:0 \
+		-o match:"LABEL=APKOVL.*ro" \
+		cat etc/fstab
 }
 
