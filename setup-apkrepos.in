@@ -57,7 +57,7 @@ find_fastest_mirror() {
 	local arch="$(apk --print-arch)"
 	for url in $MIRRORS; do
 		# warm up the dns cache
-		nslookup $(get_hostname_from_url $url) >/dev/null 2>&1
+		$MOCK nslookup $(get_hostname_from_url $url) >/dev/null 2>&1
 		local time="$(time_cmd wget --spider -q -T 5 -t 1 \
 			${url%/}/edge/main/$arch/APKINDEX.tar.gz)"
 		if [ -n "$time" ]; then

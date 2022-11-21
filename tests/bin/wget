@@ -33,7 +33,7 @@ msg() {
 	fi
 }
 
-OPTS=$(getopt -l quiet,help,spider -o "qhO:" -n $prog -- "$@") || usage "1" >&2
+OPTS=$(getopt -l quiet,help,spider,timeout,tries -o "qhO:T:t:" -n $prog -- "$@") || usage "1" >&2
 
 quiet=
 eval set -- "$OPTS"
@@ -53,6 +53,8 @@ while true; do
 			shift
 			outfile="$1"
 			;;
+		-T|--timeout) shift;;
+		-t|--tries) shift;;
 		--)
 			shift
 			break
