@@ -441,6 +441,8 @@ iface_help() {
 		You will be asked which physical interface(s) to
 		be used for advanced configurations.
 
+		Select 'none' to leave configuration unmodified.
+
 	__EOF__
 }
 prompt_for_interfaces() {
@@ -458,6 +460,7 @@ prompt_for_interfaces() {
 		iface=$resp
 
 		case "$iface" in
+			"none") exit;;
 			"done") break;;
 			'?') iface_help; continue;;
 			br[0-9]*|bridge[0-9]*|virbr[0-9]*)
@@ -575,6 +578,10 @@ while getopts "abhip:r" opt; do
 		'?') usage "1" >&2;;
 	esac
 done
+
+if [ "$1" = none ]; then
+	exit
+fi
 
 mkdir -p $ROOT/etc/network
 if [ "$STDINPUT" = "1" ]; then

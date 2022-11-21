@@ -3,14 +3,16 @@
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
 	setup_interfaces_usage \
+	setup_interfaces_none \
 	setup_interfaces_interactive_dhcp \
+	setup_interfaces_interactive_none \
 	setup_interfaces_interactive_vlan \
 	setup_interfaces_interactive_vlan_ng \
 	setup_interfaces_interactive_vlan0_ng \
 	setup_interfaces_interactive_br0 \
 	setup_interfaces_interactive_bond0 \
 	setup_interfaces_interactive_wlan0_psk \
-	setup_interfaces_interactive_wlan0_none
+	setup_interfaces_interactive_wlan0_open
 
 setup_interfaces_usage_body() {
 	test_usage setup-interfaces
@@ -24,6 +26,16 @@ create_fake_ifaces() {
 		echo down >sys/class/net/$i/operstate
 		n=$((n+1))
 	done
+}
+
+setup_interfaces_none_body() {
+	init_env
+	create_fake_ifaces lo eth0
+	atf_check -s exit:0 \
+		setup-interfaces none
+	if [ -f etc/network/interfaces ]; then
+		atf_fail "etc/network/interfaces should not be created"
+	fi
 }
 
 setup_interfaces_interactive_dhcp_body() {
@@ -40,6 +52,21 @@ setup_interfaces_interactive_dhcp_body() {
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0" \
 		setup-interfaces <answers
+}
+
+setup_interfaces_interactive_none_body() {
+	init_env
+	create_fake_ifaces lo eth0
+	(
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo none
+	)>answers
+	atf_check -s exit:0 \
+		-o match:"Available interfaces are: eth0" \
+		setup-interfaces <answers
+	if [ -f etc/network/interfaces ]; then
+		atf_fail "etc/network/interfaces should not be created"
+	fi
 }
 
 setup_interfaces_interactive_vlan_body() {
@@ -182,7 +209,7 @@ setup_interfaces_interactive_wlan0_psk_body() {
 		setup-interfaces <answers
 }
 
-setup_interfaces_interactive_wlan0_none_body() {
+setup_interfaces_interactive_wlan0_open_body() {
 	init_env
 	create_fake_ifaces lo eth0 wlan0
 	mkdir -p sys/class/net/wlan0/phy80211
