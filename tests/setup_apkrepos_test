@@ -3,12 +3,20 @@
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
 	setup_apkrepos_usage \
+	setup_apkrepos_exclusive_opts \
 	setup_apkrepos_https \
 	setup_apkrepos_random \
 	setup_apkrepos_first
 
 setup_apkrepos_usage_body() {
 	test_usage setup-apkrepos
+}
+
+setup_apkrepos_exclusive_opts_body() {
+	init_env
+	atf_check -s exit:1 -e match:"usage" setup-apkrepos -r -f
+	atf_check -s exit:1 -e match:"usage" setup-apkrepos -r -1
+	atf_check -s exit:1 -e match:"usage" setup-apkrepos -f -1
 }
 
 setup_apkrepos_https_body() {

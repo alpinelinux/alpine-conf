@@ -142,7 +142,7 @@ edit_repositories() {
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-apkrepos [-cfhr1] [REPO...]
+		usage: setup-apkrepos [-ch] [-f|-r|-1|REPO...]
 
 		Setup apk repositories
 
@@ -163,10 +163,22 @@ add_random=false
 while getopts "c1fhr" opt; do
 	case $opt in
 		c) community_prefix="";;
-		f) add_fastest=true;;
-		1) add_first=true;;
+		f) add_fastest=true
+			if $add_first || $add_random; then
+				usage "1" >&2
+			fi
+			;;
+		1) add_first=true
+			if $add_fastest || $add_random; then
+				usage "1" >&2
+			fi
+			;;
 		h) usage 0;;
-		r) add_random=true;;
+		r) add_random=true
+			if $add_first || $add_fastest; then
+				usage "1" >&2
+			fi
+			;;
 		'?') usage "1" >&2;;
 	esac
 done
