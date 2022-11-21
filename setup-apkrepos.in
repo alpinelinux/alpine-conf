@@ -218,7 +218,13 @@ if $add_fastest; then
 	add_fastest_mirror && changed=true
 fi
 
-while ! $changed; do
+if $add_first || $add_random || $add_fastest; then
+	interactive=false
+else
+	interactice=true
+fi
+
+while $interactive && ! $changed; do
 	if [ -z "$MIRRORS" ]; then
 		MIRRORS=$(wget -qO- $MIRRORS_URL)
 	fi
