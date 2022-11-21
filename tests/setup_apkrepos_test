@@ -7,7 +7,8 @@ init_tests \
 	setup_apkrepos_https \
 	setup_apkrepos_random \
 	setup_apkrepos_first \
-	setup_apkrepos_fastest
+	setup_apkrepos_fastest \
+	setup_apkrepos_network_failure
 
 setup_apkrepos_usage_body() {
 	test_usage setup-apkrepos
@@ -54,4 +55,21 @@ setup_apkrepos_fastest_body() {
 		-e match:"^[0-9].*example.com" \
 		-o match:"Added mirror a[0-9].example.com" \
 		setup-apkrepos -f
+}
+
+setup_apkrepos_network_failure_body() {
+	init_env
+	MIRRORS_URL=https://example.com/fail \
+		atf_check -s not-exit:0 \
+		-o match:"Finding" \
+		-e match:"Warning! No mirror found" \
+		setup-apkrepos -f
+	MIRRORS_URL=https://example.com/fail \
+		atf_check -s not-exit:0 \
+		-e match:"Warning" \
+		setup-apkrepos -r
+	MIRRORS_URL=https://example.com/fail \
+		atf_check -s not-exit:0 \
+		-e match:"Warning! No mirror found" \
+		setup-apkrepos -1
 }

@@ -5,7 +5,7 @@ PREFIX=@PREFIX@
 : ${LIBDIR=$PREFIX/lib}
 . "$LIBDIR/libalpine.sh"
 
-MIRRORS_URL=https://mirrors.alpinelinux.org/mirrors.txt
+: ${MIRRORS_URL:=https://mirrors.alpinelinux.org/mirrors.txt}
 
 if [ "$ROOT" != "/" ]; then
 	apk_root_opt="--root $ROOT"
@@ -33,7 +33,12 @@ ask_setup_method() {
 
 add_random_mirror() {
 	local i=0
-	local random_mirror_index="$(( $RANDOM % $(get_mirror_count) ))"
+	local count=$(get_mirror_count)
+	if [ ${count:-0} -eq 0 ]; then
+		echo "Warning! no mirror found" >&2
+		return 1
+	fi
+	local random_mirror_index="$(( $RANDOM % $count ))"
 
 	printf %s "Picking random mirror... "
 	for mirror in $MIRRORS; do
@@ -70,7 +75,7 @@ add_fastest_mirror() {
 	echo "Finding fastest mirror... "
 	local fastest="$(find_fastest_mirror)"
 	if [ -z "$fastest" ]; then
-		echo "Warning! No mirror found"
+		echo "Warning! No mirror found" >&2
 		return 1
 	fi
 	add_mirror "$fastest"
@@ -207,15 +212,22 @@ fi
 
 if $add_first; then
 	set -- $MIRRORS
-	add_mirror "$1" && changed=true
+	if [ $# -eq 0 ]; then
+		echo "Warning! No mirror found" >&2
+		exit 1
+	fi
+	add_mirror "$1" || exit
+	changed=true
 fi
 
 if $add_random; then
-	add_random_mirror && changed=true
+	add_random_mirror || exit
+	changed=true
 fi
 
 if $add_fastest; then
-	add_fastest_mirror && changed=true
+	add_fastest_mirror || exit
+	changed=true
 fi
 
 if $add_first || $add_random || $add_fastest; then

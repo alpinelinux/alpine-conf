@@ -8,6 +8,7 @@ init_tests \
 	setup_alpine_kvm_clock \
 	setup_alpine_restart_network
 
+export WGETCONTENT="https://mirror.example.com"
 setup_alpine_usage_body() {
 	test_usage setup-alpine
 }
