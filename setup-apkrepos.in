@@ -38,7 +38,7 @@ add_random_mirror() {
 		echo "Warning! no mirror found" >&2
 		return 1
 	fi
-	local random_mirror_index="$(( $RANDOM % $count ))"
+	local random_mirror_index="$(awk -v count=$count 'BEGIN {srand(); printf("%.0f", rand() * count)}')"
 
 	printf %s "Picking random mirror... "
 	for mirror in $MIRRORS; do
