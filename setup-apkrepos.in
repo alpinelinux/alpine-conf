@@ -16,6 +16,11 @@ get_hostname_from_url() {
 	echo ${n%%/*}
 }
 
+get_mirror_count() {
+	set -- $MIRRORS
+	echo $#
+}
+
 ask_setup_method() {
 	cat <<-__EOF__
 		r) Add random from the above list
@@ -23,12 +28,12 @@ ask_setup_method() {
 		e) Edit ${ROOT}etc/apk/repositories with text editor
 
 	__EOF__
-	ask "Enter mirror number (1-$mirror_count) or URL to add (or r/f/e/done)" "$1"
+	ask "Enter mirror number (1-$(get_mirror_count)) or URL to add (or r/f/e/done)" "$1"
 }
 
 add_random_mirror() {
 	local i=0
-	local random_mirror_index="$(( $RANDOM % $mirror_count ))"
+	local random_mirror_index="$(( $RANDOM % $(get_mirror_count) ))"
 
 	printf %s "Picking random mirror... "
 	for mirror in $MIRRORS; do
@@ -71,10 +76,9 @@ add_fastest_mirror() {
 	add_mirror "$fastest"
 }
 
-# show mirrors and store how many in global mirror_count
+# show mirrors
 show_mirror_list() {
 	local mirror i=0
-	mirror_count=0
 	[ -z "$MIRRORS" ] && return
 	echo ""
 	echo "Available mirrors:"
@@ -83,12 +87,11 @@ show_mirror_list() {
 		echo "$i) $(get_hostname_from_url $mirror)"
 	done
 	echo ""
-	mirror_count=$i
 }
 
 add_from_list() {
 	local mirror_index="$1"
-	if [ $mirror_index -lt 1 ] || [ $mirror_index -gt $mirror_count ]; then
+	if [ $mirror_index -lt 1 ] || [ $mirror_index -gt $(get_mirror_count) ]; then
 		return 1
 	fi
 	set $MIRRORS
@@ -196,12 +199,10 @@ if $add_first; then
 fi
 
 if $add_random; then
-	show_mirror_list > /dev/null
 	add_random_mirror && changed=true
 fi
 
 if $add_fastest; then
-	show_mirror_list > /dev/null
 	add_fastest_mirror && changed=true
 fi
 
