@@ -11,8 +11,6 @@ PREFIX=@PREFIX@
 : ${LIBDIR=$PREFIX/lib}
 . "$LIBDIR/libalpine.sh"
 
-EXCLUDE_LIST="$sysconfdir"/exclude
-INCLUDE_LIST="$sysconfdir"/include
 LBU_LIST="${ROOT}etc/apk/protected_paths.d/lbu.list"
 
 
@@ -40,7 +38,6 @@ usage() {
 		  include (inc, add)
 		  list (ls)
 		  list-backup (lb)
-		  migrate_include_exclude
 		  package (pkg)
 		  revert
 		  status (stat, st)
@@ -232,7 +229,6 @@ usage_include() {
 }
 
 cmd_include() {
-	cmd_migrate_include_exclude
 	if [ "$LIST" ] ; then
 		[ $# -gt 0 ] && usage_include "1" >&2
 		show_include
@@ -271,7 +267,7 @@ usage_package() {
 		If <dirname> is a directory, a package named <hostname>.apkovl.tar.gz will
 		be created in the specified directory.
 
-		If <filename> is specified, and is not a direcotry, a package with the
+		If <filename> is specified, and is not a directory, a package with the
 		specified name willbe created.
 
 		If <dirname> nor <filename> is not specified, a package named
@@ -291,7 +287,6 @@ cmd_package() {
 	local suff="apkovl.tar.gz"
 	local tmpdir tmppkg
 
-	cmd_migrate_include_exclude
 	check_openssl
 	init_tmpdir tmpdir
 
@@ -380,7 +375,6 @@ usage_list() {
 }
 
 cmd_list() {
-	cmd_migrate_include_exclude
 	if [ "$1" = "-h" ]; then
 		usage_list 0
 	fi
@@ -525,7 +519,6 @@ usage_exclude() {
 }
 
 cmd_exclude() {
-	cmd_migrate_include_exclude
 	if [ "$LIST" ] ; then
 		[ $# -gt 0 ] && usage_exclude "1" >&2
 		show_exclude
@@ -691,39 +684,6 @@ cmd_diff() {
 	cd "$tmp" && diff -ruN $diff_opts a b
 }
 
-# migrate
-migrate_conf() {
-	local pref="$1" conf="$2" line=
-	echo "Note: Migrating  $conf to $LBU_LIST" >&2
-	echo "# Automatically imported from $conf" >> "$LBU_LIST"
-	while read line; do
-		if [ "${line#'#'}" != "$line" ]; then
-			# dont prefix comments
-			echo "$line" >> "$LBU_LIST" || return 1
-			continue
-		fi
-		case "$line" in
-			[a-zA-z0-9._/]*) line="$pref$line";;
-			*) continue;; # skip files with weird names
-		esac
-		if ! list_has "$line"; then
-			echo "$line" >> "$LBU_LIST" || return 1
-		fi
-	done < "$conf"
-	rm "$conf"
-}
-
-#-----------------------------------------------------------
-# lbu migrate_config - migrate include/exclude to protected_paths.d
-cmd_migrate_include_exclude() {
-	if [ -e "$INCLUDE_LIST" ]; then
-		migrate_conf + "$INCLUDE_LIST"
-	fi
-	if [ -e "$EXCLUDE_LIST" ]; then
-		migrate_conf - "$EXCLUDE_LIST"
-	fi
-}
-
 #-----------------------------------------------------------
 # Main
 
@@ -746,7 +706,6 @@ case "$cmd" in
 	list-backup|lb)		SUBCMD="listbackup";;
 	revert)			SUBCMD="revert";;
 	diff)			SUBCMD="diff";;
-	migrate_include_exclude) SUBCMD="migrate_include_exclude";;
 	-h)			usage 0;;
 	*)			usage "1" >&2;;
 esac
