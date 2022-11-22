@@ -158,14 +158,17 @@ fi
 
 [ -z "$SSH_CONNECTION" ] && rst_if=1
 if [ -n "$INTERFACESOPTS" ]; then
-	printf "$INTERFACESOPTS" | setup-interfaces -i ${rst_if:+-r}
+	if [ "$INTERFACESOPTS" != none ]; then
+		printf "$INTERFACESOPTS" | setup-interfaces -i ${rst_if:+-r}
+	fi
 else
 	setup-interfaces ${quick:+-a} ${rst_if:+-r}
 fi
 
 # setup up dns if no dhcp was configured
-grep '^iface.*dhcp' $ROOT/etc/network/interfaces > /dev/null ||\
+if [ -f "$ROOT"/etc/network/interfaces ] && ! grep -q '^iface.*dhcp' "$ROOT"/etc/network/interfaces; then
 	setup-dns ${DNSOPTS}
+fi
 
 # set root password
 if [ -z "$empty_root_password" ]; then

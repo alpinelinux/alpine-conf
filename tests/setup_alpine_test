@@ -6,7 +6,8 @@ init_tests \
 	setup_alpine_quick \
 	setup_alpine_create_answerfile \
 	setup_alpine_kvm_clock \
-	setup_alpine_restart_network
+	setup_alpine_restart_network \
+	setup_alpine_answerfile_none
 
 export WGETCONTENT="https://mirror.example.com"
 setup_alpine_usage_body() {
@@ -109,3 +110,32 @@ setup_alpine_restart_network_body() {
 	atf_check -s exit:3 \
 		rc-service --quiet networking status
 }
+
+setup_alpine_answerfile_none_body() {
+	init_env
+
+	cat >opts<<-EOF
+		KEYMAPOPTS=none
+		HOSTNAMEOPTS=alpine
+		INTERFACESOPTS=none
+		DNSOPTS=none
+		TIMEZONEOPTS=none
+		PROXYOPTS=none
+		NTPOPTS=none
+		APKREPOSOPTS=none
+		USEROPTS=none
+		SSHDOPTS=none
+		DISKOPTS=none
+		LBUOPTS=none
+		APKCACHEOPTS=none
+	EOF
+	atf_check -s exit:0 \
+		-o match:"apk add" \
+		setup-alpine -e -f opts
+	for i in etc/network/interfaces etc/resolv.conf; do
+		if [ -e "$i" ]; then
+			atf_fail "$i should not been created"
+		fi
+	done
+}
+
