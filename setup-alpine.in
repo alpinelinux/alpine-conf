@@ -197,8 +197,8 @@ for svc in $svc_list; do
 done
 
 # start up the services
-$MOCK openrc boot
-$MOCK openrc default
+$MOCK openrc ${SSH_CONNECTION:+-n} boot
+$MOCK openrc ${SSH_CONNECTION:+-n} default
 
 # update /etc/hosts - after we have got dhcp address
 # Get default fully qualified domain name from *first* domain
