@@ -233,7 +233,7 @@ fi
 if $add_first || $add_random || $add_fastest; then
 	interactive=false
 else
-	interactice=true
+	interactive=true
 fi
 
 while $interactive && ! $changed; do
