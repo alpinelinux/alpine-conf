@@ -68,7 +68,7 @@ case "$USEANSWERFILE" in
 		USEANSWERFILE="$temp"
 		;;
 	*)
-		USEANSWERFILE=$(realpath "$USEANSWERFILE")
+		[ -n "$USEANSWERFILE" ] && USEANSWERFILE=$(realpath "$USEANSWERFILE")
 		;;
 esac
 if [ -n "$USEANSWERFILE" ] && [ -e "$USEANSWERFILE" ]; then
