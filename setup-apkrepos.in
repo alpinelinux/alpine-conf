@@ -106,7 +106,7 @@ add_from_list() {
 
 get_alpine_release() {
 	# use the main version already configured, or get the version from /etc/alpine-release
-	local version="$(grep -Eom1 '[^/]+/main/?$' "${ROOT}"etc/apk/repositories | grep -Eo '^[^/]+' \
+	local version="$(grep -Eom1 '[^/]+/main/?$' "${ROOT}"etc/apk/repositories 2>/dev/null | grep -Eo '^[^/]+' \
 		|| cat "${ROOT}"etc/alpine-release 2>/dev/null)"
 	case "$version" in
 		*_git*|*_alpha*) release="edge";;
