@@ -38,7 +38,7 @@ usage() {
 while getopts "aef:c:hq" opt ; do
 	case $opt in
 		a) ARCHIVE=yes;;
-		f) USEANSWERFILE=$(realpath "$OPTARG");;
+		f) USEANSWERFILE="$OPTARG";;
 		c) CREATEANSWERFILE="$OPTARG";;
 		e) empty_root_password=1;;
 		h) usage 0;;
@@ -66,6 +66,9 @@ case "$USEANSWERFILE" in
 		temp="$(mktemp)"
 		wget -qO "$temp" "$USEANSWERFILE" || die "Failed to download '$USEANSWERFILE'"
 		USEANSWERFILE="$temp"
+		;;
+	*)
+		USEANSWERFILE=$(realpath "$USEANSWERFILE")
 		;;
 esac
 if [ -n "$USEANSWERFILE" ] && [ -e "$USEANSWERFILE" ]; then
