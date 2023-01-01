@@ -105,7 +105,8 @@ add_from_list() {
 }
 
 get_alpine_release() {
-	local version="$(cat "${ROOT}"etc/alpine-release 2>/dev/null)"
+	local version="$(grep -Eom1 '[^/]+/main/?$' "${ROOT}"etc/apk/repositories | grep -Eo '^[^/]+' \
+		|| cat "${ROOT}"etc/alpine-release 2>/dev/null)"
 	case "$version" in
 		*_git*|*_alpha*) release="edge";;
 		[0-9]*.[0-9]*.[0-9]*)
