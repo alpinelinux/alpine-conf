@@ -221,6 +221,13 @@ setup_disk_func_uuid_or_device_body() {
 			-o match:"UUID=1db12961-31ce-420f-94f0-559a1f6592ff" \
 			setup-disk /dev/sda1
 
+	SETUP_DISK_TESTFUNC=uuid_or_device \
+	NO_DISK_UUID="/dev/sda1 /dev/sda3" \
+		atf_check -s exit:0 \
+			-o not-match:"UUID" \
+			-o match:"/dev/sda1" \
+			setup-disk /dev/sda1
+
 }
 
 setup_disk_non_existing_block_dev_body() {
