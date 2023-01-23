@@ -65,7 +65,7 @@ enumerate_fstab() {
 	local fs_spec= fs_file= fs_vfstype= fs_mntops= fs_freq= fs_passno=
 	[ -z "$mnt" ] && return
 	local escaped_mnt="$(echo $mnt | sed -e 's:/*$::' -e 's:/:\\/:g')"
-	awk "\$2 ~ /^$escaped_mnt(\/|\$)/ {print \$0}" /proc/mounts | \
+	awk "\$2 ~ /^$escaped_mnt(\/|\$)/ {print \$0}" "$ROOT"/proc/mounts | \
 		sed "s:$mnt:/:g; s: :\t:g" | sed -E 's:/+:/:g' | \
 		while read fs_spec fs_file fs_vfstype fs_mntops fs_freq fs_passno; do
 			if [ "$fs_file" = / ]; then
@@ -221,13 +221,13 @@ unpack_apkovl() {
 # find filesystem of given mounted dir
 find_mount_fs() {
 	local mount_point="$1"
-	awk "\$2 == \"$mount_point\" {print \$3}" /proc/mounts | tail -n 1
+	awk "\$2 == \"$mount_point\" {print \$3}" "$ROOT"/proc/mounts | tail -n 1
 }
 
 # find device for given mounted dir
 find_mount_dev() {
 	local mnt="$1"
-	awk "\$2 == \"$mnt\" { print \$1 }" /proc/mounts | tail -n 1
+	awk "\$2 == \"$mnt\" { print \$1 }" "$ROOT"/proc/mounts | tail -n 1
 }
 
 supported_boot_fs() {
@@ -264,14 +264,14 @@ init_chroot_mounts() {
 	local mnt="$1" i=
 	for i in proc dev; do
 		mkdir -p "$mnt"/$i
-		mount --bind /$i "$mnt"/$i
+		$MOCK mount --bind /$i "$mnt"/$i
 	done
 }
 
 cleanup_chroot_mounts() {
 	local mnt="$1" i=
 	for i in proc dev; do
-		umount "$mnt"/$i
+		$MOCK umount "$mnt"/$i
 	done
 }
 
@@ -304,10 +304,10 @@ setup_grub() {
 		fi
 		# currently disabling nvram so grub doesnt call efibootmgr
 		# installing to alpine directory so other distros dont overwrite it
-		grub-install --target=$target --efi-directory="$efi_directory" \
+		$MOCK grub-install --target=$target --efi-directory="$efi_directory" \
 			--bootloader-id=alpine --boot-directory="$mnt"/boot --no-nvram
 		# fallback mode will use boot/boot${fw arch}.efi
-		install -D "$efi_directory"/EFI/alpine/grub$fwa.efi \
+		$MOCK install -D "$efi_directory"/EFI/alpine/grub$fwa.efi \
 			"$efi_directory"/EFI/boot/boot$fwa.efi
 	# install GRUB for ppc64le
 	elif [ "$ARCH" = "ppc64le" ]; then
@@ -378,7 +378,7 @@ setup_uboot() {
 
 	# Rely on update-u-boot to automatically determine the
 	# board, imagedir, etc. this may not work in all cases.
-	update-u-boot
+	$MOCK update-u-boot
 }
 
 rpi_gen_config() {
@@ -469,7 +469,7 @@ setup_raspberrypi_bootloader() {
 
 # detect which firmware packages to install, if any
 select_firmware_pkgs() {
-	local firmware_pkgs="$( (cd "$ROOT"/sys/module/ && echo *) \
+	local firmware_pkgs="$( (cd "$ROOT"/sys/module/ 2>/dev/null && echo *) \
 		| xargs modinfo -F firmware 2>/dev/null \
 		| awk -F/ '{print $1 == $0 ? "linux-firmware-other" : "linux-firmware-"$1}' \
 		| sort -u)"
@@ -489,7 +489,7 @@ is_nvme_dev() {
 }
 
 install_mounted_root() {
-	local mnt="$1"
+	local mnt="$(realpath "$1")"
 	shift 1
 	local disks="${@}" mnt_boot= boot_fs= root_fs= use_crypt=
 	local initfs_features="ata base ide scsi usb virtio"
@@ -500,7 +500,7 @@ install_mounted_root() {
 
 	rootdev=$(find_mount_dev "$mnt")
 	if [ -z "$rootdev" ]; then
-		echo "$mnt does not seem to be a mount point" >&2
+		echo "'$mnt' does not seem to be a mount point" >&2
 		return 1
 	fi
 	root_fs=$(find_mount_fs "$mnt")
@@ -585,6 +585,7 @@ install_mounted_root() {
 	if [ -f "$mnt"/etc/fstab ]; then
 		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
 	fi
+	mkdir -p "$mnt"/etc
 	enumerate_fstab "$mnt" >> "$mnt"/etc/fstab
 	if [ -n "$SWAP_DEVICES" ]; then
 		local swap_dev
