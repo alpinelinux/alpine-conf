@@ -7,14 +7,17 @@ if [ "$1" = "--print-arch" ]; then
 	exit
 fi
 
-echo "DEBUG: fake apk" "$@"
-
 rootfs=.
 kver=5.15.78-0
 while [ $# -gt 0 ]; do
 	case "$1" in
 		add|del)
+			echo "DEBUG: fake apk" "$@"
 			cmd="$1"
+			;;
+		audit)
+			echo "U etc/hostname"
+			exit 0
 			;;
 		-p|--root)
 			shift
