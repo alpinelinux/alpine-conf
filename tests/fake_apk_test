@@ -24,10 +24,13 @@ fake_apk_add_body() {
 
 fake_apk_audit_body() {
 	init_env
-	mkdir etc
-	echo "foo" > etc/hostname
 	atf_check -s exit:0 \
 		-o no-match:"DEBUG: fake apk" \
 		-o match:"U etc/hostname" \
 		apk audit
+
+	atf_check -s exit:0 \
+		-o no-match:"DEBUG: fake apk" \
+		-o match:"etc/hostname" \
+		apk audit --quiet
 }

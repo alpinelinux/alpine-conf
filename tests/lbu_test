@@ -160,22 +160,8 @@ lbu_st_usage_body() {
 		lbu st -h
 }
 
-create_fake_apk_audit() {
-	mkdir -p bin etc
-	cat >bin/apk<<-EOF
-		#!/bin/sh
-		# mock apk
-		echo etc/localtime
-		echo etc/hosts
-	EOF
-	chmod +x bin/apk
-	touch etc/localtime etc/hosts
-	export PATH="$PWD/bin:$PATH"
-}
-
 lbu_package_body() {
 	init_env
-	create_fake_apk_audit
 
 	atf_check \
 		lbu package
@@ -204,7 +190,6 @@ lbu_package_encrypted_body() {
 		echo 'ENCRYPTION=$DEFAULT_CIPHER'
 		echo 'PASSWORD=foobar'
 	) > "$PWD/$sysconfdir/lbu.conf"
-	create_fake_apk_audit
 
 	atf_check \
 		-e match:"WARNING" \
@@ -218,7 +203,6 @@ lbu_package_encrypted_body() {
 lbu_package_pre_post_hooks_body() {
 	init_env
 	get_sysconfdir
-	create_fake_apk_audit
 
 	mkdir -p "$PWD/$sysconfdir/pre-package.d" \
 		"$PWD/$sysconfdir/post-package.d"

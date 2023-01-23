@@ -9,6 +9,7 @@ fi
 
 rootfs=.
 kver=5.15.78-0
+audit_prefix="U "
 while [ $# -gt 0 ]; do
 	case "$1" in
 		add|del)
@@ -16,13 +17,15 @@ while [ $# -gt 0 ]; do
 			cmd="$1"
 			;;
 		audit)
-			echo "U etc/hostname"
-			exit 0
+			cmd="$1"
 			;;
 		-p|--root)
 			shift
 			rootfs="$1"
 			;;
+		--quiet)
+			audit_prefix=""
+			shift ;;
 		--arch) shift ;;
 		--repositories-file) shift ;;
 		--keys-dir) shift ;;
@@ -32,6 +35,14 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
+
+if [ "$cmd" = audit ]; then
+		mkdir -p etc
+		touch etc/hosts etc/localtime
+		echo "${audit_prefix}etc/hosts"
+		echo "${audit_prefix}etc/localtime"
+		exit 0
+fi
 
 for pkg in $pkgs; do
 	case "$pkg" in
