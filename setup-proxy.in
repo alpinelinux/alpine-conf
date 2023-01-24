@@ -60,7 +60,7 @@ else
 		export no_proxy=localhost
 	__EOF__
 	# busybox wget does not handle http proxies well
-	$MOCK apk add --quiet --no-progress wget
+	apk add --quiet --no-progress wget
 fi
 
 if [ -z "$quiet" ] && [ "$proxyurl" != "none" ]; then

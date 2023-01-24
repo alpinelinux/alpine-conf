@@ -198,7 +198,7 @@ config_iface() {
 		echo "raw_device=\"$raw_device\"" >> $conf
 	fi
 	if is_wifi $iface; then
-		$MOCK apk add --quiet --no-progress iw wpa_supplicant || return
+		apk add --quiet --no-progress iw wpa_supplicant || return
 		local wifi_configured=false
 		while ! $wifi_configured; do
 			echo "Available wireless networks (scanning):"
@@ -533,14 +533,14 @@ prompt_for_interfaces() {
 
 	if ask_yesno "Do you want to do any manual network configuration? (y/n)" n; then
 		case "$EDITOR" in
-			nano)	$MOCK apk add nano;;
-			vim)	$MOCK apk add vim;;
+			nano)	apk add nano;;
+			vim)	apk add vim;;
 		esac
 		${EDITOR:-vi} interfaces
 	fi
 
 	if [ -n "$PKGS" ]; then
-		$MOCK apk add --quiet $PKGS
+		apk add --quiet $PKGS
 	fi
 
 	mkdir -p $ROOT/etc/network

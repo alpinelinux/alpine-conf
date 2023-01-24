@@ -9,10 +9,9 @@ fi
 
 rootfs=.
 kver=5.15.78-0
-audit_prefix="U "
 while [ $# -gt 0 ]; do
 	case "$1" in
-		add|del)
+		add|del|cache|update)
 			echo "DEBUG: fake apk" "$@"
 			cmd="$1"
 			;;
@@ -24,7 +23,7 @@ while [ $# -gt 0 ]; do
 			rootfs="$1"
 			;;
 		--quiet)
-			audit_prefix=""
+			quiet=1
 			shift ;;
 		--arch) shift ;;
 		--repositories-file) shift ;;
@@ -36,13 +35,21 @@ while [ $# -gt 0 ]; do
 	shift
 done
 
-if [ "$cmd" = audit ]; then
+case "$cmd" in
+	audit)
 		mkdir -p etc
 		touch etc/hosts etc/localtime
+		if [ -z "$quiet" ]; then
+			audit_prefix="U "
+		fi
 		echo "${audit_prefix}etc/hosts"
 		echo "${audit_prefix}etc/localtime"
 		exit 0
-fi
+		;;
+	cache|update|del)
+		exit 0
+		;;
+esac
 
 for pkg in $pkgs; do
 	case "$pkg" in

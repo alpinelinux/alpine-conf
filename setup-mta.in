@@ -68,7 +68,7 @@ while [ $# -eq 0 ] && [ "$res" != "221" ]; do
 	[ "x$res" = "x221" ] && echo "Connection to $mailhub is ok."
 done
 
-$MOCK apk add ssmtp
+apk add ssmtp
 
 setcfg mailhub $mailhub
 setcfg FromLineOverride YES

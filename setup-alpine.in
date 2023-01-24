@@ -268,7 +268,7 @@ diskmode=$(cat /tmp/alpine-install-diskmode.out 2>/dev/null)
 if [ "$diskmode" != "sys" ]; then
 	setup-lbu ${LBUOPTS}
 	setup-apkcache ${APKCACHEOPTS}
-	if [ -L /etc/apk/cache ]; then
-		$MOCK apk cache sync
+	if [ -L "$ROOT"/etc/apk/cache ]; then
+		apk cache sync
 	fi
 fi

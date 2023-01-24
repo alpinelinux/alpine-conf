@@ -151,7 +151,7 @@ if [ -n "$groups" ] && [ "$groups" != "none" ]; then
 fi
 
 if [ -n "$admin" ]; then
-	$MOCK apk add doas
+	apk add doas
 	mkdir -p "$ROOT"/etc/doas.d
 	echo "permit persist :wheel" >> "$ROOT"/etc/doas.d/doas.conf
 	$MOCK addgroup "$username" "wheel" || exit

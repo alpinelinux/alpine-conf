@@ -96,7 +96,7 @@ select_variant() {
 }
 
 goodbye() {
-	$MOCK apk del --quiet --no-progress .setup-keymap-deps
+	apk del --quiet --no-progress .setup-keymap-deps
 	exit $1
 }
 
@@ -109,7 +109,7 @@ done
 shift $(( $OPTIND - 1 ))
 
 trap 'goodbye 1' INT
-$MOCK apk add --quiet --virtual .setup-keymap-deps kbd-bkeymaps
+apk add --quiet --virtual .setup-keymap-deps kbd-bkeymaps
 
 deflayout="$1"
 defvariant="$2"

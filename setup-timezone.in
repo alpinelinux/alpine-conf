@@ -89,10 +89,10 @@ else
 	apkdel=".setup-timezone"
 fi
 
-$MOCK apk add --no-progress --quiet $pkg || die "Failed to install tzdata package"
+apk add --no-progress --quiet $pkg || die "Failed to install tzdata package"
 
 if [ -n "$apkdel" ]; then
-	trap "$MOCK apk del --no-progress --quiet $apkdel" EXIT HUP INT TERM
+	trap "apk del --no-progress --quiet $apkdel" EXIT HUP INT TERM
 fi
 
 if [ -L "${ROOT}"etc/zoneinfo/localtime ]; then

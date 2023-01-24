@@ -257,6 +257,6 @@ done
 
 if $changed; then
 	printf %s "Updating repository indexes... "
-	$MOCK apk update --quiet $apk_root_opt && echo "done."
+	apk update --quiet $apk_root_opt && echo "done."
 fi
 

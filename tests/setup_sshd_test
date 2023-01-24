@@ -29,7 +29,7 @@ setup_sshd_dropbear_body() {
 	init_env
 	atf_check -s exit:0 \
 		-e empty \
-		-o match:"^apk add .* dropbear" \
+		-o match:"apk add .* dropbear" \
 		-o match:"service dropbear added" \
 		-o match:"Starting dropbear" \
 		setup-sshd dropbear
@@ -40,7 +40,7 @@ setup_sshd_openssh_body() {
 	export WGETCONTENT="ssh-id FOOBAR"
 	atf_check -s exit:0 \
 		-e empty \
-		-o match:"^apk add .* openssh" \
+		-o match:"apk add .* openssh" \
 		-o match:"service sshd added" \
 		-o match:"Starting sshd" \
 		setup-sshd -k 'https://example.com/user.keys' openssh
@@ -58,7 +58,7 @@ setup_sshd_openssh_c_compat_body() {
 	init_env
 	atf_check -s exit:0 \
 		-e empty \
-		-o match:"^apk add .* openssh" \
+		-o match:"apk add .* openssh" \
 		-o match:"service sshd added" \
 		-o match:"Starting sshd" \
 		-o not-match:"Allow root ssh" \

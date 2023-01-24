@@ -75,7 +75,7 @@ if [ "$sshdchoice" = "openssh" ] && apk info --quiet --installed acf-core; then
 	pkgs="$pkgs acf-openssh"
 fi
 
-$MOCK apk add --quiet $pkgs
+apk add --quiet $pkgs
 
 users=$(awk -F: '{if ($3<65000 && $3 >= 1000) print $1}' \
 	"$ROOT"/etc/passwd 2>/dev/null)

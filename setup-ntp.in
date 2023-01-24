@@ -58,6 +58,6 @@ case "$resp" in
 		;;
 esac
 
-[ -z "$pkgs" ] || $MOCK apk add --quiet $pkgs
+[ -z "$pkgs" ] || apk add --quiet $pkgs
 rc-update add $svc default
 rc-service $svc start

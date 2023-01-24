@@ -7,7 +7,8 @@ init_tests \
 	setup_alpine_create_answerfile \
 	setup_alpine_kvm_clock \
 	setup_alpine_restart_network \
-	setup_alpine_answerfile_none
+	setup_alpine_answerfile_none \
+	setup_alpine_answerfile_apkcache
 
 export WGETCONTENT="https://mirror.example.com"
 setup_alpine_usage_body() {
@@ -137,5 +138,31 @@ setup_alpine_answerfile_none_body() {
 			atf_fail "$i should not been created"
 		fi
 	done
+}
+
+setup_alpine_answerfile_apkcache_body() {
+	init_env
+
+	cat >opts<<-EOF
+		KEYMAPOPTS=none
+		HOSTNAMEOPTS=alpine
+		INTERFACESOPTS=none
+		DNSOPTS=none
+		TIMEZONEOPTS=none
+		PROXYOPTS=none
+		NTPOPTS=none
+		APKREPOSOPTS=none
+		USEROPTS=none
+		SSHDOPTS=none
+		DISKOPTS=none
+		LBUOPTS=none
+		APKCACHEOPTS="media/LABEL=APKOVL/cache"
+	EOF
+	atf_check -s exit:0 \
+		-o match:"apk cache" \
+		setup-alpine -e -f opts
+	if ! [ -L etc/apk/cache ]; then
+		atf_fail "etc/apk/cache was not created"
+	fi
 }
 

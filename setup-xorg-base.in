@@ -38,7 +38,7 @@ if test -f "$orig"; then
 		fi
 	done < "$orig" >> "$tmp"
 	mv -f "$tmp" "$orig"
-	$MOCK apk update
+	apk update
 fi
 
 # enable community repo
@@ -49,9 +49,9 @@ if [ -f "$ROOT"/etc/apk/repositories ] && ! grep -q '^[^#].*/community$' "$ROOT"
 		-e "/^#${escaped_repo}$/d" \
 		"$ROOT"/etc/apk/repositories \
 		&& echo ">> Enabling community repository"
-	$MOCK apk update
+	apk update
 fi
 
-$MOCK apk add xorg-server xf86-input-libinput eudev mesa-dri-gallium "$@"
+apk add xorg-server xf86-input-libinput eudev mesa-dri-gallium "$@"
 
 setup-devd udev

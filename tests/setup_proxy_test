@@ -14,7 +14,7 @@ setup_proxy_usage_body() {
 setup_proxy_url_body() {
 	init_env
 	atf_check -s exit:0 \
-		-o match:'^apk add.*wget' \
+		-o match:'apk add.*wget' \
 		-e empty \
 		setup-proxy https://example.com
 	grep http_proxy etc/profile.d/proxy.sh || atf_fail "http_proxy not set in etc/profile.d/proxy.sh"
