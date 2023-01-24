@@ -680,7 +680,7 @@ install_mounted_root() {
 		"$mnt"/var/lib/apk/world 2>/dev/null)"
 
 	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base $(select_bootloader_pkg) $(select_firmware_pkgs)"
-	if [ "$(rc --sys)" = "XEN0" ]; then
+	if [ "$(openrc --sys)" = "XEN0" ]; then
 		pkgs="$pkgs xen-hypervisor"
 	fi
 	if is_rpi; then
