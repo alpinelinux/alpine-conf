@@ -285,13 +285,25 @@ get_bootopt() {
 	done
 }
 
+find_efi_directory() {
+	local mnt="$1" dir=
+	for dir in boot/efi boot; do
+		if [ "$(find_mount_fs "$mnt"/$dir)" = vfat ]; then
+			echo "$mnt"/$dir
+			return
+		fi
+	done
+	return 1
+}
+
 # setup GRUB bootloader
 setup_grub() {
 	local mnt="$1" root="$2" modules="$3" kernel_opts="$4" bootdev="$5"
 	# install GRUB efi mode
 	if [ -n "$USE_EFI" ]; then
 		local target fwa
-		local efi_directory="$mnt"/boot/efi
+		local efi_directory=$(find_efi_directory "$mnt") || \
+			echo "WARNING: EFI directory was not found" >&2
 		case "$ARCH" in
 			x86_64)		target=x86_64-efi ; fwa=x64 ;;
 			x86)		target=i386-efi ; fwa=ia32 ;;
@@ -299,9 +311,7 @@ setup_grub() {
 			aarch64)	target=arm64-efi ; fwa=aa64 ;;
 			riscv64)	target=riscv64-efi ; fwa=riscv64 ;;
 		esac
-		if [ -n "$USE_CRYPT" ]; then
-			efi_directory="$mnt"/boot
-		fi
+
 		# currently disabling nvram so grub doesnt call efibootmgr
 		# installing to alpine directory so other distros dont overwrite it
 		$MOCK grub-install --target=$target --efi-directory="$efi_directory" \

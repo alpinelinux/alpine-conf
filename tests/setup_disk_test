@@ -10,7 +10,8 @@ init_tests \
 	setup_disk_func_setup_partitions_gpt \
 	setup_disk_func_find_efi_size \
 	setup_disk_non_existing_block_dev \
-	setup_disk_install_mounted_root_nvme
+	setup_disk_install_mounted_root_nvme \
+	setup_disk_install_mounted_root_efi_boot
 
 setup_disk_usage_body() {
 	test_usage setup-disk
@@ -222,4 +223,28 @@ setup_disk_install_mounted_root_nvme_body() {
 	atf_check -o match:"GRUB_CMDLINE_LINUX_DEFAULT=.*ext4,nvme" \
 		cat target/etc/default/grub
 
+}
+
+setup_disk_install_mounted_root_efi_boot_body() {
+	init_env
+	mkdir -p target/boot \
+		sys/firmware/efi
+
+	# simulate nvme0n1p2 being mounted
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+	fake_mount "/dev/vda1 $PWD/target/boot vfat rw,relatime,fmask=0022 0 0"
+
+	atf_check -s exit:0 \
+		-o match:"Installing system on /dev/vda2" \
+		-o match:"grub-install .* --efi-directory=$PWD/target/boot .* --boot-directory=$PWD/target/boot" \
+		-o match:"install -D $PWD/target/boot/EFI/alpine/grub.*efi $PWD/target/boot/EFI/boot/bootaa64.efi" \
+		setup-disk -v target
+
+	atf_check \
+		-o match:"/dev/vda2	/	ext4	rw,noatime,data=ordered 0 1" \
+		-o match:"/dev/vda1	/boot	vfat	rw,relatime,fmask=0022 0 2" \
+		cat target/etc/fstab
+
+	atf_check -o match:"GRUB_CMDLINE_LINUX_DEFAULT=.*ext4" \
+		cat target/etc/default/grub
 }
