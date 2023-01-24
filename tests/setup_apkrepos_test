@@ -8,7 +8,8 @@ init_tests \
 	setup_apkrepos_random \
 	setup_apkrepos_first \
 	setup_apkrepos_fastest \
-	setup_apkrepos_network_failure
+	setup_apkrepos_network_failure \
+	setup_apkrepos_interactive
 
 setup_apkrepos_usage_body() {
 	test_usage setup-apkrepos
@@ -73,3 +74,13 @@ setup_apkrepos_network_failure_body() {
 		-e match:"Warning! No mirror found" \
 		setup-apkrepos -1
 }
+
+setup_apkrepos_interactive_body() {
+	init_env
+	export WGETCONTENT="$(seq 0 9 | awk '{print "https://a" $0 ".example.com"}')"
+	echo "1" > answers
+	atf_check -s exit:0 \
+		-o match:"Enter mirror number" \
+		setup-apkrepos < answers
+}
+
