@@ -102,7 +102,7 @@ setup_alpine_restart_network_body() {
 	echo down >sys/class/net/eth0/operstate
 
 	SSH_CONNECTION="::1 54984 ::1 22" atf_check -s exit:0 \
-		-o match:"openrc boot" \
+		-o match:"openrc( -n)? boot" \
 		-e empty \
 		setup-alpine -q
 	atf_check -s exit:3 \
