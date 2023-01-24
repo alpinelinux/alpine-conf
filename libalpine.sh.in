@@ -43,16 +43,6 @@ init_tmpdir() {
 	eval "$1=\"$__tmpd\""
 }
 
-pkg_inst() {
-	eecho "WARNING: pkg_inst is deprecated. Use '\$MOCK apk add --quiet' in script"
-	$MOCK apk add --quiet $*
-}
-
-pkg_deinst() {
-	eecho "WARNING: pkg_deinst is deprecated. Use '\$MOCK apk del --quiet' in script"
-	$MOCK apk del --quiet $*
-}
-
 default_read() {
 	local n
 	read n
