@@ -9,7 +9,9 @@ init_tests \
 	setup_apkrepos_first \
 	setup_apkrepos_fastest \
 	setup_apkrepos_network_failure \
-	setup_apkrepos_interactive
+	setup_apkrepos_interactive \
+	setup_apkrepos_alpine_stable \
+	setup_apkrepos_alpine_edge
 
 setup_apkrepos_usage_body() {
 	test_usage setup-apkrepos
@@ -84,3 +86,31 @@ setup_apkrepos_interactive_body() {
 		setup-apkrepos < answers
 }
 
+setup_apkrepos_alpine_stable_body() {
+	init_env
+	export WGETCONTENT="$(seq 0 9 | awk '{print "https://a" $0 ".example.com"}')"
+	mkdir -p etc
+	echo "3.17.0" > etc/alpine-release
+	atf_check -s exit:0 \
+		-o match:"Added mirror a0.example.com" \
+		setup-apkrepos -1
+	atf_check -o match:"v3\.17" cat etc/apk/repositories
+}
+
+setup_apkrepos_alpine_edge_body() {
+	init_env
+	export WGETCONTENT="$(seq 0 9 | awk '{print "https://a" $0 ".example.com"}')"
+	mkdir -p etc etc/apk
+	# edge may have a .0 in etc/alpine-release
+	echo "3.17.0" > etc/alpine-release
+	echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" > etc/apk/repositories
+
+	atf_check -s exit:0 \
+		-o match:"Added mirror a0.example.com" \
+		setup-apkrepos -1
+
+	atf_check \
+		-o match:"https://a0.example.com/edge/main" \
+		-o not-match:"v3\.17" \
+		cat etc/apk/repositories
+}
