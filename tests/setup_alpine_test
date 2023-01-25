@@ -8,7 +8,8 @@ init_tests \
 	setup_alpine_kvm_clock \
 	setup_alpine_restart_network \
 	setup_alpine_answerfile_none \
-	setup_alpine_answerfile_apkcache
+	setup_alpine_answerfile_apkcache \
+	setup_alpine_answerfile_network
 
 export WGETCONTENT="https://mirror.example.com"
 setup_alpine_usage_body() {
@@ -164,5 +165,29 @@ setup_alpine_answerfile_apkcache_body() {
 	if ! [ -L etc/apk/cache ]; then
 		atf_fail "etc/apk/cache was not created"
 	fi
+}
+
+setup_alpine_answerfile_network_body() {
+	init_env
+	cat >opts<<-EOF
+		KEYMAPOPTS=none
+		HOSTNAMEOPTS=myname
+		INTERFACESOPTS=none
+		DNSOPTS=none
+		TIMEZONEOPTS=none
+		PROXYOPTS=none
+		NTPOPTS=none
+		APKREPOSOPTS=none
+		USEROPTS=none
+		SSHDOPTS=none
+		DISKOPTS=none
+		LBUOPTS=none
+		APKCACHEOPTS=none
+	EOF
+	WGETCONTENT="$(cat opts)" atf_check -s exit:0 \
+		-o match:"apk add" \
+		setup-alpine -e -f https://example.com/answers
+
+	atf_check -o match:"myname" cat etc/hostname
 }
 
