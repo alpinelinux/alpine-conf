@@ -4,6 +4,13 @@ init_env() {
 	export ROOT=$PWD LIBDIR=$(atf_get_srcdir)/.. MOCK=echo
 }
 
+fake_bin() {
+	mkdir -p bin
+	cat > bin/"$1"
+	chmod +x bin/"$1"
+	PATH="$PWD/bin:$PATH"
+}
+
 init_tests() {
 	TESTS="$@"
 	export TESTS

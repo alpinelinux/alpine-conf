@@ -9,6 +9,7 @@ init_tests \
 	setup_disk_func_setup_partitions_dos \
 	setup_disk_func_setup_partitions_gpt \
 	setup_disk_func_find_efi_size \
+	setup_disk_func_uuid_or_device \
 	setup_disk_non_existing_block_dev \
 	setup_disk_install_mounted_root_nvme \
 	setup_disk_install_mounted_root_efi_boot
@@ -190,6 +191,36 @@ setup_disk_func_find_efi_size_body() {
 			-o match:"^$expected$" \
 			setup-disk /dev/vda
 	done
+}
+
+setup_disk_func_uuid_or_device_body() {
+	init_env
+	fake_bin blkid <<-EOF
+		#!/bin/sh
+		cat <<-EOF2
+			/dev/sda3: UUID="4ec0992a-bf5a-4d04-bc49-06c131ae901b" BLOCK_SIZE="4096" TYPE="ext4" PARTUUID="0ce794d3-03"
+			/dev/sda1: UUID="1db12961-31ce-420f-94f0-559a1f6592ff" BLOCK_SIZE="1024" TYPE="ext4" PARTUUID="0ce794d3-01"
+			/dev/sda2: UUID="a5fbbd70-94f6-4d03-947c-e3afb91a32c8" TYPE="swap" PARTUUID="0ce794d3-02"
+			/dev/md0: UUID="86a00eb9-9b5a-4d73-812c-8fc958673a7c" TYPE="LVM2_member"
+		EOF2
+	EOF
+
+	SETUP_DISK_TESTFUNC=uuid_or_device \
+		atf_check -s exit:0 \
+			-o match:"/dev/vda1" \
+			setup-disk /dev/vda1
+
+	SETUP_DISK_TESTFUNC=uuid_or_device \
+		atf_check -s exit:0 \
+			-o not-match:"UUID=" \
+			-o match:"/dev/md0" \
+			setup-disk /dev/md0
+
+	SETUP_DISK_TESTFUNC=uuid_or_device \
+		atf_check -s exit:0 \
+			-o match:"UUID=1db12961-31ce-420f-94f0-559a1f6592ff" \
+			setup-disk /dev/sda1
+
 }
 
 setup_disk_non_existing_block_dev_body() {
