@@ -59,7 +59,7 @@ case "$USEANSWERFILE" in
 	http*://*|ftp://*)
 		# dynamically download answer file from URL (supports HTTP(S) and FTP)
 		# ensure the network is up, otherwise setup a temporary interface config
-		if ! rc-status networking --quiet status; then
+		if ! rc-service networking --quiet status; then
 			setup-interfaces -ar
 		fi
 
