@@ -550,7 +550,7 @@ prompt_for_interfaces() {
 auto_setup() {
 	local iface
 	for iface in $(available_ifaces); do
-		if [ "$(cat "$ROOT"/sys/class/net/$iface/operstate)" = "up" ]; then
+		if [ "$(cat "$ROOT"/sys/class/net/$iface/operstate 2>/dev/null)" = "up" ]; then
 			break
 		fi
 	done

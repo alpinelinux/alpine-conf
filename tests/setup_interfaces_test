@@ -12,7 +12,10 @@ init_tests \
 	setup_interfaces_interactive_br0 \
 	setup_interfaces_interactive_bond0 \
 	setup_interfaces_interactive_wlan0_psk \
-	setup_interfaces_interactive_wlan0_open
+	setup_interfaces_interactive_wlan0_open \
+	setup_interfaces_auto \
+	setup_interfaces_auto_none \
+	setup_interfaces_auto_restart
 
 setup_interfaces_usage_body() {
 	test_usage setup-interfaces
@@ -232,4 +235,25 @@ setup_interfaces_interactive_wlan0_open_body() {
 		-o not-match:"Type the \"Lynx2C0CEA_5g\" network Pre-Shared Key" \
 		-o match:"Ip address for wlan0" \
 		setup-interfaces <answers
+}
+
+setup_interfaces_auto_body() {
+	init_env
+	create_fake_ifaces lo eth0
+	atf_check -s exit:0 \
+		setup-interfaces -a
+}
+
+setup_interfaces_auto_none_body() {
+	init_env
+	atf_check -s exit:0 \
+		setup-interfaces -a
+}
+
+setup_interfaces_auto_restart_body() {
+	init_env
+	create_fake_ifaces lo eth0
+	atf_check -s exit:0 \
+		setup-interfaces -a -r
+	atf_check -o match:"status: started" rc-service networking status
 }
