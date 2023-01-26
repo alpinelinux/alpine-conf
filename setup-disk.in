@@ -669,6 +669,7 @@ install_mounted_root() {
 	rm -f "$mnt"/var/lib/apk/installed "$mnt"/lib/apk/db/installed
 	echo "Installing system on $rootdev:"
 	case "$BOOTLOADER" in
+		none) ;;
 		grub) setup_grub "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" $disks ;;
 		syslinux) setup_syslinux "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" ;;
 		zipl) setup_zipl "$mnt" "$root" "$modules" "$kernel_opts" ;;
@@ -825,6 +826,9 @@ stop_all_raid() {
 }
 
 select_bootloader_pkg() {
+	if [ "$BOOTLOADER" = none ]; then
+		return
+	fi
 	local bootloader="$BOOTLOADER"
 	if [ "$ARCH" = "ppc64le" ]; then
 		bootloader=grub-ieee1275

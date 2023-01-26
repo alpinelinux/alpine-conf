@@ -12,7 +12,8 @@ init_tests \
 	setup_disk_func_uuid_or_device \
 	setup_disk_non_existing_block_dev \
 	setup_disk_install_mounted_root_nvme \
-	setup_disk_install_mounted_root_efi_boot
+	setup_disk_install_mounted_root_efi_boot \
+	setup_disk_install_mounted_root_bootloader_none
 
 setup_disk_usage_body() {
 	test_usage setup-disk
@@ -268,7 +269,6 @@ setup_disk_install_mounted_root_efi_boot_body() {
 	mkdir -p target/boot \
 		sys/firmware/efi
 
-	# simulate nvme0n1p2 being mounted
 	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
 	fake_mount "/dev/vda1 $PWD/target/boot vfat rw,relatime,fmask=0022 0 0"
 
@@ -285,4 +285,21 @@ setup_disk_install_mounted_root_efi_boot_body() {
 
 	atf_check -o match:"GRUB_CMDLINE_LINUX_DEFAULT=.*ext4" \
 		cat target/etc/default/grub
+}
+
+setup_disk_install_mounted_root_bootloader_none_body() {
+	init_env
+	mkdir -p target/boot \
+		sys/firmware/efi
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+	fake_mount "/dev/vda1 $PWD/target/boot vfat rw,relatime,fmask=0022 0 0"
+
+	BOOTLOADER=none atf_check -s exit:0 \
+		-o not-match:"grub" \
+		setup-disk -v target
+
+	if [ -f target/etc/default/grub ]; then
+		atf_fail "etc/default/grub should not exist"
+	fi
 }
