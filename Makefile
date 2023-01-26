@@ -117,5 +117,5 @@ Kyuafile:
 	echo "include('tests/Kyuafile')" >> $@
 
 check: $(SCRIPTS) $(BIN_FILES) tests/Kyuafile Kyuafile
-	kyua test || (kyua report --verbose && exit 1)
+	kyua --variable parallelism=$(shell nproc) test || (kyua report --verbose && exit 1)
 
