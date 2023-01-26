@@ -292,8 +292,7 @@ setup_disk_install_mounted_root_bootloader_none_body() {
 	mkdir -p target/boot \
 		sys/firmware/efi
 
-	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
-	fake_mount "/dev/vda1 $PWD/target/boot vfat rw,relatime,fmask=0022 0 0"
+	fake_mount "/dev/vda2 $PWD/target virtiofs rw,noatime,data=ordered 0 0"
 
 	BOOTLOADER=none atf_check -s exit:0 \
 		-o not-match:"grub" \
