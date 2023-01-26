@@ -24,7 +24,7 @@ while [ $# -gt 0 ]; do
 			;;
 		--quiet)
 			quiet=1
-			shift ;;
+			;;
 		--arch) shift ;;
 		--repositories-file) shift ;;
 		--keys-dir) shift ;;
