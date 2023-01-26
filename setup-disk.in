@@ -693,7 +693,7 @@ install_mounted_root() {
 	if is_rpi; then
 		pkgs="$pkgs dosfstools"
 	fi
-	local repos="$(sed -e 's/\#.*//' /etc/apk/repositories)"
+	local repos="$(sed -e 's/\#.*//' "$ROOT"/etc/apk/repositories 2>/dev/null)"
 	local repoflags=
 	for i in $repos; do
 		repoflags="$repoflags --repository $i"
