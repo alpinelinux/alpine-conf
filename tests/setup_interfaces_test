@@ -13,6 +13,7 @@ init_tests \
 	setup_interfaces_interactive_bond0 \
 	setup_interfaces_interactive_wlan0_psk \
 	setup_interfaces_interactive_wlan0_open \
+	setup_interfaces_interactive_ssid_list \
 	setup_interfaces_auto \
 	setup_interfaces_auto_none \
 	setup_interfaces_auto_restart
@@ -234,6 +235,29 @@ setup_interfaces_interactive_wlan0_open_body() {
 		-o not-match:"x00" \
 		-o not-match:"Type the \"Lynx2C0CEA_5g\" network Pre-Shared Key" \
 		-o match:"Ip address for wlan0" \
+		setup-interfaces <answers
+}
+
+setup_interfaces_interactive_ssid_list_body() {
+	init_env
+	create_fake_ifaces lo eth0 wlan0
+	mkdir -p sys/class/net/wlan0/phy80211
+
+	(
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo wlan0
+		# Type the wireless network name to connect to:
+		echo kano1
+		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo dhcp
+		# Do you want to do any manual network configuration? (y/n) [n]
+		echo n
+	)>answers
+
+	atf_check -s exit:0 \
+		-o match:"Available interfaces are: eth0 wlan0" \
+		-o match:"kano1" \
+		-o match:"Type the \"kano1\" network Pre-Shared Key" \
 		setup-interfaces <answers
 }
 
