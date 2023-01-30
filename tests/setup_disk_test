@@ -13,7 +13,8 @@ init_tests \
 	setup_disk_non_existing_block_dev \
 	setup_disk_install_mounted_root_nvme \
 	setup_disk_install_mounted_root_efi_boot \
-	setup_disk_install_mounted_root_bootloader_none
+	setup_disk_install_mounted_root_bootloader_none \
+	setup_disk_install_mounted_root_zfs
 
 setup_disk_usage_body() {
 	test_usage setup-disk
@@ -302,3 +303,25 @@ setup_disk_install_mounted_root_bootloader_none_body() {
 		atf_fail "etc/default/grub should not exist"
 	fi
 }
+
+setup_disk_install_mounted_root_zfs_body() {
+	init_env
+	mkdir -p target/boot \
+		sys/firmware/efi
+
+	fake_mount "rpool/root-a $PWD/target zfs rw,noatime,data=ordered 0 0"
+
+	atf_check -s exit:0 \
+		-o match:"grub" \
+		-e not-match:"zfs is not supported" \
+		setup-disk -v target
+	atf_check \
+		-o match:"GRUB_CMDLINE_LINUX_DEFAULT=.*zfs" \
+		-o match:"GRUB_FS=zfs" \
+		cat target/etc/default/grub
+	atf_check \
+		-o match:'features=.*nvme' \
+		-o match:'features=.*zfs' \
+		cat target/etc/mkinitfs/mkinitfs.conf
+}
+

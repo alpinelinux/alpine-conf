@@ -1,0 +1,18 @@
+#!/bin/sh
+
+
+case "$1" in
+	list)
+		cat << EOF
+NAME          SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP    HEALTH  ALTROOT
+bpool        2.75G  54.4M  2.70G        -         -     0%     1%  1.00x    ONLINE  -
+  nvme0n1p2     3G  54.4M  2.70G        -         -     0%  1.93%      -    ONLINE
+rpool        3.62T   419M  3.62T        -         -     0%     0%  1.00x    ONLINE  -
+  nvme0n1p3  3.64T   419M  3.62T        -         -     0%  0.01%      -    ONLINE
+EOF
+		;;
+	*)
+		echo "usage: zpool command args ..." >&2
+		;;
+esac
+

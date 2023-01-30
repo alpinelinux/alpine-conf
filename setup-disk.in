@@ -238,6 +238,9 @@ find_mount_dev() {
 
 supported_boot_fs() {
 	local supported="ext2 ext3 ext4 btrfs xfs vfat"
+	if [ "$BOOTLOADER" = "grub" ]; then
+		local supported="$supported zfs"
+	fi
 	local fs=
 	if is_rpi; then
 		supported=vfat
@@ -352,6 +355,10 @@ setup_grub() {
 	GRUB_DISABLE_RECOVERY=true
 	GRUB_CMDLINE_LINUX_DEFAULT="modules=$modules $kernel_opts"
 	EOF
+
+	case "$initfs_features" in
+		*zfs*) echo "GRUB_FS=zfs" >> "$mnt"/etc/default/grub;;
+	esac
 }
 
 # setup syslinux bootloader
@@ -542,6 +549,18 @@ install_mounted_root() {
 	if [ "$BOOTLOADER" != none ] && ! supported_boot_fs "$boot_fs"; then
 		[ -z "$FORCE_BOOTFS" ] && return 1
 		echo "Continuing at your own risk."
+	fi
+
+	# if root fileystem is zfs, check if we need to load
+	# nvme feature when creating initramfs
+	if [ "$root_fs" = "zfs" ]; then
+		for dev in $(zpool list -v ${rootdev%%/*} | sed '/^\S.*/d;s/^\s*\(\S*\)\s.*/\1/g'); do
+			case $dev in
+			nvme*)
+				initfs_features="${initfs_features% nvme} nvme"
+				;;
+			esac
+		done
 	fi
 
 	# check if our root is on raid so we can feed mkinitfs and
