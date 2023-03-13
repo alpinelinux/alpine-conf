@@ -1476,7 +1476,7 @@ usage() {
 
 		If DISKDEV is specified, then use the specified disk(s) without asking. If
 		multiple disks are specified then set them up in a RAID array. If there are
-		mode than 2 disks, then use raid level 5 instead of raid level 1.
+		more than 2 disks, then use raid level 5 instead of raid level 1.
 
 		options:
 		 -h  Show this help
