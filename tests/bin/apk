@@ -15,7 +15,7 @@ while [ $# -gt 0 ]; do
 			echo "DEBUG: fake apk" "$@"
 			cmd="$1"
 			;;
-		audit)
+		audit|info)
 			cmd="$1"
 			;;
 		-p|--root)
@@ -28,6 +28,7 @@ while [ $# -gt 0 ]; do
 		--arch) shift ;;
 		--repositories-file) shift ;;
 		--keys-dir) shift ;;
+		-*) subopt="$1";;
 		[a-z]*)
 			pkgs="$pkgs $1"
 			;;
@@ -48,6 +49,20 @@ case "$cmd" in
 		;;
 	cache|update|del)
 		exit 0
+		;;
+	info)
+		case "$subopt" in
+			-r|--depends)
+				for pkg in $pkgs; do
+					if ! [ -n "$quiet" ]; then
+						printf "%s depends on:\n\n"
+					fi
+					case "$pkg" in
+						*gnome*) printf "gnome-shell\ngvfs\n";;
+					esac
+				done
+				;;
+		esac
 		;;
 esac
 
