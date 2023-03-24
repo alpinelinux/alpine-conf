@@ -297,10 +297,12 @@ get_bootopt() {
 find_efi_directory() {
 	local mnt="$1" dir=
 	for dir in boot/efi boot; do
-		if [ "$(find_mount_fs "$mnt"/$dir)" = vfat ]; then
-			echo "$mnt"/$dir
-			return
-		fi
+		case "$(find_mount_fs "$mnt"/$dir)" in
+			vfat|fat|msdos)
+				echo "$mnt"/$dir
+				return
+				;;
+		esac
 	done
 	return 1
 }
