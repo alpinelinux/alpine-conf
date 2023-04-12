@@ -69,6 +69,7 @@ case "$de" in
 		setup-xorg-base ${BROWSER:-firefox} $(apk info --quiet --depends \
 			gnome gnome-apps-core) "$@"
 		rc-update add gdm
+		rc-update add elogind
 		;;
 	plasma)
 		setup-xorg-base ${BROWSER:-firefox} \
