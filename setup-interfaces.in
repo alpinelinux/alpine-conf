@@ -124,7 +124,7 @@ find_essids() {
 	$MOCK ip link set dev "$iface" up
 	(iw dev wlan0 scan; echo BSS) | awk -F": " '
 		/^BSS/ { if (ssid) { print ssid "/" auth }; ssid=""; auth="" }
-		$1 ~ /SSID$/ { ssid=$2 }
+		$1 ~ /^[[:blank:]]*SSID$/ { ssid=$2 }
 		$1 ~ /Authentication suites/ { auth=$2 }' \
 		| grep -E -v '(802.1x|\\x00)' | sort -u >"$essids_list"
 	if [ -s "$essids_list" ]; then
