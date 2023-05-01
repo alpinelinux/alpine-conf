@@ -123,11 +123,6 @@ add_mirror() {
 	mkdir -p "${APKREPOS_PATH%/*}"
 	echo "${mirror%/}/${release}/main" >> $APKREPOS_PATH
 	echo "${community_prefix}${mirror%/}/${release}/community" >> $APKREPOS_PATH
-	case "$release" in
-	v[0-9]*)
-		echo "#${mirror%/}/edge/main" >> $APKREPOS_PATH;
-		echo "#${mirror%/}/edge/community" >> $APKREPOS_PATH;;
-	esac
 	echo "#${mirror%/}/edge/testing" >> $APKREPOS_PATH
 	echo "" >> $APKREPOS_PATH
 	echo "Added mirror $(get_hostname_from_url $mirror)"
