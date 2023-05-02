@@ -180,8 +180,13 @@ find_partitions() {
 	fi
 	case "$type" in
 		boot)
-			search=bootable
-			[ -n "$USE_EFI" ] && search=$(partition_id esp)
+			if [ -n "$USE_EFI" ]; then
+				search=$(partition_id esp)
+			elif [ "$DISKLABEL" = "gpt" ]; then
+				search="LegacyBIOSBootable"
+			else
+				search=bootable
+			fi
 			sfdisk -d "$dev" | awk '/'$search'/ {print $1}'
 			;;
 		*)
@@ -1262,6 +1267,9 @@ native_disk_install_lvm() {
 			setup_partitions $diskdev \
 				"${boot_size}M,$boot_part_type,*" \
 				"${lvm_size}${lvm_size:+M},$lvm_part_type" || return 1
+			if [ "$DISKLABEL" = "gpt" ] && [ -z "$USE_EFI" ]; then
+				sfdisk --part-attrs "$diskdev" 1 LegacyBIOSBootable
+			fi
 		fi
 	done
 
@@ -1344,10 +1352,13 @@ native_disk_install() {
 				$boot_size $swap_size $root_part_type || return 1
 		else
 			setup_partitions $diskdev \
-				"${boot_size}M,$boot_part_type,*" \
+				"${boot_size}M,$boot_part_type,bootable" \
 				"${swap_size}M,$swap_part_type" \
 				"${root_size}${root_size:+M},$root_part_type" \
 				|| return 1
+			if [ "$DISKLABEL" = "gpt" ] && [ -z "$USE_EFI" ]; then
+				sfdisk --part-attrs "$diskdev" 1 LegacyBIOSBootable
+			fi
 		fi
 	done
 
