@@ -452,6 +452,7 @@ BSS 70:3a:cb:f9:ea:13(on wlan0)
 		 * SSID List
 		 * Operating Mode Notification
 		 * FTM Responder
+		 * UTF-8 SSID
 		 * Max Number Of MSDUs In A-MSDU is unlimited
 	VHT capabilities:
 		VHT Capabilities (0x338139b2):
