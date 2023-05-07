@@ -320,6 +320,7 @@ done
 
 # wireless regulatory db
 if [ -e "$ROOTFS"/lib/modules/*/kernel/net/wireless/cfg80211.ko* ]; then
+	_apk add --no-scripts wireless-regdb
 	for _regdb in "$ROOTFS"/lib/firmware/regulatory.db*; do
 		[ -e "$_regdb" ] && install -pD "$_regdb" "$MODLOOP"/modules/firmware/"${_regdb##*/}"
 	done
