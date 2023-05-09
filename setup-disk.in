@@ -1352,7 +1352,7 @@ native_disk_install() {
 				$boot_size $swap_size $root_part_type || return 1
 		else
 			setup_partitions $diskdev \
-				"${boot_size}M,$boot_part_type,bootable" \
+				"${boot_size}M,$boot_part_type,*" \
 				"${swap_size}M,$swap_part_type" \
 				"${root_size}${root_size:+M},$root_part_type" \
 				|| return 1
