@@ -44,13 +44,12 @@ show_tz_list() {
 
 setup_tz() {
 	local zonepath="$1"
-	mkdir -p "${ROOT}"etc/zoneinfo
 	if ! $INSTALL_TZDATA; then
 		local zone="${zonepath#*/zoneinfo/}"
 		local zdir="${zonepath%/*}"/
 		zdir="${zdir#*/zoneinfo/}"
 		if ! $KEEP_TZDATA; then
-			rm -r "${ROOT}"etc/zoneinfo
+			rm -rf "${ROOT}"etc/zoneinfo
 		fi
 		mkdir -p "${ROOT}"etc/zoneinfo/$zdir
 		cp "$zonepath" "${ROOT}"etc/zoneinfo/$zdir/

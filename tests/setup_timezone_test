@@ -26,6 +26,7 @@ setup_timezone_copy_body() {
 
 setup_timezone_install_body() {
 	init_env
+	mkdir etc
 	mkdir -p usr/share/zoneinfo/Europe
 	touch usr/share/zoneinfo/Europe/Oslo
 	atf_check -s exit:0 \
@@ -69,4 +70,3 @@ setup_timezone_interactive_body() {
 		-e empty \
 		setup-timezone < answers
 }
-
