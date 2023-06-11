@@ -4,7 +4,7 @@ PREFIX=@PREFIX@
 : ${LIBDIR=$PREFIX/lib}
 . "$LIBDIR/libalpine.sh"
 
-zroot="$ROOT"/usr/share/zoneinfo
+zroot="$ROOT"usr/share/zoneinfo
 
 usage() {
 	cat <<-__EOF__
@@ -50,7 +50,7 @@ setup_tz() {
 		local zdir="${zonepath%/*}"/
 		zdir="${zdir#*/zoneinfo/}"
 		if ! $KEEP_TZDATA; then
-			rm -r "${ROOT}"/etc/zoneinfo
+			rm -r "${ROOT}"etc/zoneinfo
 		fi
 		mkdir -p "${ROOT}"etc/zoneinfo/$zdir
 		cp "$zonepath" "${ROOT}"etc/zoneinfo/$zdir/
