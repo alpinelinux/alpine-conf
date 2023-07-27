@@ -88,7 +88,6 @@ case "$de" in
 			kde-gtk-config \
 			kdeplasma-addons \
 			kgamma5 \
-			khotkeys \
 			kinfocenter \
 			kio-fuse \
 			kmenuedit \
@@ -98,6 +97,8 @@ case "$de" in
 			kwallet-pam \
 			kwayland-integration \
 			pinentry-qt \
+			pipewire-alsa \
+			pipewire-pulse \
 			plasma-browser-integration \
 			plasma-desktop \
 			plasma-disks \
@@ -108,8 +109,8 @@ case "$de" in
 			plasma-workspace-wallpapers \
 			polkit-elogind \
 			polkit-kde-agent-1 \
-			print-manager \
 			powerdevil \
+			print-manager \
 			sddm-breeze \
 			sddm-kcm \
 			spectacle \
