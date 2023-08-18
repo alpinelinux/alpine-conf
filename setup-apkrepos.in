@@ -113,6 +113,9 @@ get_alpine_release() {
 		[0-9]*.[0-9]*.[0-9]*)
 			# release in x.y.z format, cut last digit
 			release=v${version%.[0-9]*};;
+		v[0-9]*.[0-9]*)
+            # release in vx.y format, keep as is
+			release="${version}";;
 		*)	# fallback to edge
 			release="edge";;
 	esac
