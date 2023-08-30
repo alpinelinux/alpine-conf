@@ -6,7 +6,7 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-desktop [-h] [gnome|plasma|xfce]
+		usage: setup-desktop [-h] [gnome|plasma|xfce|mate]
 
 		Install a standard desktop
 
@@ -38,7 +38,7 @@ fi
 
 de="$1"
 
-valid_desktops="xfce gnome plasma none"
+valid_desktops="xfce gnome plasma mate none"
 if [ $# -eq 1 ] && ! isin "$de" $valid_desktops; then
 	echo "$de is not a valid desktop" >&2
 	usage "1" >&2
@@ -46,13 +46,27 @@ fi
 shift
 
 while ! isin "$de" $valid_desktops; do
-	ask "Which desktop environment? ('gnome', 'plasma', 'xfce' or 'none')" none
+	ask "Which desktop environment? ('gnome', 'plasma', 'xfce', 'mate' or 'none')" none
 	de="$resp"
 done
 
 case "$de" in
 	none)
 		exit 0
+		;;
+	mate)
+		setup-xorg-base mate-desktop-environment ${BROWSER:-firefox} \
+			consolekit2 \
+			gvfs \
+			lightdm \
+			lightdm-gtk-greeter \
+			polkit \
+			dbus \
+			dbus-x11 \
+			font-dejavu \
+			"$@"
+		rc-update add dbus
+		rc-update add lightdm
 		;;
 	xfce)
 		setup-xorg-base xfce4 ${BROWSER:-firefox} \
