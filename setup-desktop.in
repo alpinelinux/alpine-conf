@@ -106,6 +106,7 @@ case "$de" in
 			plasma-pa \
 			plasma-systemmonitor \
 			plasma-vault \
+			plasma-welcome \
 			plasma-workspace-wallpapers \
 			polkit-elogind \
 			polkit-kde-agent-1 \
