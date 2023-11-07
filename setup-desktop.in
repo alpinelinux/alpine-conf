@@ -77,7 +77,6 @@ case "$de" in
 			bluedevil \
 			breeze \
 			breeze-gtk \
-			breeze-icons \
 			dbus \
 			discover \
 			drkonqi \
@@ -86,6 +85,7 @@ case "$de" in
 			kate \
 			kde-cli-tools \
 			kde-gtk-config \
+			kde-icons \
 			kdeplasma-addons \
 			kgamma5 \
 			kinfocenter \
