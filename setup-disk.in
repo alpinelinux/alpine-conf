@@ -921,7 +921,7 @@ confirm_erase() {
 # setup partitions on given disk dev in $1.
 # usage: setup_partitions <diskdev> size1,type1 [size2,type2 ...]
 setup_partitions() {
-	local diskdev="$1" start=1M line=
+	local diskdev="$1" line=
 	shift
 	supported_part_label "$DISKLABEL" || return 1
 
@@ -938,7 +938,7 @@ setup_partitions() {
 		for line in "$@"; do
 			case "$line" in
 			0M*) ;;
-			*) echo "$start,$line"; start= ;;
+			*) echo ",$line" ;;
 			esac
 		done
 	) | sfdisk --quiet --wipe-partitions always --label $DISKLABEL $diskdev || return 1
