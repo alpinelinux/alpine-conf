@@ -106,18 +106,23 @@ if [ -n "$ZONE" ]; then
 	setup_tz "$zroot"/"$ZONE"
 else
 	while true; do
-		ask "Which timezone are you in? ('?' for list)" "$default_timezone"
+		show_tz_list
+		echo ""
+		ask "Which timezone are you in?" "$default_timezone"
 		timezone="$resp"
 		case "$timezone" in
-		"") continue;;
-		"?") show_tz_list; continue;;
+			none|abort) break;;
+			"") continue;;
+			"?") show_tz_list; continue;;
 		esac
 
 		while [ -d "$zroot/$timezone" ]; do
-			ask "What sub-timezone of '$timezone' are you in? ('?' for list)"
+			show_tz_list "$timezone"
+			echo ""
+			ask "What sub-timezone of '$timezone' are you in?"
 			zone="$resp"
 			case "$zone" in
-			"?") show_tz_list "$timezone"; continue;;
+				"?") show_tz_list "$timezone"; continue;;
 			esac
 			default_timezone="$timezone"
 			timezone="$timezone/$zone"

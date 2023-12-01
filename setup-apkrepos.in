@@ -22,13 +22,22 @@ get_mirror_count() {
 }
 
 ask_setup_method() {
+	local cstate="enable"
+	if [ -z "$community_prefix" ]; then
+		cstate="disable"
+	fi
+
 	cat <<-__EOF__
-		r) Add random from the above list
-		f) Detect and add fastest mirror from above list
-		e) Edit ${ROOT}etc/apk/repositories with text editor
+		 (f)    Find and use fastest mirror
+		 (s)    Show mirrorlist
+		 (r)    Use random mirror
+		 (e)    Edit ${ROOT}etc/apk/repositories with text editor
+		 (c)    Community repo $cstate
+		 (skip) Skip setting up apk repositories
 
 	__EOF__
-	ask "Enter mirror number (1-$(get_mirror_count)) or URL to add (or r/f/e/done)" "$1"
+	ask "Enter mirror number or URL:" $1
+	printf "\n"
 }
 
 add_random_mirror() {
@@ -40,7 +49,7 @@ add_random_mirror() {
 	fi
 	local random_mirror_index="$(awk -v count=$count 'BEGIN {srand(); printf("%.0f", rand() * count)}')"
 
-	printf %s "Picking random mirror... "
+	printf %s "Picking random mirror..."
 	for mirror in $MIRRORS; do
 		if [ $i -eq $random_mirror_index ]; then
 			break
@@ -239,17 +248,26 @@ while $interactive && ! $changed; do
 		MIRRORS=$(wget -qO- $MIRRORS_URL)
 	fi
 
-	show_mirror_list | more
 	ask_setup_method ${APKREPO_DEFAULT_ANSWER:-1}
 
 	case "$resp" in
-		"done") break;;
-		[0-9]*) add_from_list "$resp" && changed=true;;
+		skip) break;;
+		[0-9]*) add_from_list $resp && changed=true;;
 		/*|http://*|ftp://*|https://*) add_from_url "$resp" \
 			&& changed=true;;
-		r) add_random_mirror && changed=true;;
-		f) add_fastest_mirror && changed=true;;
+		s) show_mirror_list | more;;
+		r|"r c") add_random_mirror && changed=true;;
+		f|"f c") add_fastest_mirror && changed=true;;
 		e) edit_repositories && changed=true;;
+		c)  case "$community_prefix" in
+				"#") community_prefix=""; cstate="enabled";;
+				"") community_prefix="#"; cstate="disabled";;
+			esac
+			printf "Community repository %s\n\n" "$cstate"
+			;;
+	esac
+	case "$resp" in
+		*c) community_prefix=""; printf "Community repository enabled\n";;
 	esac
 done
 

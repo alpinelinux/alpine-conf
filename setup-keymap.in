@@ -28,18 +28,53 @@ usage() {
 
 
 show_layouts() {
-	local owpd; owpd="$PWD"
-	cd "$MAPDIR"
-	ls --color=never
-	cd "$owpd"
+	output=""
+	for file in "$MAPDIR"/*; do
+		base=$(basename "$file")
+		output="$output${base%.bmap.gz} "
+	done
+	print_column "$output"
 }
 
 show_variants() {
-	local i; for i in "$MAPDIR/$1"/* ; do
-		i="$(basename "$i")"
-		printf "%s " "${i%%.*}"
+	output=""
+	for file in "$MAPDIR/$1"/*; do
+		base=$(basename "$file")
+		output="$output${base%.bmap.gz} "
 	done
-	echo
+	print_column "$output"
+}
+
+print_column() {
+	if [ -z "$1" ]; then
+		echo "Error: No data to display." >&2
+		return 1
+	fi
+
+	local terminal_width=$(stty size | cut -d' ' -f2)
+	if [ -z "$terminal_width" -o "$terminal_width" -eq 0 ]; then
+		terminal_width=80
+	fi
+
+	max_word_length=$(echo "$1" | awk '{for(i=1;i<=NF;i++) x = (length($i) > x ? length($i) : x)} END {print x}')
+	number_of_columns=$((terminal_width / (max_word_length + 1)))
+
+	if [ "$number_of_columns" -eq 0 ]; then
+		number_of_columns=1
+	fi
+
+	words=$(echo $1)
+	i=0
+	for word in $words; do
+		printf "%-${max_word_length}s " "$word"
+		i=$((i + 1))
+		if [ $((i % number_of_columns)) -eq 0 ]; then
+			printf "\n"
+		fi
+	done
+	if [ $((i % number_of_columns)) -ne 0 ]; then
+		printf "\n"
+	fi
 }
 
 select_layout() {
@@ -47,9 +82,10 @@ select_layout() {
 		if [ -z "$layout" ] || ! [ -d "$MAPDIR/$layout" ]; then
 			layout=none
 		fi
-		echo "Available keyboard layouts:"
 		show_layouts
+		echo ""
 		ask "Select keyboard layout:" "$layout"
+		echo ""
 		if [ "$resp" = "abort" ] || [ "$resp" = "none" ] ; then
 			goodbye 0
 		fi
@@ -79,12 +115,13 @@ setup_mapfile() {
 
 select_variant() {
 	while true; do
-		printf %s "Available variants: "
 		show_variants "$layout"
 		if [ ! -f "$MAPDIR/$layout/$variant.bmap" ] ; then
 			variant=""
 		fi
+		echo ""
 		ask "Select variant (or 'abort'):" "$variant"
+		echo ""
 		variant="$resp"
 		if [ "$variant" = "abort" ] || [ "$variant" = "none" ]; then
 			break;

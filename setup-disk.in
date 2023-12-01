@@ -834,8 +834,10 @@ confirm_erase() {
 	if [ "$ERASE_DISKS" = "$erasedisks" ]; then
 		return 0
 	fi
+	printf "\n"
 	echo "WARNING: The following disk(s) will be erased:"
 	show_disk_info $@
+	printf "\n"
 	ask_yesno "WARNING: Erase the above disk(s) and continue? (y/n)" n
 }
 
@@ -1381,6 +1383,7 @@ ask_disk() {
 	while ! all_in_list "$resp" $@ "none" "abort"; do
 		echo "Available disks are:"
 		show_disk_info "$@"
+		printf "\n"
 		ask "$prompt"  "$default_disk"
 		case "$resp" in
 			'abort') exit 0;;
@@ -1585,14 +1588,15 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 	fi
 
 	while true; do
-		printf "The following %s selected" "$disk_is_or_disks_are"
+		printf "\nThe following %s selected" "$disk_is_or_disks_are"
 		[ -n "$USE_CRYPT" ] && [ -z "$USE_LVM" ] && printf %s " (with encryption)"
 		[ -z "$USE_CRYPT" ] && [ -n "$USE_LVM" ] && printf %s " (with LVM)"
 		[ -n "$USE_CRYPT" ] && [ -n "$USE_LVM" ] && printf %s " (with LVM on LUKS)"
-		echo ":"
+		printf ":\n"
 		show_disk_info $diskdevs
 		_crypt=$([ -z "$USE_CRYPT" ] && [ -z "$USE_LVM" ] && echo ", 'crypt'")
 		_lvm=${USE_LVM:-", 'lvm'"}
+		printf "\n"
 		ask "How would you like to use $it_them? ('sys', 'data'$_crypt${_lvm#_lvm} or '?' for help)" "?"
 		case "$resp" in
 		'?') diskmode_help;;
@@ -1647,4 +1651,3 @@ data) data_only_disk_install$USE_LVM $diskdevs;;
 none) exit 0;;
 *) die "Not a valid install mode: $DISK_MODE" ;;
 esac
-

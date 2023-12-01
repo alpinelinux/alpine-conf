@@ -7,6 +7,24 @@ PREFIX=@PREFIX@
 : ${LIBDIR=$PREFIX/lib}
 . "$LIBDIR/libalpine.sh"
 
+if [ -t 1 ]; then
+	COLCYAN="\e[36m"
+	COLWHITE="\e[97m"
+	COLRESET="\e[0m"
+else
+	COLCYAN=""
+	COLWHITE=""
+	COLRESET=""
+fi
+
+print_heading1() {
+	printf "${COLCYAN}%s${COLRESET}\n" "$1"
+}
+
+print_heading2() {
+    printf "${COLWHITE}%s${COLRESET}\n" "$1"
+}
+
 is_kvm_clock() {
 	grep -q "kvm-clock"  "$ROOT"sys/devices/system/clocksource/clocksource0/current_clocksource 2>/dev/null
 }
@@ -97,7 +115,7 @@ if [ -n "$CREATEANSWERFILE" ]; then
 
 		auto eth0
 		iface eth0 inet dhcp
-		    hostname alpine-test
+		hostname alpine-test
 		"
 
 		# Search domain of example.com, Google public nameserver
@@ -144,6 +162,10 @@ if [ -n "$CREATEANSWERFILE" ]; then
 	exit 0
 fi
 
+printf "\n\n"
+print_heading1 " ALPINE LINUX INSTALL"
+print_heading1 "----------------------"
+
 if [ "$ARCHIVE" ] ; then
 	echo "Creating an Alpine overlay"
 	init_tmpdir ROOT
@@ -151,20 +173,32 @@ else
 	PKGADD="apk add"
 fi
 
+# set keymap
 if [ "$rc_sys" != LXC ]; then
 	if is_virtual_console || [ -n "$KEYMAPOPTS" ]; then
+		echo -e ""
+		print_heading2 " Keymap"
+		print_heading2 "--------"
 		setup-keymap ${KEYMAPOPTS}
 	fi
+	# set hostname
+	echo -e ""
+	print_heading2 " Hostname"
+	print_heading2 "----------"
 	setup-hostname ${HOSTNAMEOPTS} && [ -z "$SSH_CONNECTION" ] && rc-service hostname --quiet restart
 	setup-devd -C mdev # just to bootstrap
 fi
 
+# set Interface
 [ -z "$SSH_CONNECTION" ] && rst_if=1
 if [ -n "$INTERFACESOPTS" ]; then
 	if [ "$INTERFACESOPTS" != none ]; then
 		printf "$INTERFACESOPTS" | setup-interfaces -i ${rst_if:+-r}
 	fi
 else
+	echo -e ""
+	print_heading2 " Interface"
+	print_heading2 "-----------"
 	setup-interfaces ${quick:+-a} ${rst_if:+-r}
 fi
 
@@ -175,16 +209,23 @@ fi
 
 # set root password
 if [ -z "$empty_root_password" ]; then
+	echo -e ""
+	print_heading2 " Root Password"
+	print_heading2 "---------------"
 	while ! $MOCK passwd ; do
 		echo "Please retry."
 	done
 fi
 
+# pick timezone
 if [ -z "$quick" ]; then
-	# pick timezone
+	echo -e ""
+	print_heading2 " Timezone"
+	print_heading2 "----------"
 	setup-timezone ${TIMEZONEOPTS}
 fi
 
+echo -e ""
 rc-update --quiet add networking boot
 rc-update --quiet add seedrng boot || rc-update --quiet add urandom boot
 svc_list="cron crond"
@@ -218,6 +259,9 @@ sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn my.domain)} ${_
 	"$ROOT"/etc/hosts 2>/dev/null
 
 if [ -z "$quick" ]; then
+	echo -e ""
+	print_heading2 " Proxy"
+	print_heading2 "-------"
 	setup-proxy -q ${PROXYOPTS}
 fi
 # activate the proxy if configured
@@ -226,9 +270,15 @@ if [ -r "$ROOT/etc/profile" ]; then
 fi
 
 if ! is_kvm_clock && [ "$rc_sys" != "LXC" ] && [ "$quick" != 1 ]; then
+	echo -e ""
+	print_heading2 " Network Time Protocol"
+	print_heading2 "-----------------------"
 	setup-ntp ${NTPOPTS}
 fi
 
+echo -e ""
+print_heading2 " APK Mirror"
+print_heading2 "------------"
 setup-apkrepos ${APKREPOSOPTS}
 
 # Now that network and apk are operational we can install another device manager
@@ -241,6 +291,9 @@ if [ "$quick" = 1 ]; then
 	exit 0
 fi
 
+echo -e ""
+print_heading2 " User"
+print_heading2 "------"
 setup-user ${USERSSHKEY+-k "$USERSSHKEY"} ${USEROPTS:--a -g 'audio video netdev'}
 for i in "$ROOT"home/*; do
 	if [ -d "$i" ]; then
@@ -262,6 +315,9 @@ if [ "$rc_sys" = "LXC" ]; then
 	exit 0
 fi
 
+echo -e ""
+print_heading2 " Disk & Install"
+print_heading2 "----------------"
 DEFAULT_DISK=none \
 	setup-disk -w /tmp/alpine-install-diskmode.out -q ${DISKOPTS} || exit
 
@@ -275,3 +331,4 @@ if [ "$diskmode" != "sys" ]; then
 		apk cache sync
 	fi
 fi
+
