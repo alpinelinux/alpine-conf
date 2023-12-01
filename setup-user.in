@@ -46,7 +46,6 @@ if [ $# -gt 1 ]; then
 	usage "1" >&2
 elif [ $# -eq 1 ]; then
 	username="$1"
-	nopassword="-D"
 else
 	interactive=1
 fi
@@ -77,15 +76,19 @@ while true; do
 	fi
 
 	if [ -n "$fullname" ]; then
-		adduser -g "$fullname" $nopassword "$username" && break
+		adduser -g "$fullname" -D "$username" && break
 	else
-		adduser $nopassword "$username" && break
+		adduser -D "$username" && break
 	fi
 	if ! [ -n "$interactive" ]; then
 		exit 1
 	fi
 	failed_username="$username"
 	username=
+done
+
+while [ -n "$interactive" ] && ! $MOCK passwd "$username"; do
+		echo "Please retry."
 done
 
 if [ -n "$interactive" ] && [ -z "$keysopt" ]; then
