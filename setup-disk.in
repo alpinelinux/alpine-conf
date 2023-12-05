@@ -865,9 +865,6 @@ setup_partitions() {
 			esac
 		done
 	) | sfdisk --quiet --wipe-partitions always --label $DISKLABEL $diskdev || return 1
-
-	# create device nodes if not exist
-	$MOCK mdev -s
 }
 
 # set up optional raid and create filesystem on boot device.
@@ -884,7 +881,6 @@ setup_boot_dev() {
 		for disk in $disks; do
 			echo ',,,*' | sfdisk --quiet $disk -N1
 			echo ',,,-' | sfdisk --quiet $disk -N2
-			mdev -s
 		done
 	fi
 
@@ -1070,6 +1066,7 @@ data_only_disk_install_lvm() {
 	for diskdev in "$@"; do
 		setup_partitions $diskdev "${size}${size:+M},$lvm_part_type" || return 1
 	done
+	$MOCK mdev -s
 
 	setup_lvm_volume_group $vgname $@ || return 1
 	setup_lvm_swap $vgname
@@ -1102,6 +1099,7 @@ data_only_disk_install() {
 			"${SWAP_SIZE}M,$swap_part_type" \
 			"${size}${size:+M},$var_part_type" || return 1
 	done
+	$MOCK mdev -s
 
 	if [ "$USE_RAID" ]; then
 		if [ $SWAP_SIZE -gt 0 ]; then
@@ -1195,6 +1193,7 @@ native_disk_install_lvm() {
 			fi
 		fi
 	done
+	$MOCK mdev -s
 
 	# will find BOOT_DEV for us
 	setup_boot_dev $@
@@ -1284,6 +1283,7 @@ native_disk_install() {
 			fi
 		fi
 	done
+	$MOCK mdev -s
 
 	# will find BOOT_DEV for us
 	setup_boot_dev $@

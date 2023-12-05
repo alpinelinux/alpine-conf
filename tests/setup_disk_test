@@ -101,7 +101,6 @@ setup_disk_func_setup_partitions_dos_body() {
 
 	SETUP_DISK_TESTFUNC=setup_partitions  \
 		atf_check -s exit:0 \
-		-o match:"mdev" \
 		setup-disk dev/vda "0M," "10M,83,*", "10M,82", "10M,fd", ",8e"
 
 	SETUP_DISK_TESTFUNC=find_partitions  \
@@ -146,7 +145,6 @@ setup_disk_func_setup_partitions_gpt_body() {
 
 	SETUP_DISK_TESTFUNC=setup_partitions DISKLABEL=gpt \
 		atf_check -s exit:0 \
-		-o match:"mdev" \
 		setup-disk dev/vda "0M," "30M,$esp" "30M,$swap" "30M,$linux" "30M,$raid" "30M,$lvm"
 
 	sfdisk -d dev/vda
