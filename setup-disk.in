@@ -138,6 +138,7 @@ partition_id() {
 	local id
 	if [ "$DISKLABEL" = "gpt" ]; then
 		case "$1" in
+			biosboot)	id=21686148-6449-6E6F-744E-656564454649 ;;
 			swap)	id=0657FD6D-A4AB-43C4-84E5-0933C84B4F4F ;;
 			linux)	id=0FC63DAF-8483-4772-8E79-3D69D8477DE4 ;;
 			raid)	id=A19D880F-05FC-4D3B-A006-743F0F84911E ;;
@@ -1168,11 +1169,12 @@ native_disk_install_lvm() {
 	local boot_size="${BOOT_SIZE:-300}"
 	local lvm_size="$LVM_SIZE"
 	local root_dev=/dev/$vgname/lv_root
+	local biosboot=
 
 	init_progs $(select_bootloader_pkg) || return 1
 	confirm_erase $@ || return 1
 
-	if [ "$BOOTFS" = "vfat" ] && [ -z "$USE_EFI" ]; then
+	if [ "$BOOTFS" = "vfat" ] && [ "$DISKLABEL" = "dos" ]; then
 		boot_part_type=$(partition_id vfat)
 	fi
 	if [ -n "$USE_RAID" ]; then
@@ -1183,6 +1185,8 @@ native_disk_install_lvm() {
 
 	if [ -n "$USE_EFI" ]; then
 		boot_part_type=$(partition_id esp)
+	elif [ "$DISKLABEL" = "gpt" ]; then
+		biosboot="2M,$(partition_id biosboot)"
 	fi
 
 	for diskdev in "$@"; do
@@ -1192,10 +1196,11 @@ native_disk_install_lvm() {
 				$boot_size 0 $root_part_type || return 1
 		else
 			setup_partitions $diskdev \
+				$biosboot \
 				"${boot_size}M,$boot_part_type,*" \
 				"${lvm_size}${lvm_size:+M},$lvm_part_type" || return 1
 			if [ "$DISKLABEL" = "gpt" ] && [ -z "$USE_EFI" ]; then
-				sfdisk --part-attrs "$diskdev" 1 LegacyBIOSBootable
+				sfdisk --part-attrs "$diskdev" 2 LegacyBIOSBootable
 			fi
 		fi
 	done
@@ -1247,11 +1252,11 @@ native_disk_install() {
 	local boot_size="${BOOT_SIZE:-300}"
 	local swap_size="${SWAP_SIZE}"
 	local root_size="${ROOT_SIZE}"
-	local root_dev= boot_dev= swap_dev=
+	local root_dev= boot_dev= swap_dev= biosboot=
 	init_progs $(select_bootloader_pkg) || return 1
 	confirm_erase $@ || return 1
 
-	if [ "$BOOTFS" = "vfat" ] && [ -z "$USE_EFI" ]; then
+	if [ "$BOOTFS" = "vfat" ] && [ "$DISKLABEL" = "dos" ]; then
 		boot_part_type=$(partition_id vfat)
 	fi
 	if [ -n "$USE_RAID" ]; then
@@ -1263,6 +1268,8 @@ native_disk_install() {
 
 	if [ -n "$USE_EFI" ]; then
 		boot_part_type=$(partition_id esp)
+	elif [ "$DISKLABEL" = "gpt" ]; then
+		biosboot="2M,$(partition_id biosboot)"
 	fi
 
 	for diskdev in "$@"; do
@@ -1280,12 +1287,13 @@ native_disk_install() {
 				$boot_size $swap_size $root_part_type || return 1
 		else
 			setup_partitions $diskdev \
+				$biosboot \
 				"${boot_size}M,$boot_part_type,*" \
 				"${swap_size}M,$swap_part_type" \
 				"${root_size}${root_size:+M},$root_part_type" \
 				|| return 1
 			if [ "$DISKLABEL" = "gpt" ] && [ -z "$USE_EFI" ]; then
-				sfdisk --part-attrs "$diskdev" 1 LegacyBIOSBootable
+				sfdisk --part-attrs "$diskdev" 2 LegacyBIOSBootable
 			fi
 		fi
 	done
@@ -1510,6 +1518,9 @@ if is_efi || [ -n "$USE_EFI" ]; then
 	USE_EFI=1
 	DISKLABEL=gpt
 	BOOTFS=vfat
+fi
+
+if [ "$DISKLABEL" = "gpt" ]; then
 	: ${BOOTLOADER:=grub}
 fi
 
