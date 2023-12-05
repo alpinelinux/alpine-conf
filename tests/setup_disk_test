@@ -127,6 +127,10 @@ setup_disk_func_setup_partitions_dos_body() {
 		atf_check -s exit:0 \
 		-o match:"dev/vda4" \
 		setup-disk dev/vda "lvm"
+
+	SETUP_DISK_TESTFUNC=find_nth_non_boot_parts \
+		atf_check -s exit:0 \
+		setup-disk 1 "83" dev/vda
 }
 
 setup_disk_func_setup_partitions_gpt_body() {
@@ -145,7 +149,7 @@ setup_disk_func_setup_partitions_gpt_body() {
 
 	SETUP_DISK_TESTFUNC=setup_partitions DISKLABEL=gpt \
 		atf_check -s exit:0 \
-		setup-disk dev/vda "0M," "30M,$esp" "30M,$swap" "30M,$linux" "30M,$raid" "30M,$lvm"
+		setup-disk dev/vda "0M," "30M,$esp" "30M,$swap" "size=30M,type=$linux,attrs=LegacyBIOSBootable" "30M,$raid" "30M,$lvm" "size=10M,type=linux"
 
 	sfdisk -d dev/vda
 
@@ -153,6 +157,9 @@ setup_disk_func_setup_partitions_gpt_body() {
 		atf_check -s exit:0 \
 		-o match:"dev/vda1" \
 		setup-disk dev/vda "boot"
+
+	# zsh needs this
+	unset USE_EFI
 
 	SETUP_DISK_TESTFUNC=find_partitions DISKLABEL=gpt \
 		atf_check -s exit:0 \
@@ -173,6 +180,11 @@ setup_disk_func_setup_partitions_gpt_body() {
 		atf_check -s exit:0 \
 		-o match:"dev/vda5" \
 		setup-disk dev/vda "lvm"
+
+	SETUP_DISK_TESTFUNC=find_nth_non_boot_parts DISKLABEL=gpt \
+		atf_check -s exit:0 \
+		-o match:"dev/vda6" \
+		setup-disk 1 "$linux" dev/vda
 }
 
 setup_disk_func_find_efi_size_body() {

@@ -861,6 +861,7 @@ setup_partitions() {
 		for line in "$@"; do
 			case "$line" in
 			0M*) ;;
+			*=*) echo "$line";;
 			*) echo ",$line" ;;
 			esac
 		done
@@ -913,12 +914,17 @@ find_nth_non_boot_parts() {
 	local idx="$1" id="$2" disk= type=bootable
 	shift 2
 	local disks="$@"
-	[ -n "$USE_EFI" ] && type=$(partition_id esp)
+	local search="bootable"
+	if [ -n "$USE_EFI" ]; then
+		search="$(partition_id esp)"
+	elif [ "$DISKLABEL" = "gpt" ]; then
+		search="LegacyBIOSBootable"
+	fi
 	for disk in $disks; do
 		if is_dasd $disk eckd; then
 			fdasd -p $disk | grep "Linux $id" | awk '{print $1}' | tail -n 1
 		else
-			sfdisk -d $disk | grep -v $type \
+			sfdisk -d "$disk" | grep -v "$search" \
 				| awk "/(Id|type)=$id/ { i++; if (i==$idx) print \$1 }"
 		fi
 	done
