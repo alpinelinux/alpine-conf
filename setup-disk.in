@@ -125,13 +125,6 @@ is_rpi() {
 	grep -q "Raspberry Pi" /proc/device-tree/model 2>/dev/null
 }
 
-# Find the disk device from given partition
-disk_from_part() {
-	local path="${1%/*}"
-	local dev="${1##*/}"
-	echo $path/$(basename "$(readlink -f "$ROOT/sys/class/block/$dev/..")")
-}
-
 # $1 partition type (swap,linux,raid,lvm,prep,esp)
 # return partition type id based on table type
 partition_id() {
@@ -316,6 +309,8 @@ find_efi_directory() {
 # setup GRUB bootloader
 setup_grub() {
 	local mnt="$1" root="$2" modules="$3" kernel_opts="$4" bootdev="$5"
+	local disk=
+	shift 5
 	# install GRUB efi mode
 	if [ -n "$USE_EFI" ]; then
 		local target fwa
@@ -338,19 +333,21 @@ setup_grub() {
 			"$efi_directory"/EFI/boot/boot$fwa.efi
 	# install GRUB for ppc64le
 	elif [ "$ARCH" = "ppc64le" ]; then
-		shift 5
-		local disks="${@}"
-		for disk in $disks; do
+		for disk in "$@"; do
 			prep=$(find_partitions "$disk" "prep")
 			echo "Installing grub on $prep"
 			grub-install --boot-directory="$mnt"/boot $prep
 		done
 	# install GRUB in bios mode
 	else
-		local bootdisk="$(disk_from_part $bootdev)"
 		case "$ARCH" in
-			x86|x86_64) grub-install --boot-directory="$mnt"/boot \
-				--target=i386-pc $bootdisk ;;
+			x86|x86_64)
+				for disk in "$@"; do
+					echo "Installing grub on $disk"
+					grub-install --boot-directory="$mnt"/boot \
+						--target=i386-pc "$disk"
+				done
+				;;
 			*) die "Cannot install GRUB in BIOS mode for $ARCH" ;;
 		esac
 	fi
@@ -1213,7 +1210,7 @@ native_disk_install_lvm() {
 	setup_lvm_swap $vgname
 	lvcreate --quiet -n ${root_dev##*/} -l ${ROOT_SIZE:-100%FREE} $vgname
 	rc-update add lvm boot
-	setup_root $root_dev $BOOT_DEV
+	setup_root "$root_dev" "$BOOT_DEV" "$@"
 }
 
 setup_crypt() {
