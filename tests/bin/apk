@@ -85,7 +85,7 @@ for pkg in $pkgs; do
 			flavor=${pkg#linux-}
 			mkdir -p "$rootfs"/lib/modules/$kver-$flavor/kernel/drivers/net/wireless/broadcom/brcm80211/brcmfmac \
 				"$rootfs"/boot
-			touch "$rootfs"/boot/System.map-$flavor \
+			touch "$rootfs"/boot/System.map-$kver-$flavor \
 				"$rootfs"/boot/config-$flavor \
 				"$rootfs"/boot/vmlinuz-$flavor
 			cat >"$rootfs/lib/modules/$kver-$flavor"/kernel/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko <<-EOF

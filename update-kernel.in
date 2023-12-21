@@ -351,11 +351,10 @@ $MOCK mkinitfs $MKINITFS_ARGS -q -b $ROOTFS -F "$features base squashfs" \
 	-o "$STAGING/initramfs-$FLAVOR" "$KVER"
 
 for file in System.map config vmlinuz; do
-	if [ -f "$BOOT/$file-$FLAVOR" ]; then
-		cp "$BOOT/$file-$FLAVOR" $STAGING
-	else
-		cp "$BOOT/$file" $STAGING
-	fi
+	cp "$BOOT/$file-$KVER" "$STAGING" 2>/dev/null \
+		|| cp "$BOOT/$file-$FLAVOR" "$STAGING" 2>/dev/null \
+		|| cp "$BOOT/$file" "$STAGING" 2>/dev/null \
+		|| { echo "Failed to copy $file-$KVER, $file-$FLAVOR or $file" >&2; exit 1; }
 done
 
 if [ "$MNTDIR" ]; then
