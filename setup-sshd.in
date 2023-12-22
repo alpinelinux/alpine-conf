@@ -159,7 +159,7 @@ fi
 if [ -n "$authorized_key" -a "$authorized_key" != "none" ]; then
 	# if the argument is an HTTP(S)/FTP URL, try to fetch the file contents
 	case "$authorized_key" in
-		http*://*|ftp://)
+		http*://*|ftp://*)
 			key_url="$authorized_key"
 			authorized_key="$(wget -qO- "$key_url")" || die "Failed to fetch key from '$key_url'"
 			;;
