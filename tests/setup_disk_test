@@ -360,6 +360,7 @@ setup_disk_install_mounted_root_zfs_body() {
 	atf_check \
 		-o match:'features=.*nvme' \
 		-o match:'features=.*zfs' \
+		-o match:'features=.*keymap' \
 		cat target/etc/mkinitfs/mkinitfs.conf
 }
 
