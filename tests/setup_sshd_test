@@ -5,7 +5,8 @@ init_tests \
 	setup_sshd_usage \
 	setup_sshd_empty \
 	setup_sshd_dropbear \
-	setup_sshd_openssh \
+	setup_sshd_openssh_https \
+	setup_sshd_openssh_ftp \
 	setup_sshd_openssh_c_compat \
 	setup_sshd_interactive_openssh_nologin \
 	setup_sshd_interactive_openssh_prohibitpass \
@@ -35,7 +36,7 @@ setup_sshd_dropbear_body() {
 		setup-sshd dropbear
 }
 
-setup_sshd_openssh_body() {
+setup_sshd_openssh_https_body() {
 	init_env
 	export WGETCONTENT="ssh-id FOOBAR"
 	atf_check -s exit:0 \
@@ -44,6 +45,25 @@ setup_sshd_openssh_body() {
 		-o match:"service sshd added" \
 		-o match:"Starting sshd" \
 		setup-sshd -k 'https://example.com/user.keys' openssh
+	grep -x 'ssh-id FOOBAR' root/.ssh/authorized_keys \
+		|| atf_fail "failed to wget ssh key"
+
+	# check that permissions are set properly
+	atf_check -o match:"^700$" \
+		stat -c '%a' root/.ssh
+	atf_check -o match:"^600$" \
+		stat -c '%a' root/.ssh/authorized_keys
+}
+
+setup_sshd_openssh_ftp_body() {
+	init_env
+	export WGETCONTENT="ssh-id FOOBAR"
+	atf_check -s exit:0 \
+		-e empty \
+		-o match:"apk add .* openssh" \
+		-o match:"service sshd added" \
+		-o match:"Starting sshd" \
+		setup-sshd -k 'ftp://example.com/user.keys' openssh
 	grep -x 'ssh-id FOOBAR' root/.ssh/authorized_keys \
 		|| atf_fail "failed to wget ssh key"
 
