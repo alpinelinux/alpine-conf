@@ -268,6 +268,8 @@ setup_interfaces_auto_single_body() {
 	init_env
 	create_fake_ifaces lo eth0
 	atf_check -s exit:0 \
+		-o match:"ip link set dev eth0 up" \
+		-o not-match:"ip link set dev eth0 down" \
 		setup-interfaces -a
 
 	atf_check \
@@ -282,6 +284,9 @@ setup_interfaces_auto_first_body() {
 	init_env
 	create_fake_ifaces lo eth0 eth1
 	atf_check -s exit:0 \
+		-o match:"ip link set dev eth0 up" \
+		-o match:"ip link set dev eth1 up" \
+		-o match:"ip link set dev eth1 down" \
 		setup-interfaces -a
 
 	# use first interface if all are down
@@ -325,15 +330,16 @@ setup_interfaces_auto_none_body() {
 		setup-interfaces -a
 
 	# do not setup dhcp on lo
-	atf_check \
-		-o not-match:"iface lo inet dhcp" \
-		cat etc/network/interfaces
+	if [ -e etc/network/interfaces ]; then
+		atf_fail "etc/network/interfaces should not be created"
+	fi
 }
 
 setup_interfaces_auto_restart_body() {
 	init_env
 	create_fake_ifaces lo eth0
 	atf_check -s exit:0 \
+		-o match:"ip link set dev eth0 up" \
 		setup-interfaces -a -r
 	atf_check -o match:"status: started" rc-service networking status
 }

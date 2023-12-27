@@ -547,14 +547,42 @@ prompt_for_interfaces() {
 	cp interfaces $ROOT/etc/network/
 }
 
+find_first_iface_up() {
+	local n=0
+	[ $# -eq 0 ] && return
+	while [ $n -le ${SETUP_INTERFACES_LINK_WAIT_MAX:-11} ]; do
+		for i in "$@"; do
+			if [ "$(cat "$ROOT/sys/class/net/$i/operstate" 2>/dev/null)" = "up" ]; then
+				echo "$i"
+				return
+			fi
+		done
+		sleep 0.1
+		n=$((n+1))
+	done
+}
+
 auto_setup() {
 	local iface
-	for iface in $(available_ifaces); do
-		if [ "$(cat "$ROOT"/sys/class/net/$iface/operstate 2>/dev/null)" = "up" ]; then
-			break
+	set -- $(available_ifaces)
+	if [ $# -eq 0 ]; then
+		return
+	fi
+	for iface in "$@"; do
+		$MOCK ip link set dev "$iface" up
+	done
+	iface="$(find_first_iface_up "$@")"
+	if [ -z "$iface" ]; then
+		iface="$1"
+	fi
+
+	# we will likely use the found interface later so lets keep it up
+	for i in "$@"; do
+		if [ "$i" != "$iface" ]; then
+			$MOCK ip link set dev "$i" down
 		fi
 	done
-	[ -z "$iface" ] && return 0
+
 	cat >$ROOT/etc/network/interfaces <<-EOF
 	auto lo
 	iface lo inet loopback
