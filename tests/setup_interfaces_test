@@ -14,9 +14,12 @@ init_tests \
 	setup_interfaces_interactive_wlan0_psk \
 	setup_interfaces_interactive_wlan0_open \
 	setup_interfaces_interactive_ssid_list \
-	setup_interfaces_auto \
+	setup_interfaces_auto_single \
+	setup_interfaces_auto_first \
+	setup_interfaces_auto_up \
 	setup_interfaces_auto_none \
-	setup_interfaces_auto_restart
+	setup_interfaces_auto_restart \
+
 
 setup_interfaces_usage_body() {
 	test_usage setup-interfaces
@@ -261,17 +264,70 @@ setup_interfaces_interactive_ssid_list_body() {
 		setup-interfaces <answers
 }
 
-setup_interfaces_auto_body() {
+setup_interfaces_auto_single_body() {
 	init_env
 	create_fake_ifaces lo eth0
 	atf_check -s exit:0 \
 		setup-interfaces -a
+
+	atf_check \
+		-o match:"auto lo" \
+		-o match:"iface lo inet loopback" \
+		-o match:"auto eth0" \
+		-o match:"iface eth0 inet dhcp" \
+		cat etc/network/interfaces
+}
+
+setup_interfaces_auto_first_body() {
+	init_env
+	create_fake_ifaces lo eth0 eth1
+	atf_check -s exit:0 \
+		setup-interfaces -a
+
+	# use first interface if all are down
+	atf_check \
+		-o match:"auto lo" \
+		-o match:"iface lo inet loopback" \
+		-o match:"auto eth0" \
+		-o match:"iface eth0 inet dhcp" \
+		cat etc/network/interfaces
+}
+
+setup_interfaces_auto_up_body() {
+	init_env
+	create_fake_ifaces lo eth0 eth1 eth2 eth3
+	echo up > sys/class/net/eth1/operstate
+	echo up > sys/class/net/eth2/operstate
+	atf_check -s exit:0 \
+		-o match:"ip link set dev eth0 up" \
+		-o match:"ip link set dev eth1 up" \
+		-o match:"ip link set dev eth2 up" \
+		-o match:"ip link set dev eth3 up" \
+		-o match:"ip link set dev eth3 down" \
+		-o match:"ip link set dev eth2 down" \
+		-o not-match:"ip link set dev eth1 down" \
+		-o match:"ip link set dev eth0 down" \
+		setup-interfaces -a
+
+	# use first interface that is up
+	atf_check \
+		-o match:"auto lo" \
+		-o match:"iface lo inet loopback" \
+		-o match:"auto eth1" \
+		-o match:"iface eth1 inet dhcp" \
+		cat etc/network/interfaces
 }
 
 setup_interfaces_auto_none_body() {
 	init_env
+	create_fake_ifaces lo
 	atf_check -s exit:0 \
 		setup-interfaces -a
+
+	# do not setup dhcp on lo
+	atf_check \
+		-o not-match:"iface lo inet dhcp" \
+		cat etc/network/interfaces
 }
 
 setup_interfaces_auto_restart_body() {
@@ -281,3 +337,4 @@ setup_interfaces_auto_restart_body() {
 		setup-interfaces -a -r
 	atf_check -o match:"status: started" rc-service networking status
 }
+
