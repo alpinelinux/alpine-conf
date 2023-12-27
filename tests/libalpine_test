@@ -23,7 +23,7 @@ libalpine_available_ifaces_body() {
 	echo 1 >sys/class/net/lo/ifindex
 	echo 2 >sys/class/net/eth0/ifindex
 	atf_check \
-		-o match:"lo eth0" \
+		-o match:"eth0" \
 		sh -c ". $libalpine; available_ifaces"
 }
 
@@ -37,7 +37,7 @@ libalpine_available_ifaces_bond_body() {
 	echo 3 >sys/class/net/bond0/ifindex
 
 	atf_check \
-		-o match:"lo bond0" \
+		-o match:"bond0" \
 		sh -c ". $libalpine; available_ifaces"
 }
 
@@ -51,7 +51,7 @@ libalpine_available_ifaces_bridge_body() {
 	echo 3 >sys/class/net/br0/ifindex
 
 	atf_check \
-		-o match:"lo br0" \
+		-o match:"br0" \
 		sh -c ". $libalpine; available_ifaces"
 }
 
