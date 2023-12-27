@@ -122,7 +122,7 @@ find_essids() {
 	export essids_list=wlans
 	# Supports only open or PSK
 	$MOCK ip link set dev "$iface" up
-	(iw dev wlan0 scan; echo BSS) | awk -F": " '
+	(iw dev "$iface" scan; echo BSS) | awk -F": " '
 		/^BSS/ { if (ssid) { print ssid "/" auth }; ssid=""; auth="" }
 		$1 ~ /^[[:blank:]]*SSID$/ { ssid=$2 }
 		$1 ~ /Authentication suites/ { auth=$2 }' \
