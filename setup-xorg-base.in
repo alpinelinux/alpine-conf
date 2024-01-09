@@ -10,7 +10,7 @@ usage() {
 		 -h  Show this help
 
 		Installs xorg-server, enables community repository, enable udev and
-		install the pagkages PKG if specified.
+		install the packages PKG if specified.
 	__EOF__
 	exit $1
 }
