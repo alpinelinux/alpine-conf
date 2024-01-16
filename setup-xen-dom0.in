@@ -11,7 +11,7 @@ for mod in xen_netback xen_blkback xenfs xen_pciback xen_wdt tun; do
 done
 
 # install packages
-apk add --quiet xen
+apk add --quiet xen $@
 
 # setup and start services
 for svc in xenstored xenconsoled xenqemu; do
