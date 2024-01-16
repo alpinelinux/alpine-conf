@@ -308,6 +308,9 @@ if [ -f "$root_keys" ]; then
 fi
 
 if is_xen_dom0; then
+	echo -e ""
+	print_heading2 " Xen"
+	print_heading2 "-----"
 	setup-xen-dom0
 fi
 
