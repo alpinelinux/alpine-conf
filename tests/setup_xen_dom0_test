@@ -6,9 +6,13 @@ init_tests \
 
 setup_xen_dom0_body() {
 	init_env
+	mkdir -p etc/init.d
+	touch etc/init.d/xenstored etc/init.d/xenconsoled
 	atf_check -s exit:0 \
 		-o match:"modprobe xen" \
-		-o match:"Starting xen" \
+		-o match:"Starting xenstored" \
+		-o match:"Starting xenconsoled" \
+		-o not-match:"Starting xenqemu" \
 		-e empty \
 		setup-xen-dom0
 }

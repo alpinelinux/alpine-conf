@@ -15,9 +15,8 @@ apk add --quiet xen
 
 # setup and start services
 for svc in xenstored xenconsoled xenqemu; do
-	rc-update --quiet add $svc default
+	if rc-service --exist "$svc"; then
+		rc-update --quiet add "$svc" default
+		rc-service "$svc" start
+	fi
 done
-
-rc-service xenstored start
-rc-service xenconsoled start
-rc-service xenqemu start
