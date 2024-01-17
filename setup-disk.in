@@ -1622,7 +1622,12 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 		sys|data) break;;
 		lvm) USE_LVM="_lvm" ;;
 		nolvm) USE_LVM="";;
-		crypt) USE_CRYPT="_crypt" ;;
+		crypt)
+			USE_CRYPT="_crypt"
+			if [ -n "$SWAP_SIZE" ]; then
+				USE_LVM="_lvm"
+			fi
+			;;
 		nocrypt) USE_CRYPT="";;
 		lvmsys|lvmdata)
 			resp=${resp#lvm}
@@ -1632,6 +1637,9 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 		cryptsys)
 			resp=${resp#crypt}
 			USE_CRYPT="_crypt"
+			if [ -n "$SWAP_SIZE" ]; then
+				USE_LVM="_lvm"
+			fi
 			break
 			;;
 		esac
