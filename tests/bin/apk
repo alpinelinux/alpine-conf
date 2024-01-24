@@ -58,7 +58,11 @@ case "$cmd" in
 						printf "%s depends on:\n\n"
 					fi
 					case "$pkg" in
-						*gnome*) printf "gnome-shell\ngvfs\n";;
+						*gnome*)
+							if grep -q '^[^#].*community$' etc/apk/repositories; then
+								printf "gnome-shell\ngvfs\n"
+							fi
+							;;
 					esac
 				done
 				;;

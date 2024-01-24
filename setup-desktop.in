@@ -80,8 +80,9 @@ case "$de" in
 		rc-update add lightdm
 		;;
 	gnome)
-		setup-xorg-base ${BROWSER:-firefox} $(apk info --quiet --depends \
-			gnome gnome-apps-core) "$@"
+		setup-xorg-base ${BROWSER:-firefox} "$@"
+		# apk info needs community repos which are enabled with setup-xorg-base
+		apk add $(apk info --quiet --depends gnome gnome-apps-core)
 		rc-update add gdm
 		rc-update add elogind
 		;;
