@@ -2,7 +2,7 @@ test-default:
   image: alpine:latest
   stage: test
   script:
-    - apk add make gcc musl-dev kyua sfdisk openssl squashfs-tools
+    - apk add make gcc musl-dev kyua sfdisk openssl squashfs-tools cmd:ssh-keygen
     - make -j $(nproc) check
   tags:
     - docker-alpine
