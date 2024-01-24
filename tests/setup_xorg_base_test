@@ -3,7 +3,8 @@
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
 	setup_xorg_base_usage \
-	setup_xorg_base
+	setup_xorg_base \
+	setup_xorg_base_community_duplicates
 
 setup_xorg_base_usage_body() {
 	test_usage setup-xorg-base
@@ -12,11 +13,42 @@ setup_xorg_base_usage_body() {
 setup_xorg_base_body() {
 	init_env
 	mkdir -p etc/apk
-	echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" > etc/apk/repositories
+	cat > etc/apk/repositories <<-EOF
+		https://dl-cdn.alpinelinux.org/alpine/edge/main
+		#https://dl-cdn.alpinelinux.org/alpine/edge/community
+	EOF
 
 	atf_check -s exit:0 \
 		-o match:"apk add.*xorg-server.*foobar" \
 		-o match:"Starting udev" \
 		-e empty \
 		setup-xorg-base foobar
+
+	atf_check \
+		-o match:"https://dl-cdn.alpinelinux.org/alpine/edge/community" \
+		cat etc/apk/repositories
+}
+
+setup_xorg_base_community_duplicates_body() {
+	init_env
+	mkdir -p etc/apk
+	cat > etc/apk/repositories <<-EOF
+		https://dl-cdn.alpinelinux.org/alpine/edge/main
+		https://example.tld/main
+		https://dl-cdn.alpinelinux.org/alpine/edge/community
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"apk update" \
+		-e empty \
+		setup-xorg-base
+
+	atf_check \
+		-o match:"https://example.tld/community" \
+		-o match:"https://dl-cdn.alpinelinux.org/alpine/edge/community" \
+		cat etc/apk/repositories
+
+	atf_check \
+		-o match:"2" \
+		grep -c -w "community" etc/apk/repositories
 }

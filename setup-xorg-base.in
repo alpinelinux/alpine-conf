@@ -24,31 +24,15 @@ done
 shift $(($OPTIND - 1))
 
 # For every main/ repo, enable corresponding community/ repo
-orig="$ROOT"/etc/apk/repositories
-if test -f "$orig"; then
-	echo '>> Enabling community repositories'
-	tmp="$orig".setup-xorg-base.tmp
-	:> "$tmp"
-	while read line ; do
-		echo "$line"
-		nosharp="${line##\#*}"
-		nomain="${line%%/main}"
-		if test "$line" = "$nosharp" && test "$line" != "$nomain"; then
-			echo "$nomain"/community
-		fi
-	done < "$orig" >> "$tmp"
-	mv -f "$tmp" "$orig"
-	apk update
-fi
+for repo in $(grep '^[^#].*/main$' "$ROOT"/etc/apk/repositories 2>/dev/null); do
+	crepo="${repo%%/main}/community"
+	if ! grep -q -x -- "$crepo" "$ROOT"/etc/apk/repositories; then
+		echo ">>> Enabling repository $crepo"
+		echo "$crepo" >> "$ROOT"/etc/apk/repositories
+	fi
+done
 
-# enable community repo
-if [ -f "$ROOT"/etc/apk/repositories ] && ! grep -q '^[^#].*/community$' "$ROOT"/etc/apk/repositories; then
-	repo=$(grep '^[^#].*/main$' /etc/apk/repositories | sed 's:/main$:/community:')
-	escaped_repo=$(echo $repo | sed -e 's:/:\\/:g' -e 's:\.:\\.:g')
-	sed -i -e "/^[^#].*\/main$/a $repo" \
-		-e "/^#${escaped_repo}$/d" \
-		"$ROOT"/etc/apk/repositories \
-		&& echo ">> Enabling community repository"
+if [ -n "$crepo" ]; then
 	apk update
 fi
 
