@@ -12,6 +12,7 @@ init_tests \
 	setup_sshd_interactive_openssh_prohibitpass \
 	setup_sshd_interactive_openssh_nokey \
 	setup_sshd_interactive_openssh_user_exist \
+	setup_sshd_interactive_openssh_direct_key \
 	setup_sshd_openssh_ssh_key
 
 setup_sshd_usage_body() {
@@ -164,6 +165,28 @@ setup_sshd_interactive_openssh_user_exist_body() {
 		-o not-match:"Enter ssh key" \
 		-o match:"apk add.* openssh" \
 		setup-sshd < answers
+}
+
+setup_sshd_interactive_openssh_direct_key_body() {
+	atf_require_prog ssh-keygen
+	init_env
+	mkdir -p etc/ssh
+	echo "PermitRootLogin foobar" > etc/ssh/sshd_config
+	local key="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBblcU1qMyXsRG1zDI0GfcfXk01O4p6bAlM3A6zHHxnM joe@example.tld"
+	(
+		echo "openssh"
+		echo ""
+		echo "ssh-asdfaasdfasdf"
+		echo "$key"
+	) >answers
+	atf_check -s exit:0 \
+		-o match:"Which ssh server" \
+		-o match:"Allow root ssh login.*\[prohibit-password\]" \
+		-o match:"Enter ssh key" \
+		-e match:"is not a public key file" \
+		setup-sshd <answers
+	grep -x "$key" root/.ssh/authorized_keys \
+		|| atf_fail "failed to fetch key from github"
 }
 
 setup_sshd_openssh_ssh_key_body() {

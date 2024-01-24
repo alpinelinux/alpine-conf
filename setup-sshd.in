@@ -139,6 +139,12 @@ if [ "$sshdchoice" = "openssh" ] && [ -z "$authorized_key" ] && [ -z "$users" ];
 			none)
 				break
 				;;
+			*)
+				if printf "%s\n" "$resp" | ssh-keygen -l -f - >/dev/null; then
+					authorized_key="$resp"
+					break
+				fi
+				;;
 		esac
 	done
 fi
