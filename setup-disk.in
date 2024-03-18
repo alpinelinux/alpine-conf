@@ -322,6 +322,7 @@ setup_grub() {
 			arm*)		target=arm-efi ; fwa=arm ;;
 			aarch64)	target=arm64-efi ; fwa=aa64 ;;
 			riscv64)	target=riscv64-efi ; fwa=riscv64 ;;
+			loongarch64)	target=loongarch64-efi ; fwa=loongarch64 ;;
 		esac
 
 		# currently disabling nvram so grub doesnt call efibootmgr
