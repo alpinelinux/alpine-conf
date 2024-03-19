@@ -6,7 +6,7 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-desktop [-h] [gnome|plasma|xfce|mate]
+		usage: setup-desktop [-h] [gnome|plasma|xfce|mate|sway]
 
 		Install a standard desktop
 
@@ -38,7 +38,7 @@ fi
 
 de="$1"
 
-valid_desktops="xfce gnome plasma mate none"
+valid_desktops="xfce gnome plasma mate sway none"
 if [ $# -eq 1 ] && ! isin "$de" $valid_desktops; then
 	echo "$de is not a valid desktop" >&2
 	usage "1" >&2
@@ -46,7 +46,7 @@ fi
 shift
 
 while ! isin "$de" $valid_desktops; do
-	ask "Which desktop environment? ('gnome', 'plasma', 'xfce', 'mate' or 'none')" none
+	ask "Which desktop environment? ('gnome', 'plasma', 'xfce', 'mate', 'sway' or 'none')" none
 	de="$resp"
 done
 
@@ -137,6 +137,23 @@ case "$de" in
 			"$@"
 		rc-update add dbus
 		rc-update add sddm
+		;;
+	sway)
+		setup-wayland-base ${BROWSER:-firefox} \
+			font-dejavu \
+			foot \
+			grim \
+			i3status \
+			sway \
+			sway \
+			swayidle \
+			swaylock \
+			swaylockd \
+			util-linux-login \
+			wl-clipboard \
+			wmenu \
+			xwayland \
+			"$@"
 		;;
 	*)
 		usage "1" >&2
