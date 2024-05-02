@@ -635,7 +635,7 @@ install_mounted_root() {
 	local pkgs="$(grep -h -v -w sfdisk "$mnt"/etc/apk/world \
 		"$mnt"/var/lib/apk/world 2>/dev/null)"
 
-	pkgs="$pkgs acct linux-$KERNEL_FLAVOR alpine-base $(select_bootloader_pkg) $(select_firmware_pkgs)"
+	pkgs="$pkgs linux-$KERNEL_FLAVOR alpine-base $(select_bootloader_pkg) $(select_firmware_pkgs)"
 	if [ "$(openrc --sys)" = "XEN0" ]; then
 		pkgs="$pkgs xen-hypervisor"
 	fi
