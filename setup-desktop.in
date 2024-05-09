@@ -102,7 +102,7 @@ case "$de" in
 			kde-gtk-config \
 			kde-icons \
 			kdeplasma-addons \
-			kgamma5 \
+			kgamma \
 			kinfocenter \
 			kio-fuse \
 			kmenuedit \
