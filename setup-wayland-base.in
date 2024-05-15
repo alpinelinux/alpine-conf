@@ -1,0 +1,34 @@
+#!/bin/sh
+
+usage() {
+	cat <<-__EOF__
+		usage: setup-wayland-base [-h] [PKG..]
+
+		Set up system to use Wayland
+
+		options:
+		 -h  Show this help
+
+		Installs and enables elogind, enables community repository, enable udev
+		and install the packages PKG if specified.
+	__EOF__
+	exit $1
+}
+
+while getopts "h" opt; do
+	case $opt in
+		h) usage 0;;
+		'?') usage "1" >&2;;
+	esac
+done
+shift $(($OPTIND - 1))
+
+# For every main/ repo, enable corresponding community/ repo
+setup-apkrepos -o
+
+apk add elogind eudev "$@"
+
+rc-service elogind start
+rc-update add elogind
+
+setup-devd udev

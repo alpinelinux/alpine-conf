@@ -1,0 +1,54 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	setup_wayland_base_usage \
+	setup_wayland_base \
+	setup_wayland_base_community_duplicates
+
+setup_wayland_base_usage_body() {
+	test_usage setup-wayland-base
+}
+
+setup_wayland_base_body() {
+	init_env
+	mkdir -p etc/apk
+	cat > etc/apk/repositories <<-EOF
+		https://dl-cdn.alpinelinux.org/alpine/edge/main
+		#https://dl-cdn.alpinelinux.org/alpine/edge/community
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"apk add.*elogind.*foobar" \
+		-o match:"Starting udev" \
+		-e empty \
+		setup-wayland-base foobar
+
+	atf_check \
+		-o match:"https://dl-cdn.alpinelinux.org/alpine/edge/community" \
+		cat etc/apk/repositories
+}
+
+setup_wayland_base_community_duplicates_body() {
+	init_env
+	mkdir -p etc/apk
+	cat > etc/apk/repositories <<-EOF
+		https://dl-cdn.alpinelinux.org/alpine/edge/main
+		https://example.tld/main
+		https://dl-cdn.alpinelinux.org/alpine/edge/community
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"apk update" \
+		-e empty \
+		setup-wayland-base
+
+	atf_check \
+		-o match:"https://example.tld/community" \
+		-o match:"https://dl-cdn.alpinelinux.org/alpine/edge/community" \
+		cat etc/apk/repositories
+
+	atf_check \
+		-o match:"2" \
+		grep -c -w "community" etc/apk/repositories
+}
