@@ -15,7 +15,7 @@ usage() {
 	exit $1
 }
 
-while getopts "d:n:h" opt; do
+while getopts "h" opt; do
 	case $opt in
 		h) usage 0;;
 		'?') usage "1" >&2;;
