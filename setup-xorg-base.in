@@ -24,17 +24,7 @@ done
 shift $(($OPTIND - 1))
 
 # For every main/ repo, enable corresponding community/ repo
-for repo in $(grep '^[^#].*/main$' "$ROOT"/etc/apk/repositories 2>/dev/null); do
-	crepo="${repo%%/main}/community"
-	if ! grep -q -x -- "$crepo" "$ROOT"/etc/apk/repositories; then
-		echo ">>> Enabling repository $crepo"
-		echo "$crepo" >> "$ROOT"/etc/apk/repositories
-	fi
-done
-
-if [ -n "$crepo" ]; then
-	apk update
-fi
+setup-apkrepos -o
 
 apk add xorg-server xf86-input-libinput eudev mesa-dri-gallium "$@"
 

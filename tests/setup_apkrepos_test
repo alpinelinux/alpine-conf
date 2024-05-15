@@ -12,7 +12,8 @@ init_tests \
 	setup_apkrepos_interactive \
 	setup_apkrepos_alpine_stable \
 	setup_apkrepos_alpine_stable_preconfigured \
-	setup_apkrepos_alpine_edge
+	setup_apkrepos_alpine_edge \
+	setup_apkrepos_add_community
 
 setup_apkrepos_usage_body() {
 	test_usage setup-apkrepos
@@ -23,6 +24,10 @@ setup_apkrepos_exclusive_opts_body() {
 	atf_check -s exit:1 -e match:"usage" setup-apkrepos -r -f
 	atf_check -s exit:1 -e match:"usage" setup-apkrepos -r -1
 	atf_check -s exit:1 -e match:"usage" setup-apkrepos -f -1
+	atf_check -s exit:1 -e match:"usage" setup-apkrepos -o -r
+	atf_check -s exit:1 -e match:"usage" setup-apkrepos -o -f
+	atf_check -s exit:1 -e match:"usage" setup-apkrepos -o -1
+	atf_check -s exit:1 -e match:"usage" setup-apkrepos -o -c
 }
 
 setup_apkrepos_https_body() {
@@ -126,4 +131,22 @@ setup_apkrepos_alpine_edge_body() {
 		-o match:"https://a0.example.com/edge/main" \
 		-o not-match:"v3\.17" \
 		cat etc/apk/repositories
+}
+
+setup_apkrepos_add_community_body() {
+	init_env
+
+	mkdir -p etc etc/apk
+	echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" > etc/apk/repositories
+
+	atf_check -s exit:0 \
+		-o match:">>> Enabling repository https://dl-cdn.alpinelinux.org/alpine/edge/community" \
+		-o match:"Updating repository indexes..." \
+		-o match:"apk update" \
+		setup-apkrepos -o
+
+	grep -q \
+		"https://dl-cdn.alpinelinux.org/alpine/edge/community" \
+		etc/apk/repositories \
+		|| atf_fail "community mirror was not added to /etc/apk/repositories"
 }

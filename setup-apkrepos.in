@@ -90,6 +90,17 @@ add_fastest_mirror() {
 	add_mirror "$fastest"
 }
 
+# For every main/ repo, enable corresponding community/ repo
+add_community_mirrors() {
+	for repo in $(grep '^[^#].*/main$' "$APKREPOS_PATH" 2>/dev/null); do
+		crepo="${repo%%/main}/community"
+		if ! grep -qx -- "$crepo" "$APKREPOS_PATH"; then
+			echo ">>> Enabling repository $crepo"
+			echo "$crepo" >> "$APKREPOS_PATH"
+		fi
+	done
+}
+
 # show mirrors
 show_mirror_list() {
 	local mirror i=0
@@ -155,6 +166,7 @@ edit_repositories() {
 usage() {
 	cat <<-__EOF__
 		usage: setup-apkrepos [-ch] [-f|-r|-1|REPO...]
+		       setup-apkrepos -o
 
 		Setup apk repositories
 
@@ -162,8 +174,11 @@ usage() {
 		 -c  Enable the community repo
 		 -f  Detect and add fastest mirror
 		 -h  Show this help
+		 -o  Only enable a community repo for every defined repo
 		 -r  Add a random mirror and do not prompt
 		 -1  Add first mirror on the list (normally a CDN)
+
+		Option -o cannot be used with options -c, -f, -r or -1.
 	__EOF__
 	exit $1
 }
@@ -172,22 +187,33 @@ community_prefix="#"
 add_fastest=false
 add_first=false
 add_random=false
-while getopts "c1fhr" opt; do
+add_community_repos=false
+while getopts "c1fhor" opt; do
 	case $opt in
-		c) community_prefix="";;
+		c) community_prefix=""
+			if $add_community_repos; then
+				usage "1" >&2
+			fi
+			;;
 		f) add_fastest=true
-			if $add_first || $add_random; then
+			if $add_first || $add_random || $add_community_repos; then
 				usage "1" >&2
 			fi
 			;;
 		1) add_first=true
-			if $add_fastest || $add_random; then
+			if $add_fastest || $add_random || $add_community_repos; then
 				usage "1" >&2
 			fi
 			;;
 		h) usage 0;;
+		o) add_community_repos=true
+			if $add_first || $add_fastest || $add_random \
+				|| [ $community_prefix != "#" ]; then
+				usage "1" >&2
+			fi
+			;;
 		r) add_random=true
-			if $add_first || $add_fastest; then
+			if $add_first || $add_fastest || $add_community_repos; then
 				usage "1" >&2
 			fi
 			;;
@@ -208,7 +234,7 @@ fi
 get_alpine_release
 changed=false
 
-if [ $# -gt 0 ]; then
+if [ $# -gt 0 ] && ! $add_community_repos; then
 	# replace the apk repos with the specified ones
 	rm -f "$APKREPOS_PATH"
 	mkdir -p "${APKREPOS_PATH%/*}"
@@ -237,7 +263,12 @@ if $add_fastest; then
 	changed=true
 fi
 
-if $add_first || $add_random || $add_fastest; then
+if $add_community_repos; then
+	add_community_mirrors || exit
+	changed=true
+fi
+
+if $add_first || $add_random || $add_fastest || $add_community_repos; then
 	interactive=false
 else
 	interactive=true
