@@ -1,0 +1,20 @@
+#!/bin/sh
+
+while getopts "t:" opt; do
+	case $opt in
+		t) fstype="$OPTARG";;
+		'?') echo "fake mount not implemented: $@" >&2; exit 1;;
+	esac
+done
+shift $(( $OPTIND - 1))
+
+case "$fstype" in
+	ext4) opts="rw,noatime,data=ordered";;
+	vfat) opts="rw,relatime,fmask=0022";;
+	*) opts="FAKE-MOUNTOPTS";;
+esac
+
+mkdir -p proc
+echo "$1 $(echo $2 | sed -E 's:/+:/:g') ext4 $opts 0 0" >> proc/mounts
+
+echo "DEBUG: fake mount $@"

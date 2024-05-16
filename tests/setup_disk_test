@@ -259,7 +259,18 @@ setup_disk_sys_body() {
 	mkdir proc etc
 	touch proc/mounts etc/fstab
 	ERASE_DISKS=/dev/vda atf_check \
+		-o match:"Installation is complete" \
 		setup-disk -m sys /dev/vda
+
+	atf_check \
+		-o match:"^ext4$"\
+		awk '$2 == "/" {print $3}' mnt/etc/fstab
+	atf_check \
+		-o match:"^ext4$"\
+		awk '$2 == "/boot" {print $3}' mnt/etc/fstab
+	atf_check \
+		-o match:"^swap$"\
+		awk '$2 == "swap" {print $3}' mnt/etc/fstab
 }
 
 setup_disk_install_mounted_root_nvme_body() {

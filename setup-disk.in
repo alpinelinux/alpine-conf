@@ -181,11 +181,11 @@ find_partitions() {
 			else
 				search=bootable
 			fi
-			sfdisk -d "$dev" | awk '/'$search'/ {print $1}'
+			sfdisk -d "${ROOT}$dev" | awk '/'$search'/ {print $1}'
 			;;
 		*)
 			search=$(partition_id "$type")
-			sfdisk -d "$dev" | awk '/type='$search'/ {print $1}'
+			sfdisk -d "${ROOT}$dev" | awk '/type='$search'/ {print $1}'
 			;;
 	esac
 }
@@ -279,7 +279,7 @@ init_chroot_mounts() {
 cleanup_chroot_mounts() {
 	local mnt="$1" i=
 	for i in proc dev; do
-		$MOCK umount "$mnt"/$i
+		umount "$mnt"/$i
 	done
 }
 
@@ -661,7 +661,7 @@ unmount_partitions() {
 	local mnt="$1"
 
 	# unmount the partitions
-	umount $(awk '{print $2}' /proc/mounts | egrep "^$mnt(/|\$)" | sort -r)
+	umount $(awk '{print $2}' "$ROOT"/proc/mounts | grep -E "^$mnt(/|\$)" | sort -r)
 
 	if [ -n "$USE_CRYPT" ]; then
 		if [ -n "$USE_LVM" ]; then
@@ -852,7 +852,7 @@ setup_partitions() {
 	supported_part_label "$DISKLABEL" || return 1
 
 	# create clean disk label
-	echo "label: $DISKLABEL" | sfdisk --quiet $diskdev
+	echo "label: $DISKLABEL" | sfdisk --quiet "${ROOT}$diskdev"
 
 	# initialize MBR for syslinux only
 	if [ "$BOOTLOADER" = "syslinux" ] && [ -f "$MBR" ]; then
@@ -868,7 +868,7 @@ setup_partitions() {
 			*) echo ",$line" ;;
 			esac
 		done
-	) | sfdisk --quiet --wipe-partitions always --label $DISKLABEL $diskdev || return 1
+	) | sfdisk --quiet --wipe-partitions always --label "$DISKLABEL" "${ROOT}$diskdev" || return 1
 }
 
 # set up optional raid and create filesystem on boot device.
@@ -906,7 +906,7 @@ setup_boot_dev() {
 		btrfs) mkfs_args="";;
 		ext4) mkfs_args="$mkfs_args -O ^64bit";; # pv-grub does not support 64bit
 	esac
-	mkfs.$BOOTFS $MKFS_OPTS_BOOT $mkfs_args $bootdev
+	$MOCK mkfs.$BOOTFS $MKFS_OPTS_BOOT $mkfs_args $bootdev
 	BOOT_DEV="$bootdev"
 }
 
@@ -927,7 +927,7 @@ find_nth_non_boot_parts() {
 		if is_dasd $disk eckd; then
 			fdasd -p $disk | grep "Linux $id" | awk '{print $1}' | tail -n 1
 		else
-			sfdisk -d "$disk" | grep -v "$search" \
+			sfdisk -d "${ROOT}$disk" | grep -v "$search" \
 				| awk "/(Id|type)=$id/ { i++; if (i==$idx) print \$1 }"
 		fi
 	done
@@ -991,12 +991,12 @@ setup_lvm_volume_group() {
 # set up swap on given device(s)
 setup_swap_dev() {
 	local swap_dev=
-	sed -i -e '/swap/d' /etc/fstab
+	sed -i -e '/swap/d' "$ROOT"/etc/fstab
 	SWAP_DEVICES=
 	for swap_dev in "$@"; do
-		mkswap $swap_dev >/dev/null
+		$MOCK mkswap $swap_dev >/dev/null
 		printf "%s\tswap\t\tswap\tdefaults 0 0\n" \
-			"$(uuid_or_device $swap_dev)" >> /etc/fstab
+			"$(uuid_or_device $swap_dev)" >> "$ROOT"/etc/fstab
 		SWAP_DEVICES="$SWAP_DEVICES $swap_dev"
 	done
 	swapon -a
@@ -1141,24 +1141,24 @@ setup_root() {
 	shift 2
 	local disks="$@" mkfs_args="-q"
 	[ "$ROOTFS" = "btrfs" ] && mkfs_args=""
-	mkfs.$ROOTFS $MKFS_OPTS_ROOT $mkfs_args "$root_dev"
+	$MOCK mkfs.$ROOTFS $MKFS_OPTS_ROOT $mkfs_args "$root_dev"
 	mkdir -p "$SYSROOT"
-	mount -t $ROOTFS $root_dev "$SYSROOT" || return 1
+	mount -t $ROOTFS $root_dev "${ROOT}$SYSROOT" || return 1
 	if [ -n "$boot_dev" ]; then
 		# use separate esp partirion with UEFI but without crypt
 		if [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ]; then
-			mkdir -p "$SYSROOT"/boot/efi
-			mount -t $BOOTFS $boot_dev "$SYSROOT"/boot/efi || return 1
+			mkdir -p "${ROOT}$SYSROOT"/boot/efi
+			mount -t $BOOTFS $boot_dev "${ROOT}$SYSROOT"/boot/efi || return 1
 		else
-			mkdir -p "$SYSROOT"/boot
-			mount -t $BOOTFS $boot_dev "$SYSROOT"/boot || return 1
+			mkdir -p "${ROOT}$SYSROOT"/boot
+			mount -t $BOOTFS $boot_dev "${ROOT}$SYSROOT"/boot || return 1
 		fi
 	fi
 
 	setup_mdadm_conf
-	install_mounted_root "$SYSROOT" "$disks" || return 1
-	swapoff -a
-	unmount_partitions "$SYSROOT"
+	install_mounted_root "${ROOT}$SYSROOT" "$disks" || return 1
+	$MOCK swapoff -a
+	unmount_partitions "${ROOT}$SYSROOT"
 
 	echo ""
 	echo "Installation is complete. Please reboot."
@@ -1202,7 +1202,7 @@ native_disk_install_lvm() {
 				"${boot_size}M,$boot_part_type,*" \
 				"${lvm_size}${lvm_size:+M},$lvm_part_type" || return 1
 			if [ "$DISKLABEL" = "gpt" ] && [ -z "$USE_EFI" ]; then
-				sfdisk --part-attrs "$diskdev" 2 LegacyBIOSBootable
+				sfdisk --part-attrs "${ROOT}$diskdev" 2 LegacyBIOSBootable
 			fi
 		fi
 	done
@@ -1295,7 +1295,7 @@ native_disk_install() {
 				"${root_size}${root_size:+M},$root_part_type" \
 				|| return 1
 			if [ "$DISKLABEL" = "gpt" ] && [ -z "$USE_EFI" ]; then
-				sfdisk --part-attrs "$diskdev" 2 LegacyBIOSBootable
+				sfdisk --part-attrs "${ROOT}$diskdev" 2 LegacyBIOSBootable
 			fi
 		fi
 	done
