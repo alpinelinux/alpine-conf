@@ -28,7 +28,7 @@ setup-apkrepos -o
 
 apk add elogind eudev "$@"
 
+setup-devd udev
+
 rc-service elogind start
 rc-update add elogind
-
-setup-devd udev
