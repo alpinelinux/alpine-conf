@@ -47,7 +47,7 @@ setup_interfaces_none_body() {
 
 setup_interfaces_interactive_dhcp_body() {
 	init_env
-	create_fake_ifaces lo eth0
+	create_fake_ifaces lo eth0 docker0
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
 		echo eth0
@@ -57,7 +57,7 @@ setup_interfaces_interactive_dhcp_body() {
 		echo n
 	)>answers
 	atf_check -s exit:0 \
-		-o match:"Available interfaces are: eth0" \
+		-o match:"Available interfaces are: eth0[^ ]" \
 		setup-interfaces <answers
 }
 
