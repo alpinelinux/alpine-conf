@@ -11,6 +11,7 @@ init_tests \
 	setup_disk_func_find_efi_size \
 	setup_disk_func_uuid_or_device \
 	setup_disk_non_existing_block_dev \
+	setup_disk_sys \
 	setup_disk_install_mounted_root_nvme \
 	setup_disk_install_mounted_root_efi \
 	setup_disk_install_mounted_root_efi_boot \
@@ -45,6 +46,7 @@ fake_disk() {
 
 	echo $(( $size * 1000000 / $blocksize )) > sys/block/$dev/size
 	echo $(( $blocksize )) > sys/block/$dev/queue/logical_block_size
+	truncate -s "${size}M" dev/"$dev"
 }
 
 
@@ -248,6 +250,15 @@ setup_disk_non_existing_block_dev_body() {
 	atf_check -s not-exit:0 \
 		-e match:"/dev/vda is not a block device suitable for partitioning" \
 		-o match:"swapoff" \
+		setup-disk -m sys /dev/vda
+}
+
+setup_disk_sys_body() {
+	init_env
+	fake_disk vda
+	mkdir proc etc
+	touch proc/mounts etc/fstab
+	ERASE_DISKS=/dev/vda atf_check \
 		setup-disk -m sys /dev/vda
 }
 
