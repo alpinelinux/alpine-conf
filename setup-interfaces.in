@@ -14,9 +14,10 @@ unconfigured_add() {
 unconfigured_detect() {
 	local i=
 	for i in ${INTERFACES:-$(available_ifaces)}; do
-		if [ "$i" != "lo" ]; then
-			unconfigured_add $i
-		fi
+		case "$i" in
+			lo|docker0) continue;;
+		esac
+		unconfigured_add "$i"
 	done
 }
 
