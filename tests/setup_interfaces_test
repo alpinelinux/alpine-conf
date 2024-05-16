@@ -12,6 +12,7 @@ init_tests \
 	setup_interfaces_interactive_br0 \
 	setup_interfaces_interactive_bond0 \
 	setup_interfaces_interactive_wlan0_psk \
+	setup_interfaces_interactive_wlan0_psk_by_index \
 	setup_interfaces_interactive_wlan0_open \
 	setup_interfaces_interactive_ssid_list \
 	setup_interfaces_auto_single \
@@ -213,6 +214,39 @@ setup_interfaces_interactive_wlan0_psk_body() {
 		-o not-match:"x00" \
 		-o match:"Type the \"Telenor0366rar\" network Pre-Shared Key" \
 		-o match:"Ip address for wlan2" \
+		setup-interfaces <answers
+}
+
+setup_interfaces_interactive_wlan0_psk_by_index_body() {
+	init_env
+	create_fake_ifaces lo eth0 wlan3
+	mkdir -p sys/class/net/wlan3/phy80211
+
+	(
+		# Which one do you want to initialize? (or '?' or 'done') [eth0]
+		echo wlan3
+		# 1) Get-B3ED64
+		# 2) Lynx2C0CEA
+		# 3) Lynx2C0CEA_5G
+		# 4) Telenor0366rar-5GHz
+		# 5) Telenor0366rar
+		# 6) kano1
+		# Type the wireless network name to connect to:
+		echo 5
+		# Type the "Telenor0366rar" network Pre-Shared Key (will not echo):
+		echo 0123456789
+		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo dhcp
+		# Do you want to do any manual network configuration? (y/n) [n]
+		echo n
+	)>answers
+	atf_check -s exit:0 \
+		-o match:"Available interfaces are: eth0 wlan3" \
+		-o match:"Lynx2C0CEA_5G" \
+		-o match:"Get-B3ED64" \
+		-o not-match:"x00" \
+		-o match:"Type the \"Telenor0366rar\" network Pre-Shared Key" \
+		-o match:"Ip address for wlan3" \
 		setup-interfaces <answers
 }
 

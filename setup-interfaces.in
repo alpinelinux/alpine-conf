@@ -130,7 +130,7 @@ find_essids() {
 		| grep -E -v '(802.1x|\\x00)' | sort -u >"$essids_list"
 	if [ -s "$essids_list" ]; then
 		# we use / as separator since it is an illegal char in ssids
-		awk -F/ '{print $1}' "$essids_list"
+		awk -F/ '{print NR ") " $1}' "$essids_list"
 	else
 		return 1
 	fi
@@ -162,6 +162,16 @@ EOF
 
 essid_is_valid()  {
 	[ -n "$1" ] && cut -d/ -f1 "$essids_list" | grep -q -w -F "$1"
+}
+
+is_number() {
+	echo "$1" | grep -q -E  '^[0-9]+$'
+}
+
+essid_by_index() {
+	if is_number "$1"; then
+		cut -d/ -f1 "$essids_list" | sed "$1!d"
+	fi
 }
 
 wlan_is_psk() {
@@ -214,8 +224,13 @@ config_iface() {
 				case "$resp" in
 					""|done|abort) echo "Aborting $iface setup"; return;;
 				esac
-				echo "Invalid SSID: $resp"
-				continue
+				local by_index="$(essid_by_index "$resp")"
+				if essid_is_valid "$by_index"; then
+					resp="$by_index"
+				else
+					echo "Invalid SSID: $resp"
+					continue
+				fi
 			fi
 			essid="$resp"
 
