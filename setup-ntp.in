@@ -30,6 +30,12 @@ shift $(( $OPTIND - 1 ))
 : ${resp:=$1}
 
 while [ $# -eq 0 ] && ! isin "$resp" busybox openntpd chrony none abort; do
+	if date -d "$resp" >/dev/null 2>&1; then
+		$MOCK date -s "$resp"
+	else
+		# display current time before asking for NTP client
+		date
+	fi
 	ask "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none')" chrony
 done
 

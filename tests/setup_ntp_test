@@ -8,7 +8,8 @@ init_tests \
 	setup_ntp_chrony \
 	setup_ntp_openntpd \
 	setup_ntp_none \
-	setup_ntp_none_backwards_compat
+	setup_ntp_none_backwards_compat \
+	setup_ntp_interactive_datetime
 
 setup_ntp_usage_body() {
 	test_usage setup-ntp
@@ -58,3 +59,14 @@ setup_ntp_none_backwards_compat_body() {
 		setup-ntp -c none
 }
 
+setup_ntp_interactive_datetime_body() {
+	init_env
+	(
+		echo "2024-05-16 22:28:50"
+		echo busybox
+	) > answers
+	atf_check -s exit:0 \
+		-o match:"date -s 2024-05-16 22:28:50" \
+		-o match:"Which NTP client" \
+		setup-ntp < answers
+}
