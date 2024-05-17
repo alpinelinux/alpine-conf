@@ -4,12 +4,13 @@ eckd_dasd=
 fba_dasd=
 
 _dasdfmt() {
-	local block="$(ls /sys/bus/ccw/devices/"$1"/block 2>/dev/null)"
-	if ! [ -b "/dev/$block" ]; then
-		echo "/dev/$block is not a block device" >&2
+	local block="$(ls "${ROOT}sys/bus/ccw/devices/$1/block" 2>/dev/null)"
+	local dev="${ROOT}dev/$block"
+	if ! [ -b "$dev" ]; then
+		echo "$dev ($1) is not a block device" >&2
 	else
 		if ask_yesno "WARNING: Erase ECKD DASD $1? (y/n)" "n"; then
-			dasdfmt -b 4096 -d cdl -yp "/dev/$block"
+			dasdfmt -b 4096 -d cdl -yp "$dev"
 		fi
 	fi
 }
@@ -32,10 +33,10 @@ eckdselect_help() {
 show_dasd_info() {
 	local busid= vendor= block= devtype= cutype=
 	for busid in $@; do
-		vendor=$(cat /sys/bus/ccw/devices/$busid/vendor 2>/dev/null)
-		devtype=$(cat /sys/bus/ccw/devices/$busid/devtype 2>/dev/null)
-		cutype=$(cat /sys/bus/ccw/devices/$busid/cutype 2>/dev/null)
-		block="$(ls /sys/bus/ccw/devices/$busid/block 2>/dev/null)"
+		vendor=$(cat "${ROOT}sys/bus/ccw/devices/$busid/vendor" 2>/dev/null)
+		devtype=$(cat "${ROOT}/sys/bus/ccw/devices/$busid/devtype" 2>/dev/null)
+		cutype=$(cat "${ROOT}/sys/bus/ccw/devices/$busid/cutype" 2>/dev/null)
+		block="$(ls "${ROOT}/sys/bus/ccw/devices/$busid/block" 2>/dev/null)"
 		echo "  $busid	($devtype $cutype $vendor)"
 	done
 }
@@ -66,8 +67,8 @@ check_dasd() {
 	eckd_dasd= fba_dasd=
 	local dasd="$(get_bootopt dasd)"
 	for _dasd in $( echo $dasd | tr ',' ' '); do
-		[ -e /sys/bus/ccw/drivers/dasd-eckd/$_dasd ] && eckd_dasd="$eckd_dasd $_dasd"
-		[ -e /sys/bus/ccw/drivers/dasd-fba/$_dasd ] && fba_dasd="$fba_dasd $_dasd"
+		[ -e "${ROOT}/sys/bus/ccw/drivers/dasd-eckd/$_dasd" ] && eckd_dasd="$eckd_dasd $_dasd"
+		[ -e "${ROOT}/sys/bus/ccw/drivers/dasd-fba/$_dasd" ] && fba_dasd="$fba_dasd $_dasd"
 	done
 	if [ -n "$eckd_dasd" ]; then
 		ask_eckd \
@@ -79,7 +80,7 @@ check_dasd() {
 is_dasd() {
 	local disk="${1#*\/dev\/}" dasd_type="$2"
 	for _dasd in $(eval "echo \$${dasd_type}_dasd"); do
-		[ -e /sys/bus/ccw/drivers/dasd-$dasd_type/$_dasd/block/$disk ] && return 0
+		[ -e "${ROOT}sys/bus/ccw/drivers/dasd-$dasd_type/$_dasd/block/$disk" ] && return 0
 	done
 	return 1
 }

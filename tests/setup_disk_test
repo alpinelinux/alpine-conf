@@ -254,6 +254,7 @@ setup_disk_non_existing_block_dev_body() {
 }
 
 setup_disk_sys_body() {
+	atf_require_prog sfdisk
 	init_env
 	fake_disk vda
 	mkdir proc etc
