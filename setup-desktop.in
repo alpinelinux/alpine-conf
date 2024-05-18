@@ -145,9 +145,7 @@ case "$de" in
 			grim \
 			i3status \
 			sway \
-			sway \
 			swayidle \
-			swaylock \
 			swaylockd \
 			util-linux-login \
 			wl-clipboard \
