@@ -26,6 +26,6 @@ shift $(($OPTIND - 1))
 # For every main/ repo, enable corresponding community/ repo
 setup-apkrepos -o
 
-apk add xorg-server xf86-input-libinput eudev mesa-dri-gallium "$@"
+apk add xorg-server xf86-input-libinput xinit eudev mesa-dri-gallium "$@"
 
 setup-devd udev
