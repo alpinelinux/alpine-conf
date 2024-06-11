@@ -26,9 +26,11 @@ shift $(($OPTIND - 1))
 # For every main/ repo, enable corresponding community/ repo
 setup-apkrepos -o
 
-apk add elogind eudev "$@"
+apk add elogind polkit-elogind eudev "$@"
 
 setup-devd udev
 
-rc-service elogind start
-rc-update add elogind
+for service in elogind polkit; do
+	rc-service "$service" start
+	rc-update add "$service"
+done
