@@ -19,8 +19,9 @@ setup_wayland_base_body() {
 	EOF
 
 	atf_check -s exit:0 \
-		-o match:"apk add.*elogind.*foobar" \
+		-o match:"apk add.*elogind polkit-elogind.*foobar" \
 		-o match:"Starting udev" \
+		-o match:"Starting polkit" \
 		-e empty \
 		setup-wayland-base foobar
 
