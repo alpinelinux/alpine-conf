@@ -886,6 +886,7 @@ setup_boot_dev() {
 			echo ',,,*' | sfdisk --quiet $disk -N1
 			echo ',,,-' | sfdisk --quiet $disk -N2
 		done
+		$MOCK mdev -s
 	fi
 
 	echo "Creating file systems..."
