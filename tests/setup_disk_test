@@ -270,8 +270,8 @@ setup_disk_sys_body() {
 		-o match:"^ext4$"\
 		awk '$2 == "/boot" {print $3}' mnt/etc/fstab
 	atf_check \
-		-o match:"^swap$"\
-		awk '$2 == "swap" {print $3}' mnt/etc/fstab
+		-o inline:"none\n"\
+		awk '$3 == "swap" {print $2}' mnt/etc/fstab
 }
 
 setup_disk_install_mounted_root_nvme_body() {

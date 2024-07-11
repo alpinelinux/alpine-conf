@@ -556,7 +556,7 @@ install_mounted_root() {
 	if [ -n "$SWAP_DEVICES" ]; then
 		local swap_dev
 		for swap_dev in $SWAP_DEVICES; do
-			printf "%s\tswap\tswap\tdefaults\t0 0\n" \
+			printf "%s\tnone\tswap\tdefaults\t0 0\n" \
 				"$(uuid_or_device $swap_dev)" \
 				>> "$mnt"/etc/fstab
 		done
@@ -996,7 +996,7 @@ setup_swap_dev() {
 	SWAP_DEVICES=
 	for swap_dev in "$@"; do
 		$MOCK mkswap $swap_dev >/dev/null
-		printf "%s\tswap\t\tswap\tdefaults 0 0\n" \
+		printf "%s\tnone\t\tswap\tdefaults 0 0\n" \
 			"$(uuid_or_device $swap_dev)" >> "${ROOT}etc/fstab"
 		SWAP_DEVICES="$SWAP_DEVICES $swap_dev"
 	done
