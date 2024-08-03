@@ -201,6 +201,7 @@ clean_up() {
 sign_modloop() {
 	local in="$1"
 	local abuild_conf="${ABUILD_CONF:-"/etc/abuild.conf"}"
+	[ -f "$abuild_conf" ] && . "$abuild_conf"
 	local abuild_home="${ABUILD_USERDIR:-"$HOME/.abuild"}"
 	local abuild_userconf="${ABUILD_USERCONF:-"$abuild_home/abuild.conf"}"
 	[ -f "$abuild_userconf" ] && . "$abuild_userconf"
