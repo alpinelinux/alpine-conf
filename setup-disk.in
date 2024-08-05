@@ -1727,6 +1727,7 @@ fi
 if [ -d "$1" ]; then
 	# install to given mounted root
 	apk add --quiet $(select_bootloader_pkg)
+	init_progs || return 1
 	install_mounted_root "${1%/}" || exit
 	if [ -z "$USE_EFI" ] && [ "$ARCH" = "x86_64" -o "$ARCH" = x86 ]; then
 		echo "You might need fix the MBR to be able to boot" >&2
