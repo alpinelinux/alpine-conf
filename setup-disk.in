@@ -1598,6 +1598,10 @@ else
 	done
 fi
 
+if [ -z "$SWAP_SIZE" ]; then
+	SWAP_SIZE=$(find_swap_size $diskdevs)
+fi
+
 if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 	resp=
 	disk_is_or_disks_are="disk is"
@@ -1626,7 +1630,7 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 		nolvm) USE_LVM="";;
 		crypt)
 			USE_CRYPT="_crypt"
-			if [ -n "$SWAP_SIZE" ]; then
+			if [ "$SWAP_SIZE" -gt 0 ]; then
 				USE_LVM="_lvm"
 			fi
 			;;
@@ -1639,7 +1643,7 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 		cryptsys)
 			resp=${resp#crypt}
 			USE_CRYPT="_crypt"
-			if [ -n "$SWAP_SIZE" ]; then
+			if [ "$SWAP_SIZE" -gt 0 ]; then
 				USE_LVM="_lvm"
 			fi
 			break
@@ -1647,10 +1651,6 @@ if [ -n "$diskdevs" ] && [ -z "$DISK_MODE" ]; then
 		esac
 	done
 	DISK_MODE="$resp"
-fi
-
-if [ -z "$SWAP_SIZE" ]; then
-	SWAP_SIZE=$(find_swap_size $diskdevs)
 fi
 
 if [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ] && [ -z "$BOOT_SIZE" ]; then
