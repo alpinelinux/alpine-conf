@@ -262,8 +262,7 @@ if [ "$BUILDDIR" ]; then
 		INSTALL_DTBS_PATH='$ROOTFS/usr/lib/linux-$(KERNELRELEASE)'
 else
 	if [ -z "$PACKAGES" ]; then
-		PACKAGES="$(extra_pkgs "dahdi-linux-$FLAVOR" dahdi-linux)
-			$(extra_pkgs "xtables-addons-$FLAVOR")"
+		PACKAGES="$(extra_pkgs "xtables-addons-$FLAVOR")"
 	fi
 	PACKAGES="$PACKAGES linux-$FLAVOR linux-firmware"
 fi
