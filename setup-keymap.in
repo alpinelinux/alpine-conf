@@ -51,8 +51,8 @@ print_column() {
 		return 1
 	fi
 
-	local terminal_width=$(stty size | cut -d' ' -f2)
-	if [ -z "$terminal_width" -o "$terminal_width" -eq 0 ]; then
+	local terminal_width=$(stty size 2>/dev/null | cut -d' ' -f2)
+	if [ -z "$terminal_width" ] || [ "$terminal_width" -eq 0 ]; then
 		terminal_width=80
 	fi
 
