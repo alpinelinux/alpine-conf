@@ -7,7 +7,8 @@ init_tests \
 	setup_timezone_install \
 	setup_timezone_z_compat \
 	setup_timezone_none \
-	setup_timezone_interactive
+	setup_timezone_interactive \
+	setup_timezone_SIGINT
 
 setup_timezone_usage_body() {
 	test_usage setup-timezone
@@ -69,4 +70,13 @@ setup_timezone_interactive_body() {
 		-o match:"apk del" \
 		-e empty \
 		setup-timezone < answers
+}
+
+setup_timezone_SIGINT_body() {
+	init_env
+	yes '\n' | atf_check -s exit:1 \
+		-o match:"apk add .*tzdata" \
+		-o match:"apk del" \
+		-e empty \
+		timeout 0.5 setup-timezone
 }

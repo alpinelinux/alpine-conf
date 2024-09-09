@@ -91,7 +91,8 @@ fi
 apk add --no-progress --quiet $pkg || die "Failed to install tzdata package"
 
 if [ -n "$apkdel" ]; then
-	trap "apk del --no-progress --quiet $apkdel" EXIT HUP INT TERM
+	trap "exit 1" INT TERM HUP
+	trap "apk del --no-progress --quiet $apkdel" EXIT
 fi
 
 if [ -L "${ROOT}"etc/zoneinfo/localtime ]; then
