@@ -113,8 +113,7 @@ else
 		timezone="$resp"
 		case "$timezone" in
 			none|abort) break;;
-			"") continue;;
-			"?") show_tz_list; continue;;
+			""|"?") continue;;
 		esac
 
 		while [ -d "$zroot/$timezone" ]; do
@@ -123,7 +122,7 @@ else
 			ask "What sub-timezone of '$timezone' are you in? (or '?')"
 			zone="$resp"
 			case "$zone" in
-				"?") show_tz_list "$timezone"; continue;;
+				"?") continue;;
 			esac
 			default_timezone="$timezone"
 			timezone="$timezone/$zone"
