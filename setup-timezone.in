@@ -109,7 +109,7 @@ else
 	while true; do
 		show_tz_list
 		echo ""
-		ask "Which timezone are you in?" "$default_timezone"
+		ask "Which timezone are you in? (or '?' or 'none')" "$default_timezone"
 		timezone="$resp"
 		case "$timezone" in
 			none|abort) break;;
@@ -120,7 +120,7 @@ else
 		while [ -d "$zroot/$timezone" ]; do
 			show_tz_list "$timezone"
 			echo ""
-			ask "What sub-timezone of '$timezone' are you in?"
+			ask "What sub-timezone of '$timezone' are you in? (or '?')"
 			zone="$resp"
 			case "$zone" in
 				"?") show_tz_list "$timezone"; continue;;
