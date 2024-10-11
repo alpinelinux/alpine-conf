@@ -110,7 +110,7 @@ else
 		show_tz_list
 		echo ""
 		ask "Which timezone are you in? (or '?' or 'none')" "$default_timezone"
-		timezone="$resp"
+		timezone=$(printf %s "$resp" | sed 's/\/\+/\//g; s/\/$//')
 		case "$timezone" in
 			none|abort) break;;
 			""|"?") continue;;
@@ -120,7 +120,7 @@ else
 			show_tz_list "$timezone"
 			echo ""
 			ask "What sub-timezone of '$timezone' are you in? (or '?')"
-			zone="$resp"
+			zone=$(printf %s "$resp" | sed 's/\/\+/\//g; s/\/$//')
 			case "$zone" in
 				"?") continue;;
 			esac
