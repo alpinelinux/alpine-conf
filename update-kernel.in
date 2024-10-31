@@ -77,7 +77,7 @@ usage() {
 
 QUIET_OPT="--quiet"
 OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,modloopfw:,help,package:,modloopsign,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file:,keys-dir:,cache-dir: \
-	-n $SCRIPT -o a:b:f:F:hp:svk:KC:Md:c: -- "$@") || usage 1
+	-n $SCRIPT -o a:b:e:f:F:hp:svk:KC:Md:c: -- "$@") || usage 1
 
 eval set -- "$OPTS"
 while :; do
