@@ -30,6 +30,7 @@ PACKAGES=
 MKINITFS_ARGS=
 REPOSITORIES_FILE=/etc/apk/repositories
 KEYS_DIR=/etc/apk/keys
+CACHE_DIR=/etc/apk/cache
 SIGNALS="HUP INT TERM"
 tmpdir=
 features=
@@ -64,6 +65,7 @@ usage() {
 		         -C|--compression          Initramfs compression (see mkinitfs for options)
 		         -M|--media                Boot media directory layout
 		         -d|--keys-dir             Override directory of trusted keys for apk
+						 -c|--cache-dir            Override cache directory
 		         --repositories-file <f>   apk repositories file
 
 		On low-memory systems, you may want to point the TMPDIR environment variable to
@@ -74,8 +76,8 @@ usage() {
 }
 
 QUIET_OPT="--quiet"
-OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,modloopfw:,help,package:,modloopsign,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file:,keys-dir: \
-	-n $SCRIPT -o a:b:f:F:hp:svk:KC:Md: -- "$@") || usage 1
+OPTS=$(getopt -l arch:,build-dir:,flavor:,feature:,modloopfw:,help,package:,modloopsign,verbose,apk-pubkey:,hostkeys,compression:,media,repositories-file:,keys-dir:,cache-dir: \
+	-n $SCRIPT -o a:b:f:F:hp:svk:KC:Md:c: -- "$@") || usage 1
 
 eval set -- "$OPTS"
 while :; do
@@ -131,6 +133,10 @@ while :; do
 	-d|--keys-dir)
 		shift
 		KEYS_DIR="$1"
+		;;
+	-c|--cache-dir)
+		shift
+		CACHE_DIR="$1"
 		;;
 	--repositories-file)
 		shift
@@ -234,6 +240,7 @@ _apk() {
 	shift
 
 	apk $cmd $QUIET_OPT -p $ROOTFS --arch "$ARCH" \
+		--cache-dir $CACHE_DIR \
 		--keys-dir $KEYS_DIR \
 		--repositories-file "$REPOSITORIES_FILE" $*
 }
