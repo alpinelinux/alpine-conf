@@ -140,7 +140,6 @@ case "$de" in
 		;;
 	sway)
 		setup-wayland-base ${BROWSER:-firefox} \
-			dmenu \
 			font-dejavu \
 			foot \
 			grim \
