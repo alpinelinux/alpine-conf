@@ -240,7 +240,7 @@ _apk() {
 	shift
 
 	apk $cmd $QUIET_OPT -p $ROOTFS --arch "$ARCH" \
-		--cache-dir $CACHE_DIR \
+		--cache-dir "$CACHE_DIR" \
 		--keys-dir $KEYS_DIR \
 		--repositories-file "$REPOSITORIES_FILE" $*
 }
