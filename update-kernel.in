@@ -234,13 +234,17 @@ fi
 tmpdir=$(mktemp -dt $SCRIPT.XXXXXX)
 ROOTFS=$tmpdir/root
 BOOT=$ROOTFS/boot
+CACHE_DIR_OPT="--cache-dir $CACHE_DIR"
+
+if ! [ -e "$CACHE_DIR" ]; then
+	CACHE_DIR_OPT=
+fi
 
 _apk() {
 	local cmd="$1"
 	shift
 
-	apk $cmd $QUIET_OPT -p $ROOTFS --arch "$ARCH" \
-		--cache-dir "$CACHE_DIR" \
+	apk $cmd $QUIET_OPT $CACHE_DIR_OPT -p $ROOTFS --arch "$ARCH" \
 		--keys-dir $KEYS_DIR \
 		--repositories-file "$REPOSITORIES_FILE" $*
 }
