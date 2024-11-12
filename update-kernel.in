@@ -295,12 +295,14 @@ mkdir $MODLOOP $STAGING
 cp -a $ROOTFS/lib/modules $MODLOOP
 mkdir -p $MODLOOP/modules/firmware
 find $ROOTFS/lib/modules -type f -name "*.ko*" | xargs modinfo -k $KVER -F firmware | sort -u | while read FW; do
-	for f in "$ROOTFS"/lib/firmware/$FW; do
+	for f in "$ROOTFS"/lib/firmware/$FW "$ROOTFS"/lib/firmware/$FW.xz "$ROOTFS"/lib/firmware/$FW.zst; do
 		if ! [ -e "$f" ]; then
 			continue
 		fi
 		install -pD "$f" "$MODLOOP/modules/firmware/${f#*/lib/firmware}"
 		# copy also all potentially associated files
+		f=${f%.zst}
+		f=${f%.xz}
 		for _file in "${f%.*}".*; do
 			install -pD "$_file" "$MODLOOP/modules/firmware/${_file#*/lib/firmware/}"
 		done
@@ -327,7 +329,7 @@ fi
 
 # include bluetooth firmware in modloop
 if [ -e "$ROOTFS"/lib/modules/*/kernel/drivers/bluetooth/btbcm.ko* ]; then
-	for _btfw in "$ROOTFS"/lib/firmware/brcm/*.hcd; do
+	for _btfw in "$ROOTFS"/lib/firmware/brcm/*.hcd*; do
 		install -pD "$_btfw" \
 			"$MODLOOP"/modules/firmware/brcm/"${_btfw##*/}"
 	done
