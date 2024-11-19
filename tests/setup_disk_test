@@ -9,6 +9,7 @@ init_tests \
 	setup_disk_func_setup_partitions_dos \
 	setup_disk_func_setup_partitions_gpt \
 	setup_disk_func_find_efi_size \
+	setup_disk_func_find_efi_size_multi \
 	setup_disk_func_uuid_or_device \
 	setup_disk_non_existing_block_dev \
 	setup_disk_sys \
@@ -205,6 +206,26 @@ setup_disk_func_find_efi_size_body() {
 			atf_check -s exit:0 \
 			-o match:"^$expected$" \
 			setup-disk /dev/vda
+	done
+}
+
+setup_disk_func_find_efi_size_multi_body() {
+	init_env
+	# size:blocksize:expected
+	for i in 10000::512 4000::264 1000::160 \
+			10000:4096:512 4000:4096:264 1000:4096:264; do
+
+		local diskdata=${i%:*}
+		local disksize=${diskdata%:*}
+		local blocksize=${diskdata#*:}
+		local expected=${i##*:}
+
+		fake_disk vda $disksize $blocksize
+		fake_disk vdb $disksize $blocksize
+		SETUP_DISK_TESTFUNC=find_efi_size \
+			atf_check -s exit:0 \
+			-o match:"^$expected$" \
+			setup-disk /dev/vda /dev/vdb
 	done
 }
 
