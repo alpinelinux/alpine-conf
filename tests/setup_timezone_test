@@ -74,9 +74,12 @@ setup_timezone_interactive_body() {
 
 setup_timezone_SIGINT_body() {
 	init_env
-	yes '\n' | atf_check -s exit:1 \
+	if timeout --version 2>/dev/null | grep -q GNU; then
+		preserve_status="--preserve-status"
+	fi
+	atf_check -s exit:1 \
 		-o match:"apk add .*tzdata" \
 		-o match:"apk del" \
 		-e empty \
-		timeout 0.5 setup-timezone
+		timeout $preserve_status -s TERM 0.5 setup-timezone
 }
