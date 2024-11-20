@@ -176,13 +176,13 @@ fi
 # set keymap
 if [ "$rc_sys" != LXC ]; then
 	if is_virtual_console || [ -n "$KEYMAPOPTS" ]; then
-		echo -e ""
+		echo
 		print_heading2 " Keymap"
 		print_heading2 "--------"
 		setup-keymap ${KEYMAPOPTS}
 	fi
 	# set hostname
-	echo -e ""
+	echo
 	print_heading2 " Hostname"
 	print_heading2 "----------"
 	setup-hostname ${HOSTNAMEOPTS} && [ -z "$SSH_CONNECTION" ] && rc-service hostname --quiet restart
@@ -196,7 +196,7 @@ if [ -n "$INTERFACESOPTS" ]; then
 		printf "$INTERFACESOPTS" | setup-interfaces -i ${rst_if:+-r}
 	fi
 else
-	echo -e ""
+	echo
 	print_heading2 " Interface"
 	print_heading2 "-----------"
 	setup-interfaces ${quick:+-a} ${rst_if:+-r}
@@ -209,7 +209,7 @@ fi
 
 # set root password
 if [ -z "$empty_root_password" ]; then
-	echo -e ""
+	echo
 	print_heading2 " Root Password"
 	print_heading2 "---------------"
 	while ! $MOCK passwd ; do
@@ -219,13 +219,13 @@ fi
 
 # pick timezone
 if [ -z "$quick" ]; then
-	echo -e ""
+	echo
 	print_heading2 " Timezone"
 	print_heading2 "----------"
 	setup-timezone ${TIMEZONEOPTS}
 fi
 
-echo -e ""
+echo
 rc-update --quiet add networking boot
 rc-update --quiet add seedrng boot || rc-update --quiet add urandom boot
 svc_list="cron crond"
@@ -259,7 +259,7 @@ sed -i -e "s/^127\.0\.0\.1.*/127.0.0.1\t${_hn}.${_dn:-$(get_fqdn my.domain)} ${_
 	"$ROOT"/etc/hosts 2>/dev/null
 
 if [ -z "$quick" ]; then
-	echo -e ""
+	echo
 	print_heading2 " Proxy"
 	print_heading2 "-------"
 	setup-proxy -q ${PROXYOPTS}
@@ -270,13 +270,13 @@ if [ -r "$ROOT/etc/profile" ]; then
 fi
 
 if ! is_kvm_clock && [ "$rc_sys" != "LXC" ] && [ "$quick" != 1 ]; then
-	echo -e ""
+	echo
 	print_heading2 " Network Time Protocol"
 	print_heading2 "-----------------------"
 	setup-ntp ${NTPOPTS}
 fi
 
-echo -e ""
+echo
 print_heading2 " APK Mirror"
 print_heading2 "------------"
 setup-apkrepos ${APKREPOSOPTS}
@@ -291,7 +291,7 @@ if [ "$quick" = 1 ]; then
 	exit 0
 fi
 
-echo -e ""
+echo
 print_heading2 " User"
 print_heading2 "------"
 setup-user ${USERSSHKEY+-k "$USERSSHKEY"} ${USEROPTS:--a -g 'audio video netdev'}
@@ -308,7 +308,7 @@ if [ -f "$root_keys" ]; then
 fi
 
 if is_xen_dom0; then
-	echo -e ""
+	echo
 	print_heading2 " Xen"
 	print_heading2 "-----"
 	setup-xen-dom0 ${XENDOM0OPTS}
@@ -318,7 +318,7 @@ if [ "$rc_sys" = "LXC" ]; then
 	exit 0
 fi
 
-echo -e ""
+echo
 print_heading2 " Disk & Install"
 print_heading2 "----------------"
 DEFAULT_DISK=none \
