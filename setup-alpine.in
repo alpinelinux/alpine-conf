@@ -191,14 +191,14 @@ fi
 
 # set Interface
 [ -z "$SSH_CONNECTION" ] && rst_if=1
+echo -e ""
+print_heading2 " Interface"
+print_heading2 "-----------"
 if [ -n "$INTERFACESOPTS" ]; then
 	if [ "$INTERFACESOPTS" != none ]; then
 		printf "$INTERFACESOPTS" | setup-interfaces -i ${rst_if:+-r}
 	fi
 else
-	echo
-	print_heading2 " Interface"
-	print_heading2 "-----------"
 	setup-interfaces ${quick:+-a} ${rst_if:+-r}
 fi
 
