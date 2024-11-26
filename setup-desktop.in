@@ -56,7 +56,6 @@ case "$de" in
 		;;
 	mate)
 		setup-xorg-base mate-desktop-environment ${BROWSER:-firefox} \
-			consolekit2 \
 			gvfs \
 			lightdm \
 			lightdm-gtk-greeter \
@@ -70,7 +69,6 @@ case "$de" in
 		;;
 	xfce)
 		setup-xorg-base xfce4 ${BROWSER:-firefox} \
-			consolekit2 \
 			gvfs \
 			lightdm \
 			lightdm-gtk-greeter \
