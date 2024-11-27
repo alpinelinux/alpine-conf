@@ -185,7 +185,16 @@ if [ "$rc_sys" != LXC ]; then
 	echo
 	print_heading2 " Hostname"
 	print_heading2 "----------"
-	setup-hostname ${HOSTNAMEOPTS} && [ -z "$SSH_CONNECTION" ] && rc-service hostname --quiet restart
+	setup-hostname ${HOSTNAMEOPTS} && if [ -z "$SSH_CONNECTION" ]; then
+		if rc-service --quiet networking status; then
+			# manually restart networking, forcing this script to wait until networking starts
+			rc-service --quiet networking stop
+			rc-service --quiet hostname restart
+			rc-service --quiet networking start
+		else
+			rc-service --quiet hostname restart
+		fi
+	fi
 	setup-devd -C mdev # just to bootstrap
 fi
 
