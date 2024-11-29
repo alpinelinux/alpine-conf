@@ -65,7 +65,7 @@ usage() {
 		         -C|--compression          Initramfs compression (see mkinitfs for options)
 		         -M|--media                Boot media directory layout
 		         -d|--keys-dir             Override directory of trusted keys for apk
-						 -c|--cache-dir            Override cache directory
+		         -c|--cache-dir            Override cache directory
 		         --repositories-file <f>   apk repositories file
 
 		On low-memory systems, you may want to point the TMPDIR environment variable to
