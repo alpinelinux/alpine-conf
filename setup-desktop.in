@@ -101,11 +101,10 @@ case "$de" in
 		rc-update add elogind
 		;;
 	gnome)
-		setup-xorg-base ${BROWSER:-firefox} "$@"
-		# apk info needs community repos which are enabled with setup-xorg-base
+		setup-wayland-base ${BROWSER:-firefox} "$@"
+		# apk info needs community repos which are enabled with setup-wayland-base
 		apk add $(apk info --quiet --depends gnome gnome-apps-core)
 		rc-update add gdm
-		rc-update add elogind
 		;;
 	plasma)
 		setup-xorg-base ${BROWSER:-firefox} \
