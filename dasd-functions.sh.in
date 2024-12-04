@@ -1,5 +1,3 @@
-#!/bin/sh
-
 eckd_dasd=
 fba_dasd=
 

@@ -78,7 +78,7 @@ install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES)
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/sbin
 	install -m 755 $(SBIN_FILES) $(DESTDIR)/$(PREFIX)/sbin
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/lib
-	install -m 755 $(LIB_FILES) $(DESTDIR)/$(PREFIX)/lib
+	install -m 644 $(LIB_FILES) $(DESTDIR)/$(PREFIX)/lib
 	install -m 755 -d $(DESTDIR)/$(sysconfdir)
 	install -m 644 $(ETC_LBU_FILES) $(DESTDIR)/$(sysconfdir)
 
