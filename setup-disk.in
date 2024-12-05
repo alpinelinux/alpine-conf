@@ -446,6 +446,7 @@ install_mounted_root() {
 	local pvs= dev= rootdev= cryptdev= bootdev= extlinux_raidopt= root= modules=
 	local kernel_opts="$KERNELOPTS"
 	[ "$ARCH" = "s390x" ] && initfs_features="$initfs_features qeth dasd_mod"
+	[ "$ARCH" = "aarch64" ] && initfs_features="$initfs_features phy"
 	is_rpi && initfs_features="base mmc usb"
 
 	rootdev=$(find_mount_dev "$mnt")
