@@ -30,13 +30,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /*
  * TODO:
  * - fix unaligned 16-bit accesses from iso headers (ARM / MIPS)
- * - help, options, verbose logs
+ * - options, verbose logs
  */
 
 /* needed for SPLICE_F_MOVE */
 #define _GNU_SOURCE
 
 #include <errno.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <wchar.h>
@@ -683,8 +684,35 @@ int uniso(int fd)
 	return 0;
 }
 
-int main(void)
+static void usage(FILE *out, int rc) {
+	fprintf(out,
+	"usage: uniso [-h]\n"
+	"\n"
+	"Unpack ISO9660 File System from STDIN.\n"
+	"\n"
+	"options:\n"
+	" -h  Show this help\n"
+	"\n");
+
+	exit(rc);
+}
+
+int main(int argc, char *argv[])
 {
+	while (1) {
+		int c = getopt(argc, argv, "h");
+		if (c < 0)
+			break;
+
+		switch (c) {
+		case 'h':
+			usage(stdout, 0);
+			break;
+		default:
+			usage(stderr, 1);
+		}
+	}
+
 	uniso(STDIN_FILENO);
 	return 0;
 }
