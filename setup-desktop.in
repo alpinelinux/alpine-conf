@@ -144,55 +144,9 @@ case "$de" in
 		rc-update add gdm
 		;;
 	plasma)
-		setup-xorg-base ${BROWSER:-firefox} \
-			ark \
-			bluedevil \
-			breeze \
-			breeze-gtk \
-			dbus \
-			discover \
-			drkonqi \
-			font-noto \
-			gwenview \
-			kate \
-			kde-cli-tools \
-			kde-gtk-config \
-			kde-icons \
-			kdeplasma-addons \
-			kgamma \
-			kinfocenter \
-			kio-fuse \
-			kmenuedit \
-			konsole \
-			kscreen \
-			ksshaskpass \
-			kwallet-pam \
-			kwayland-integration \
-			pinentry-qt \
-			pipewire-alsa \
-			pipewire-pulse \
-			plasma-browser-integration \
-			plasma-desktop \
-			plasma-disks \
-			plasma-nm \
-			plasma-pa \
-			plasma-systemmonitor \
-			plasma-vault \
-			plasma-welcome \
-			plasma-workspace-wallpapers \
-			polkit-elogind \
-			polkit-kde-agent-1 \
-			powerdevil \
-			print-manager \
-			sddm-breeze \
-			sddm-kcm \
-			spectacle \
-			systemsettings \
-			udisks2 \
-			xdg-desktop-portal-kde \
-			xdg-user-dirs \
-			"$@"
-		rc-update add dbus
+		setup-wayland-base ${BROWSER:-firefox} "$@"
+		# apk info needs community repos which are enabled with setup-wayland-base
+		apk add $(apk info --quiet --depends plasma-desktop-meta kde-applications-base)
 		rc-update add sddm
 		;;
 	sway)

@@ -63,6 +63,11 @@ case "$cmd" in
 								printf "gnome-shell\ngvfs\n"
 							fi
 							;;
+						*plasma-desktop-meta*)
+							if grep -q '^[^#].*community$' etc/apk/repositories; then
+								printf "plasma-desktop\n"
+							fi
+							;;
 					esac
 				done
 				;;

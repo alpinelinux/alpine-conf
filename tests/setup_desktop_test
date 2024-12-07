@@ -44,6 +44,8 @@ setup_desktop_gnome_body() {
 
 setup_desktop_plasma_body() {
 	init_env
+	mkdir -p etc/apk
+	echo "https://example.tld/main" > etc/apk/repositories
 	atf_check -s exit:0 \
 		-o match:"apk add.*plasma-desktop" \
 		-o match:"Starting udev" \
