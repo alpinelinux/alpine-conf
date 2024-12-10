@@ -76,6 +76,7 @@ case "$de" in
 			polkit-elogind \
 			xfce4-screensaver \
 			xfce4-terminal \
+			font-dejavu \
 			"$@"
 		rc-update add lightdm
 		;;
