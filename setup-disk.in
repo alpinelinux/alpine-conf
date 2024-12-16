@@ -1451,7 +1451,7 @@ usage() {
 		If BOOTLOADER is specified, the specified bootloader will be used.
 		If no bootloader is specified, the default bootloader is syslinux(extlinux)
 		except when EFI is detected or explicitly set by USE_EFI which will select grub.
-		Supported bootloaders are: grub, syslinux
+		Supported bootloaders are: grub, syslinux, zipl, raspberrypi-bootloader, u-boot, none
 
 		If KERNELOPTS is specified, it will be appended to the kernel boot parameters.
 		Default is: quiet
