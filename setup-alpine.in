@@ -133,7 +133,7 @@ if [ -n "$CREATEANSWERFILE" ]; then
 		APKREPOSOPTS="-1"
 
 		# Create admin user
-		USEROPTS="-a -u -g audio,video,netdev juser"
+		USEROPTS="-a -u -g audio,input,video,netdev juser"
 		#USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
 		#USERSSHKEY="https://example.com/juser.keys"
 
@@ -294,7 +294,7 @@ fi
 echo
 print_heading2 " User"
 print_heading2 "------"
-setup-user ${USERSSHKEY+-k "$USERSSHKEY"} ${USEROPTS:--a -g 'audio video netdev'}
+setup-user ${USERSSHKEY+-k "$USERSSHKEY"} ${USEROPTS:--a -g 'audio input video netdev'}
 for i in "$ROOT"home/*; do
 	if [ -d "$i" ]; then
 		lbu add $i
