@@ -26,7 +26,7 @@ usage() {
 }
 
 filter_ssh_keys() {
-	grep ^ssh-
+	grep -E '^(ecdsa|rsa|ssh)-'
 }
 
 retrieve_ssh_keys() {
