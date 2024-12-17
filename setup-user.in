@@ -25,6 +25,18 @@ usage() {
 	exit $1
 }
 
+filter_ssh_keys() {
+	grep ^ssh-
+}
+
+retrieve_ssh_keys() {
+	wget -q -O - "$1" | filter_ssh_keys
+}
+
+contains_ssh_key() {
+	echo "$1" | filter_ssh_keys > /dev/null
+}
+
 while getopts "af:g:hk:u" opt; do
 	case $opt in
 		a) admin=1;;
@@ -112,12 +124,12 @@ if [ -n "$interactive" ] && [ -z "$keysopt" ]; then
 				break
 				;;
 			https://*|http://*)
-				sshkeys=$(wget -q -O- $resp | grep ^ssh-)
+				sshkeys=$(retrieve_ssh_keys "$resp")
 				;;
 			*)	sshkeys="$resp"
 				;;
 		esac
-		if echo "$sshkeys" | grep -q ^ssh-; then
+		if contains_ssh_key "$sshkeys"; then
 			break
 		fi
 		echo "Did not find any key in '$resp'"
@@ -125,13 +137,13 @@ if [ -n "$interactive" ] && [ -z "$keysopt" ]; then
 else
 	case "$keysopt" in
 		https://*|http://*)
-			sshkeys=$(wget -q -O- "$keysopt" | grep ^ssh-);;
+			sshkeys=$(retrieve_ssh_keys "$keysopt");;
 		none)
 			sshkeys="" ;;
 		*)
 			sshkeys="$keysopt";;
 	esac
-	if [ -n "$sshkeys" ] && ! echo "$sshkeys" | grep -q ^ssh-; then
+	if [ -n "$sshkeys" ] && ! contains_ssh_key "$sshkeys"; then
 		echo "Could not find any keys in '$resp'" >&2
 		exit 1
 	fi
