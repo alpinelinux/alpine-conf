@@ -73,6 +73,7 @@ case "$de" in
 			lightdm \
 			lightdm-gtk-greeter \
 			polkit \
+			xfce4-screensaver \
 			xfce4-terminal \
 			"$@"
 		rc-update add lightdm
