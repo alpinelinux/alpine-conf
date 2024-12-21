@@ -69,10 +69,12 @@ case "$de" in
 		;;
 	xfce)
 		setup-xorg-base xfce4 ${BROWSER:-firefox} \
+			elogind \
 			gvfs \
 			lightdm \
 			lightdm-gtk-greeter \
-			polkit \
+			polkit-elogind \
+			xfce4-screensaver \
 			xfce4-terminal \
 			"$@"
 		rc-update add lightdm
