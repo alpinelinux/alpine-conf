@@ -30,7 +30,7 @@ apk add elogind polkit-elogind eudev "$@"
 
 setup-devd udev
 
-for service in elogind polkit; do
+for service in cgroups dbus; do
 	rc-service "$service" start
 	rc-update add "$service"
 done
