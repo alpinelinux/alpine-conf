@@ -6,7 +6,7 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-desktop [-h] [gnome|plasma|xfce|mate|sway|lxqt]
+		usage: setup-desktop [-h] [gnome|plasma|xfce|xfce-wayland|mate|sway|lxqt]
 
 		Install a standard desktop
 
@@ -38,7 +38,7 @@ fi
 
 de="$1"
 
-valid_desktops="xfce gnome plasma mate sway lxqt none"
+valid_desktops="xfce xfce-wayland gnome plasma mate sway lxqt none"
 if [ $# -eq 1 ] && ! isin "$de" $valid_desktops; then
 	echo "$de is not a valid desktop" >&2
 	usage "1" >&2
@@ -46,7 +46,7 @@ fi
 shift
 
 while ! isin "$de" $valid_desktops; do
-	ask "Which desktop environment? ('gnome', 'plasma', 'xfce', 'mate', 'sway', 'lxqt' or 'none')" none
+	ask "Which desktop environment? ('gnome', 'plasma', 'xfce', 'xfce-wayland', 'mate', 'sway', 'lxqt' or 'none')" none
 	de="$resp"
 done
 
@@ -79,6 +79,27 @@ case "$de" in
 			font-dejavu \
 			"$@"
 		rc-update add lightdm
+		;;
+	xfce-wayland)
+		setup-wayland-base xfce4 ${BROWSER:-firefox} \
+			adwaita-icon-theme \
+			elogind \
+			greetd-gtkgreet \
+			gvfs \
+			labwc \
+			polkit-elogind \
+			xfce4-screensaver \
+			xfce4-terminal \
+			"$@"
+		rc-update add dbus
+		rc-update add greetd
+		if ! grep -q ^rc_need "$ROOT"/etc/conf.d/greetd 2>/dev/null; then
+			echo 'rc_need="seatd dbus"' >> "$ROOT"/etc/conf.d/greetd
+		fi
+		if ! grep -q xfce4-wayland "$ROOT"/etc/greetd/environments 2>/dev/null; then
+			echo "xfce4-wayland" >> "$ROOT"/etc/greetd/environments
+		fi
+		addgroup greetd seat
 		;;
 	lxqt)
 		setup-xorg-base ${BROWSER:-firefox} \
