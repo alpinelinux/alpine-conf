@@ -17,6 +17,17 @@ usage() {
 	exit $1
 }
 
+prefer_gtk_dark() {
+	if [ -e "$ROOT"/etc/gtk-3.0/settings.ini ]; then
+		return
+	fi
+	mkdir -p "$ROOT"/etc/gtk-3.0
+	cat >"$ROOT"/etc/gtk-3.0/settings.ini <<-EOF
+	[Settings]
+	gtk-application-prefer-dark-theme=1
+	EOF
+}
+
 while getopts "h" opt; do
 	case $opt in
 		h) usage 0;;
@@ -68,6 +79,7 @@ case "$de" in
 		rc-update add lightdm
 		;;
 	xfce)
+		prefer_gtk_dark
 		setup-xorg-base xfce4 ${BROWSER:-firefox} \
 			elogind \
 			gvfs \
@@ -81,6 +93,7 @@ case "$de" in
 		rc-update add lightdm
 		;;
 	xfce-wayland)
+		prefer_gtk_dark
 		setup-wayland-base xfce4 ${BROWSER:-firefox} \
 			adwaita-icon-theme \
 			elogind \
