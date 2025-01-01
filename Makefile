@@ -1,4 +1,4 @@
-VERSION		:= 3.19.1
+VERSION		:= 3.19.2
 
 sysconfdir	?= /etc/lbu
 
