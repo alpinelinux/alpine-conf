@@ -32,12 +32,9 @@ die() {
 }
 
 init_tmpdir() {
-	local omask="$(umask)"
-	local __tmpd="/tmp/$PROGRAM-${$}-$(date +%s)-$RANDOM"
-	umask 077 || die "umask"
-	mkdir -p "$__tmpd" || exit 1
-	trap "rc=\$?; rm -fr \"$__tmpd\"; exit \$rc" 0
-	umask $omask
+	local __tmpd
+	__tmpd=$(mktemp -d /tmp/$PROGRAM-${$}-$(date +%s)-XXXXXXXXXX) ||
+		die "Failed to create tmp dir"
 	eval "$1=\"$__tmpd\""
 }
 
