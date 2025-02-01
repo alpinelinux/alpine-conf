@@ -330,10 +330,12 @@ fi
 echo
 print_heading2 " Disk & Install"
 print_heading2 "----------------"
+diskmode_file=$(mktemp /tmp/alpine-install-diskmode.XXXXXXXXXX) ||
+	die 'Failed to create temporary diskmode file'
 DEFAULT_DISK=none \
-	setup-disk -w /tmp/alpine-install-diskmode.out -q ${DISKOPTS} || exit
+	setup-disk -w "$diskmode_file" -q ${DISKOPTS} || exit
 
-diskmode=$(cat /tmp/alpine-install-diskmode.out 2>/dev/null)
+diskmode=$(cat "$diskmode_file" 2>/dev/null)
 
 # setup lbu and apk cache unless installed sys on disk
 if [ "$diskmode" != "sys" ]; then
