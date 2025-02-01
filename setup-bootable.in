@@ -19,7 +19,7 @@ cleanup_tmpdata() {
 
 cleanup_mounts() {
 	local i=
-	cd /
+	cd_assert /
 	sync
 	sleep 1
 	for i in $read_only_mounts; do
@@ -293,12 +293,12 @@ else
 	vecho "Extracting $src to $destdir/.new/"
 	case "$src" in
 	https://*|http://*|ftp://*)
-		${WGET:-wget} -O - "$src" | (cd "$destdir"/.new; exec ${UNISO:-uniso}) \
+		${WGET:-wget} -O - "$src" | (cd_assert "$destdir"/.new; exec ${UNISO:-uniso}) \
 			|| die "Failed to download or extract $src"
 		echo ""
 		;;
 	*)
-		(cd "$destdir"/.new; exec ${UNISO:-uniso}) < "$src" \
+		(cd_assert "$destdir"/.new; exec ${UNISO:-uniso}) < "$src" \
 			|| die "Failed to download or extract $src"
 		;;
 	esac

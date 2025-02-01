@@ -424,7 +424,7 @@ setup_raspberrypi_bootloader() {
 
 # detect which firmware packages to install, if any
 select_firmware_pkgs() {
-	local firmware_pkgs="$( (cd "${ROOT}sys/module/" 2>/dev/null && echo *) \
+	local firmware_pkgs="$( (cd_assert "${ROOT}sys/module/" 2>/dev/null && echo *) \
 		| xargs modinfo -F firmware 2>/dev/null \
 		| awk -F/ '{print $1 == $0 ? "linux-firmware-other" : "linux-firmware-"$1}' \
 		| sort -u)"

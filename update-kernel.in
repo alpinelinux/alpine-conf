@@ -394,9 +394,9 @@ if [ -d "$DTBDIR" ]; then
 	esac
 	mkdir -p "$_dtb"
 	_dtb=$(realpath "$_dtb")
-	cd "$DTBDIR"
+	cd_assert "$DTBDIR"
 	find -type f \( -name "*.dtb" -o -name "*.dtbo" \) | cpio -pudm "$_dtb" 2> /dev/null
-	cd "$_opwd"
+	cd_assert "$_opwd"
 fi
 
 if [ "$MNTDIR" ]; then

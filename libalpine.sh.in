@@ -38,6 +38,10 @@ init_tmpdir() {
 	eval "$1=\"$__tmpd\""
 }
 
+cd_assert() {
+	cd "$1" || die "Failed to cd into ${2:-$1}"
+}
+
 default_read() {
 	local n
 	read n

@@ -464,7 +464,7 @@ iface_help() {
 prompt_for_interfaces() {
 	init_tmpdir TMP
 
-	cd $TMP
+	cd_assert $TMP
 	unconfigured_detect
 
 	index=1

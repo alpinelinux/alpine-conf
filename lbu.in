@@ -307,7 +307,7 @@ cmd_package() {
 
 	local tar_create="tar -c --no-recursion -T -"
 
-	cd "${ROOT:-/}"
+	cd_assert "${ROOT:-/}"
 	# remove old package.list
 	if [ -f etc/lbu/packages.list ] && [ -f var/lib/apk/world ]; then
 		echo "Note: Removing /etc/lbu/packages.list." >&2
@@ -334,7 +334,7 @@ cmd_package() {
 			rc=$?
 		fi
 	fi
-	cd "$owd"
+	cd_assert "$owd"
 
 	# actually commit unless dryrun mode
 	if [ $rc -eq 0 ]; then
@@ -632,7 +632,7 @@ cmd_status() {
 
 	# show files that exists in a but not in b as deleted
 	local f
-	( cd "$tmp"/a && find ) | while read f; do
+	( cd_assert "$tmp"/a && find ) | while read f; do
 		f=${f#./}
 		local b="$tmp/b/$f"
 		if [ "$f" = "." ] || [ -e "$b" ] || [ -L "$b" ]; then
@@ -642,7 +642,7 @@ cmd_status() {
 	done
 
 	# compare files in b with files in a
-	( cd "$tmp"/b && find ) | while read f; do
+	( cd_assert "$tmp"/b && find ) | while read f; do
 		f=${f#./}
 		[ "$f" = "." ] && continue
 		local a="$tmp/a/$f"
@@ -681,7 +681,7 @@ cmd_diff() {
 	if diff --help 2>&1 | grep -q -- --no-dereference; then
 		diff_opts="--no-dereference"
 	fi
-	cd "$tmp" && diff -ruN $diff_opts a b
+	cd_assert "$tmp" && diff -ruN $diff_opts a b
 }
 
 #-----------------------------------------------------------

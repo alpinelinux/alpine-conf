@@ -39,7 +39,7 @@ show_tz_list() {
 			z="$z ${i##*/}"
 		fi
 	done
-	( cd $path && ls --color=never -Cd $z )
+	( cd_assert $path && ls --color=never -Cd $z )
 }
 
 setup_tz() {
