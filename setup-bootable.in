@@ -1,6 +1,9 @@
 #!/bin/sh
 
-prog=${0##*/}
+PREFIX=@PREFIX@
+: ${LIBDIR=$PREFIX/lib}
+. "$LIBDIR/libalpine.sh"
+
 version=@VERSION@
 files_to_move="boot efi apks syslinux.cfg .alpine-release"
 read_only_mounts=
@@ -45,12 +48,6 @@ cleanup() {
 trap cleanup EXIT
 trap "exit 2" INT TERM QUIT
 
-die() {
-	echo "$@" >&2
-	exit 1
-}
-
-
 # find device for mountpoint
 find_dev() {
 	local mnt="${1%/}" # strip trailing /
@@ -63,11 +60,6 @@ on_usb_bus() {
 	[ -e /sys/block/$dev ] || return 1
 	local sysdev="$(readlink -f /sys/block/$dev/device)"
 	test "${sysdev##*/usb[0-9]}" != "$sysdev"
-}
-
-vecho() {
-	[ -z "$verbose" ] && return 0
-	echo "$@"
 }
 
 # check if given dir is read-only
@@ -187,9 +179,9 @@ version_check() {
 
 usage() {
 	cat <<-__EOF__
-		$prog $version
-		usage: $prog [-fhUusv] SOURCE [DEST]
-		       $prog -c DIR
+		$PROGRAM $version
+		usage: $PROGRAM [-fhUusv] SOURCE [DEST]
+		       $PROGRAM -c DIR
 
 		Copy the contents of SOURCE to DEST and make DEST bootable.
 
