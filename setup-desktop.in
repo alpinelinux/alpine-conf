@@ -169,6 +169,8 @@ case "$de" in
 		;;
 esac
 
+rc-update del acpid
+
 users=$(awk -F: '{if ($3<65000 && $3 >= 1000) print $1}' "$ROOT"/etc/passwd 2>/dev/null)
 if [ -z "$users" ]; then
 	echo "WARNING: You need to create a user account. Please run: setup-user" >&2
