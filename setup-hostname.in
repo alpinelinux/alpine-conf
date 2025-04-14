@@ -29,8 +29,8 @@ valid_hostname() {
 	fi
 	case "$1" in
 		# check that it only contains valid chars
-		*[!0-9a-z.-]*)
-			echo "Hostname must only contain letters (a-z), digits (0-9), '.' or '-'" >&2
+		*[!0-9a-zA-Z.-]*)
+			echo "Hostname must only contain letters (a-z A-Z), digits (0-9), '.' or '-'" >&2
 			return 1
 			;;
 		# must not start with - or .
