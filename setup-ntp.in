@@ -36,7 +36,7 @@ while [ $# -eq 0 ] && ! isin "$resp" busybox openntpd chrony none abort; do
 		# display current time before asking for NTP client
 		date
 	fi
-	ask "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none')" chrony
+	ask "Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none')" busybox
 done
 
 pkgs="$resp"
