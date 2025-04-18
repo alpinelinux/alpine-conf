@@ -160,7 +160,7 @@ setup_user_admin_body() {
 		-o match:"addgroup testuser wheel" \
 		-e empty \
 		setup-user -a testuser
-		grep wheel etc/doas.d/doas.conf
+		grep wheel etc/doas.d/20-wheel.conf
 
 }
 
