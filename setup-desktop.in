@@ -151,6 +151,7 @@ case "$de" in
 		;;
 	sway)
 		setup-wayland-base ${BROWSER:-firefox} \
+			brightnessctl \
 			font-dejavu \
 			foot \
 			grim \
