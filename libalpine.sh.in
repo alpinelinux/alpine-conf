@@ -35,6 +35,7 @@ init_tmpdir() {
 	local __tmpd
 	__tmpd=$(mktemp -d /tmp/$PROGRAM-${$}-$(date +%s)-XXXXXXXXXX) ||
 		die "Failed to create tmp dir"
+	trap "rc=\$?; rm -fr \"$__tmpd\"; exit \$rc" 0
 	eval "$1=\"$__tmpd\""
 }
 
