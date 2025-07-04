@@ -662,6 +662,8 @@ install_mounted_root() {
 	done
 
 	init_chroot_mounts "$mnt"
+	mkdir -p "$mnt"/usr/lib "$mnt"/usr/bin "$mnt"/usr/sbin
+	ln -s usr/bin usr/sbin usr/lib "$mnt"/
 	apk add --root "$mnt" $apkflags --overlay-from-stdin \
 		$repoflags $pkgs <$ovlfiles
 	local ret=$?
