@@ -428,6 +428,12 @@ select_firmware_pkgs() {
 		| xargs modinfo -F firmware 2>/dev/null \
 		| awk -F/ '{print $1 == $0 ? "linux-firmware-other" : "linux-firmware-"$1}' \
 		| sort -u)"
+	# add wireless-regdb if we have anything wireless
+	# https://gitlab.alpinelinux.org/alpine/aports/-/issues/17305
+	set -- "${ROOT}sys/class/net"/*/wireless
+	if [ -d "$1" ]; then
+		firmware_pkgs="$firmware_pkgs wireless-regdb"
+	fi
 	# filter out non-existing packages like linux-firmware-b43
 	# https://gitlab.alpinelinux.org/alpine/alpine-conf/-/issues/10530
 	apk search --quiet --exact ${firmware_pkgs:-linux-firmware-none}

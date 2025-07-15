@@ -13,6 +13,7 @@ init_tests \
 	setup_disk_func_uuid_or_device \
 	setup_disk_non_existing_block_dev \
 	setup_disk_sys \
+	setup_disk_sys_wifi \
 	setup_disk_install_mounted_root_nvme \
 	setup_disk_install_mounted_root_efi \
 	setup_disk_install_mounted_root_efi_boot \
@@ -294,6 +295,18 @@ setup_disk_sys_body() {
 		-o inline:"none\n"\
 		awk '$3 == "swap" {print $2}' mnt/etc/fstab
 }
+
+setup_disk_sys_wifi_body() {
+	atf_require_prog sfdisk
+	init_env
+	fake_disk vda
+	mkdir -p proc etc sys/class/net/wlan0/wireless
+	touch proc/mounts etc/fstab
+	ERASE_DISKS=/dev/vda atf_check \
+		-o match:"apk add.*wireless-regdb" \
+		setup-disk -m sys /dev/vda
+}
+
 
 setup_disk_install_mounted_root_nvme_body() {
 	init_env

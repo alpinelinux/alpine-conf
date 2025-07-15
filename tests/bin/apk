@@ -15,7 +15,7 @@ while [ $# -gt 0 ]; do
 			echo "DEBUG: fake apk" "$@"
 			cmd="$1"
 			;;
-		audit|info)
+		audit|info|search)
 			cmd="$1"
 			;;
 		-p|--root)
@@ -72,6 +72,10 @@ case "$cmd" in
 				done
 				;;
 		esac
+		;;
+	search)
+		printf "$pkgs\n"
+		exit 0
 		;;
 esac
 
