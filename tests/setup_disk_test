@@ -56,11 +56,6 @@ fake_partition() {
 	mkdir -p sys/block/$1/$1$2/holders
 }
 
-fake_mount() {
-	mkdir -p proc
-	echo "$1" >> proc/mounts
-}
-
 fake_raid() {
 	local md="$1"
 	shift

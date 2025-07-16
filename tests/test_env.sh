@@ -11,6 +11,11 @@ fake_bin() {
 	PATH="$PWD/bin:$PATH"
 }
 
+fake_mount() {
+	mkdir -p proc
+	echo "$1" >> proc/mounts
+}
+
 init_tests() {
 	TESTS="$@"
 	export TESTS
