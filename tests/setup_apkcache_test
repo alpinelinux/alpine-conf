@@ -13,6 +13,7 @@ setup_apkcache_usage_body() {
 
 setup_apkcache_abspath_body() {
 	init_env
+	fake_mount "tmpfs / tmpfs rw,relatime,mode=755,inode64 0 0"
 	atf_check -s exit:0 \
 		-o empty \
 		-e empty \
@@ -23,6 +24,7 @@ setup_apkcache_abspath_body() {
 
 setup_apkcache_relpath_with_slash_body() {
 	init_env
+	fake_mount "tmpfs / tmpfs rw,relatime,mode=755,inode64 0 0"
 	atf_check -s exit:0 \
 		-o empty \
 		-e empty \
@@ -33,6 +35,7 @@ setup_apkcache_relpath_with_slash_body() {
 
 setup_apkcache_none_body() {
 	init_env
+	fake_mount "tmpfs / tmpfs rw,relatime,mode=755,inode64 0 0"
 	atf_check -s exit:0 \
 		-o empty \
 		-e empty \

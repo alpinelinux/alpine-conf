@@ -37,6 +37,7 @@ setup_alpine_quick_body() {
 
 setup_alpine_create_answerfile_body() {
 	init_env
+	fake_mount "tmpfs / tmpfs rw,relatime,mode=755,inode64 0 0"
 	atf_check -s exit:0 \
 		-o match:"Answer file answers has been created"  \
 		setup-alpine -c answers
@@ -66,6 +67,7 @@ setup_alpine_create_answerfile_body() {
 
 setup_alpine_kvm_clock_body() {
 	init_env
+	fake_mount "tmpfs / tmpfs rw,relatime,mode=755,inode64 0 0"
 
 	mkdir -p sys/class/net/lo sys/class/net/eth0
 	echo 1 >sys/class/net/lo/ifindex
@@ -115,6 +117,7 @@ setup_alpine_restart_network_body() {
 
 setup_alpine_answerfile_none_body() {
 	init_env
+	fake_mount "tmpfs / tmpfs rw,relatime,mode=755,inode64 0 0"
 
 	cat >opts<<-EOF
 		KEYMAPOPTS=none
@@ -143,6 +146,7 @@ setup_alpine_answerfile_none_body() {
 
 setup_alpine_answerfile_apkcache_body() {
 	init_env
+	fake_mount "tmpfs / tmpfs rw,relatime,mode=755,inode64 0 0"
 
 	cat >opts<<-EOF
 		KEYMAPOPTS=none
@@ -169,6 +173,7 @@ setup_alpine_answerfile_apkcache_body() {
 
 setup_alpine_answerfile_network_body() {
 	init_env
+	fake_mount "tmpfs / tmpfs rw,relatime,mode=755,inode64 0 0"
 	cat >opts<<-EOF
 		KEYMAPOPTS=none
 		HOSTNAMEOPTS=myname

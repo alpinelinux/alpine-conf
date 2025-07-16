@@ -6,6 +6,7 @@ PREFIX=@PREFIX@
 
 
 etc="$ROOT"etc
+proc="$ROOT"proc
 
 usage() {
 	cat <<-__EOF__
@@ -22,7 +23,7 @@ usage() {
 }
 
 is_mounted() {
-	awk '{print $2}' /proc/mounts | grep -q "^$1$"
+	awk '{print $2}' "$proc"/mounts | grep -q "^$1$"
 }
 
 find_fstab_mount_point() {
@@ -92,14 +93,14 @@ has_mount_opt() {
 }
 
 is_mounted_ro() {
-	has_mount_opt ro "$1" /proc/mounts
+	has_mount_opt ro "$1" "$proc"/mounts
 }
 
 # get the fstype of the given mount point
 mount_fstype() {
 	# we only want the last mount in case there are several
 	awk -v mnt="$1" '$2 == "/" {fstype = mnt} END {print fstype}' \
-		/proc/mounts
+		"$proc"/mounts
 }
 
 apk_cache_help() {
