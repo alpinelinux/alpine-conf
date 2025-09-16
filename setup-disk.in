@@ -1548,7 +1548,7 @@ case "$ARCH" in
 	x86*) 		: ${BOOTLOADER:=syslinux};;
 	ppc64le)	: ${BOOTLOADER:=grub};;
 	s390x) 		: ${BOOTLOADER:=zipl};;
-	arm*|aarch64) : ${BOOTLOADER:=u-boot};;
+	arm*|aarch64|riscv64) : ${BOOTLOADER:=u-boot};;
 esac
 
 if [ -d "$1" ]; then
