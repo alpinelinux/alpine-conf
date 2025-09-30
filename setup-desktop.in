@@ -57,7 +57,7 @@ fi
 shift
 
 while ! isin "$de" $valid_desktops; do
-	ask "Which desktop environment? ('gnome', 'xfce', 'mate', 'sway', 'lxqt' or 'none')" none
+	ask "Which desktop environment? ('gnome', 'plasma', 'xfce', 'mate', 'sway', 'lxqt' or 'none')" none
 	de="$resp"
 done
 
