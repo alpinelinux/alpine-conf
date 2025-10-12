@@ -23,6 +23,10 @@ usage() {
 }
 
 is_mounted() {
+	if [ "$1" = "/" ]; then
+		# In a chroot we may not find this mount point in /proc/mounts
+		return 0
+	fi
 	awk '{print $2}' "$proc"/mounts | grep -q "^$1$"
 }
 
