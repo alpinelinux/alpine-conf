@@ -45,8 +45,10 @@ update_kernel_firmware_body() {
 	MKSQUASHFS_OPTS="-info" atf_check -s exit:0 \
 		-o match:"apk add.*linux-firmware" \
 		-o match:"file .*brcmfmac.ko" \
+		-o match:"file .*ath11k_pci.ko" \
 		-o match:"file .*brcm/brcmfmac43752-sdio.bin" \
 		-o match:"file .*brcm/brcmfmac43752-sdio.txt" \
 		-o match:"file .*brcmfmac.*sdio.raspberrypi*" \
+		-o match:"file .*WCN6855/hw2.0/board-2.bin*" \
 		update-kernel --verbose --flavor rpi out/
 }

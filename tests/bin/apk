@@ -83,7 +83,8 @@ for pkg in $pkgs; do
 	case "$pkg" in
 		linux-firmware*)
 			# simulate install firmware
-			mkdir -p "$rootfs"/lib/firmware/brcm
+			mkdir -p "$rootfs"/lib/firmware/brcm \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0/nfa765
 			touch "$rootfs"/lib/firmware/brcm/brcmfmac43456-sdio.raspberrypi,400.bin \
 				"$rootfs"/lib/firmware/brcm/brcmfmac43456-sdio.raspberrypi,400.clm_blob \
 				"$rootfs"/lib/firmware/brcm/brcmfmac43456-sdio.raspberrypi,400.txt \
@@ -91,12 +92,22 @@ for pkg in $pkgs; do
 				"$rootfs"/lib/firmware/brcm/brcmfmac43752-sdio.txt \
 				"$rootfs"/lib/firmware/brcm/"brcmfmac43455-sdio.Raspberry Pi Foundation-Raspberry Pi Compute Module 4.txt" \
 				"$rootfs"/lib/firmware/brcm/brcmfmac43455-sdio.bin \
-				"$rootfs"/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob
+				"$rootfs"/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0 \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0/board-2.bin.zst \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0/m3.bin.zst \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0/nfa765/m3.bin.zst \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0/nfa765/Notice.txt.zst \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0/nfa765/amss.bin.zst \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0/Notice.txt.zst \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0/amss.bin.zst \
+				"$rootfs"/lib/firmware/ath11k/WCN6855/hw2.0/regdb.bin.zst
 			;;
 		linux-*)
 			# simulate installing kernel
 			flavor=${pkg#linux-}
 			mkdir -p "$rootfs"/lib/modules/$kver-$flavor/kernel/drivers/net/wireless/broadcom/brcm80211/brcmfmac \
+				"$rootfs"/lib/modules/$kver-$flavor/kernel/drivers/net/wireless/ath/ath11k/ \
 				"$rootfs"/boot
 			touch "$rootfs"/boot/System.map-$kver-$flavor \
 				"$rootfs"/boot/config-$flavor \
@@ -107,6 +118,13 @@ for pkg in $pkgs; do
 				firmware:       brcm/brcmfmac*-sdio.*.txt
 				firmware:       brcm/brcmfmac43752-sdio.clm_blob
 				firmware:       brcm/brcmfmac43752-sdio.bin
+			EOF
+			cat >"$rootfs/lib/modules/$kver-$flavor"/kernel/drivers/net/wireless/ath/ath11k/ath11k_pci.ko <<-EOF
+				vermagic:       $kver-$flavor SMP preempt mod_unload modversions $arch
+				firmware:       ath11k/WCN6855/hw2.1/*
+				firmware:       ath11k/WCN6855/hw2.0/*
+				firmware:       ath11k/QCN9074/hw1.0/*
+				firmware:       ath11k/QCA6390/hw2.0/*
 			EOF
 			gzip "$rootfs/lib/modules/$kver-$flavor"/kernel/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko
 			;;
