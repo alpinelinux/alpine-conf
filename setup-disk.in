@@ -662,8 +662,10 @@ install_mounted_root() {
 	done
 
 	init_chroot_mounts "$mnt"
-	mkdir -p "$mnt"/usr/lib "$mnt"/usr/bin "$mnt"/usr/sbin
-	ln -s usr/bin usr/sbin usr/lib "$mnt"/
+	if [ "$BOOTSTRAP_USR_MERGED" = "1" ]; then
+		mkdir -p "$mnt"/usr/lib "$mnt"/usr/bin "$mnt"/usr/sbin
+		ln -s usr/bin usr/sbin usr/lib "$mnt"/
+	fi
 	apk add --root "$mnt" $apkflags --overlay-from-stdin \
 		$repoflags $pkgs <$ovlfiles
 	local ret=$?
