@@ -48,6 +48,7 @@ case "$resp" in
 	busybox)
 		pkgs=''
 		svc=ntpd
+		$MOCK ntpd -qnN -p pool.ntp.org # force synchronous time-sync before starting
 		;;
 	chrony)
 		if apk info --installed --quiet acf-core; then
