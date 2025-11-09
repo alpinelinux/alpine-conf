@@ -1433,7 +1433,7 @@ ask_disk() {
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-disk [-hLqrve] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAPSIZE]
+		usage: setup-disk [-hLqrve] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAP_SIZE]
 		                  [-w FILE] [MOUNTPOINT | DISKDEV...]
 
 		Install alpine on harddisk.
@@ -1454,7 +1454,7 @@ usage() {
 		 -L  Use LVM to manage partitions
 		 -q  Exit quietly if no disks are found
 		 -r  Enable software raid1 with single disk
-		 -s  Use SWAPSIZE MB instead of autodetecting swap size (Use 0 to disable swap)
+		 -s  Use SWAP_SIZE MB instead of autodetecting swap size (Use 0 to disable swap)
 		 -v  Be more verbose about what is happening
 		 -w  Write selected install mode to FILE
 
