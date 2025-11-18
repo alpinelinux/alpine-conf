@@ -1477,6 +1477,12 @@ usage() {
 		  boot: ext2, ext3, ext4, btrfs, xfs, vfat(EFI)
 		  root: ext2, ext3, ext4, btrfs, xfs
 		   var: ext2, ext3, ext4, btrfs, xfs
+
+		If DEFAULT_DISK is specified (device name) and none are set in command-line,
+		that disk is proposed by default in dialogs for use.
+
+		If ERASE_DISKS is specified (full device path), that disk will be processed
+		without use confirmation dialog (no dialogs if command-line target set same).
 	__EOF__
 	exit $1
 }
