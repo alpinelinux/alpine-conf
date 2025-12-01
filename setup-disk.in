@@ -1536,8 +1536,8 @@ fi
 
 if is_rpi; then
 	: ${BOOTLOADER:=raspberrypi-bootloader}
+	: ${SWAP_SIZE:=0}
 	BOOTFS=vfat
-	SWAP_SIZE=0
 fi
 
 if is_efi || [ -n "$USE_EFI" ]; then
