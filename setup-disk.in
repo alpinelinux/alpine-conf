@@ -1454,6 +1454,7 @@ usage() {
 		 -L  Use LVM to manage partitions
 		 -q  Exit quietly if no disks are found
 		 -r  Enable software raid1 with single disk
+		 -R  Use ROOT_SIZE MB instead of maximized size
 		 -s  Use SWAP_SIZE MB instead of autodetecting swap size (Use 0 to disable swap)
 		 -v  Be more verbose about what is happening
 		 -w  Write selected install mode to FILE
@@ -1510,7 +1511,7 @@ USE_CRYPT=
 DISK_MODE=
 USE_LVM=
 # Parse args
-while getopts "hek:Lm:o:qrs:vw:" opt; do
+while getopts "hek:Lm:o:qrRs:vw:" opt; do
 	case $opt in
 		e) USE_CRYPT="_crypt";;
 		h) usage 0;;
@@ -1520,6 +1521,7 @@ while getopts "hek:Lm:o:qrs:vw:" opt; do
 		o) APKOVL="$OPTARG";;
 		q) QUIET=1;;
 		r) USE_RAID=1;;
+		R) ROOT_SIZE="$OPTARG";;
 		s) SWAP_SIZE="$OPTARG";;
 		v) VERBOSE=1;;
 		w) WRITE_DISK_MODE_FILE="$OPTARG";;
