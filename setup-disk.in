@@ -1544,8 +1544,8 @@ ask_disk() {
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-disk [-hLqrve] [-k kernelflavor] [-m MODE] [-o apkovl] [-s SWAP_SIZE]
-		                  [-w FILE] [MOUNTPOINT | DISKDEV...]
+		usage: setup-disk [-hLqrve] [-k kernelflavor] [-m MODE] [-o apkovl] [-R ROOT_SIZE]
+		                  [-s SWAP_SIZE] [-w FILE] [MOUNTPOINT | DISKDEV...]
 
 		Install alpine on harddisk.
 
@@ -1622,7 +1622,7 @@ USE_CRYPT=
 DISK_MODE=
 USE_LVM=
 # Parse args
-while getopts "hek:Lm:o:qrRs:vw:" opt; do
+while getopts "hek:Lm:o:qrR:s:vw:" opt; do
 	case $opt in
 		e) USE_CRYPT="_crypt";;
 		h) usage 0;;
