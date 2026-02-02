@@ -95,8 +95,8 @@ if [ -n "$apkdel" ]; then
 	trap "apk del --no-progress --quiet $apkdel" EXIT
 fi
 
-if [ -L "${ROOT}"etc/zoneinfo/localtime ]; then
-	default_timezone=$(readlink "${ROOT}"etc/zoneinfo/localtime)
+if [ -L "${ROOT}"etc/localtime ]; then
+	default_timezone=$(readlink "${ROOT}"etc/localtime)
 	default_timezone=${timezone#*/zoneinfo/}
 else
 	default_timezone=UTC
