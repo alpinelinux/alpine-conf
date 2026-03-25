@@ -22,7 +22,7 @@ print_heading1() {
 }
 
 print_heading2() {
-    printf "${COLWHITE}%s${COLRESET}\n" "$1"
+	printf "${COLWHITE}%s${COLRESET}\n" "$1"
 }
 
 is_kvm_clock() {
@@ -46,7 +46,7 @@ usage() {
 		 -a  Create Alpine Linux overlay file
 		 -c  Create answer file (do not install anything)
 		 -e  Empty root password
-		 -f  Answer file to use installation
+		 -f  Answer file to use for installation
 		 -h  Show this help
 		 -q  Quick mode. Ask fewer questions.
 	__EOF__
