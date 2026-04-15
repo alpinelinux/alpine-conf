@@ -1336,7 +1336,11 @@ native_disk_install_lvm() {
 
 	setup_lvm_volume_group $vgname $@ || return 1
 	setup_lvm_swap $vgname
-	lvcreate --quiet -n ${root_dev##*/} -l ${ROOT_SIZE:-100%FREE} $vgname
+	if [ -n "$ROOT_SIZE" ]; then
+		lvcreate --quiet -n ${root_dev##*/} -L ${ROOT_SIZE}MB $vgname
+	else
+		lvcreate --quiet -n ${root_dev##*/} -l 100%FREE $vgname
+	fi
 	rc-update add lvm boot
 	setup_root "$root_dev" "$BOOT_DEV" "$@"
 }
