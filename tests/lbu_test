@@ -33,7 +33,12 @@ init_tests \
 	lbu_commit_encrypted \
 	lbu_revert_basic \
 	lbu_revert_file_not_found \
-	lbu_revert_no_media
+	lbu_revert_no_media \
+	lbu_status_no_changes \
+	lbu_status_added \
+	lbu_status_deleted \
+	lbu_status_updated \
+	lbu_status_all_default
 
 lbu_usage_body() {
 	test_usage lbu
@@ -374,4 +379,70 @@ lbu_revert_no_media_body() {
 		-o empty \
 		-e match:"usage.*revert" \
 		lbu revert somefile
+}
+
+lbu_status_no_changes_body() {
+	init_env
+	mkdir -p backup committed/etc
+	echo "hosts content" > committed/etc/hosts
+	echo "localtime content" > committed/etc/localtime
+	tar -czf "backup/$(hostname).apkovl.tar.gz" -C committed .
+
+	LBU_BACKUPDIR=backup \
+		atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		lbu status
+}
+
+lbu_status_added_body() {
+	init_env
+	mkdir -p backup committed/etc
+	echo "hosts content" > committed/etc/hosts
+	tar -czf "backup/$(hostname).apkovl.tar.gz" -C committed .
+
+	LBU_BACKUPDIR=backup \
+		atf_check -s exit:0 \
+		-o match:"^A etc/localtime" \
+		-e empty \
+		lbu status
+}
+
+lbu_status_deleted_body() {
+	init_env
+	mkdir -p backup committed/etc
+	echo "hosts content" > committed/etc/hosts
+	echo "localtime content" > committed/etc/localtime
+	echo "extra content" > committed/etc/extra
+	tar -czf "backup/$(hostname).apkovl.tar.gz" -C committed .
+
+	LBU_BACKUPDIR=backup \
+		atf_check -s exit:0 \
+		-o match:"^D etc/extra" \
+		-e empty \
+		lbu status
+}
+
+lbu_status_updated_body() {
+	init_env
+	mkdir -p backup committed/etc
+	echo "old hosts content" > committed/etc/hosts
+	echo "localtime content" > committed/etc/localtime
+	touch -t 202501010000 committed/etc/hosts
+	tar -czf "backup/$(hostname).apkovl.tar.gz" -C committed .
+
+	LBU_BACKUPDIR=backup \
+		atf_check -s exit:0 \
+		-o match:"^U etc/hosts" \
+		-e empty \
+		lbu status
+}
+
+lbu_status_all_default_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"^U etc/hosts" \
+		-o match:"^U etc/localtime" \
+		-e empty \
+		lbu status -a
 }
