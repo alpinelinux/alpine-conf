@@ -25,7 +25,12 @@ init_tests \
 	lbu_st_usage \
 	lbu_package \
 	lbu_package_encrypted \
-	lbu_package_pre_post_hooks
+	lbu_package_pre_post_hooks \
+	lbu_commit \
+	lbu_commit_backup \
+	lbu_commit_delete_old \
+	lbu_commit_dryrun \
+	lbu_commit_encrypted
 
 lbu_usage_body() {
 	test_usage lbu
@@ -218,4 +223,98 @@ lbu_package_pre_post_hooks_body() {
 		-e match:"pre-package" \
 		-e match:"post-package" \
 		lbu package
+}
+
+lbu_commit_body() {
+	init_env
+	mkdir -p backup
+
+	LBU_BACKUPDIR=backup BACKUP_LIMIT=1 \
+		atf_check -o ignore -e ignore \
+		lbu commit
+
+	atf_check \
+		-o match:"etc/localtime" \
+		-o match:"etc/hosts" \
+		tar -ztf "backup/$(hostname).apkovl.tar.gz"
+}
+
+lbu_commit_backup_body() {
+	init_env
+	mkdir -p backup
+
+	LBU_BACKUPDIR=backup BACKUP_LIMIT=1 \
+		atf_check -o ignore -e ignore \
+		lbu commit
+
+	LBU_BACKUPDIR=backup BACKUP_LIMIT=1 \
+		atf_check -o ignore -e ignore \
+		lbu commit
+
+	test -f "backup/$(hostname).apkovl.tar.gz" \
+		|| atf_fail "archive not created on second commit"
+
+	ls "backup/$(hostname)".[0-9]*.tar.gz >/dev/null 2>&1 \
+		|| atf_fail "backup of previous archive not created"
+}
+
+lbu_commit_delete_old_body() {
+	init_env
+	mkdir -p backup
+
+	touch backup/old.apkovl.tar.gz \
+		backup/stale.apkovl.tar.gz
+
+	LBU_BACKUPDIR=backup BACKUP_LIMIT=1 \
+		atf_check -s not-exit:0 \
+		-e match:"Please use -d to replace" \
+		lbu commit
+
+	LBU_BACKUPDIR=backup BACKUP_LIMIT=1 \
+		atf_check -o ignore -e ignore \
+		lbu commit -d
+
+	if [ -f "backup/old.apkovl.tar.gz" ] \
+	   || [ -f "backup/stale.apkovl.tar.gz" ]; then
+		atf_fail "old apkovl files were not removed with -d"
+	fi
+
+	test -f "backup/$(hostname).apkovl.tar.gz" \
+		|| atf_fail "archive not created with -d"
+}
+
+lbu_commit_dryrun_body() {
+	init_env
+	mkdir -p backup
+
+	LBU_BACKUPDIR=backup BACKUP_LIMIT=1 \
+		atf_check -o ignore -e ignore \
+		lbu commit -n
+
+	if ls backup/*.apkovl.tar.gz* >/dev/null 2>&1; then
+		atf_fail "archive was created despite dryrun"
+	fi
+}
+
+lbu_commit_encrypted_body() {
+	atf_require_prog openssl
+	init_env
+	get_sysconfdir
+	mkdir -p "$PWD/$sysconfdir"
+	(
+		echo 'DEFAULT_CIPHER=aes-256-cbc'
+		echo 'ENCRYPTION=$DEFAULT_CIPHER'
+		echo 'PASSWORD=foobar'
+	) > "$PWD/$sysconfdir/lbu.conf"
+
+	mkdir -p backup
+
+	LBU_BACKUPDIR=backup BACKUP_LIMIT=1 \
+		atf_check -o ignore -e ignore \
+		lbu commit
+
+	encfile="${PWD}/backup/$(hostname).apkovl.tar.gz.aes-256-cbc"
+	if [ ! -f "$encfile" ]; then
+		atf_fail "encrypted archive not created"
+	fi
 }
