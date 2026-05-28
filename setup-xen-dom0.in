@@ -5,7 +5,7 @@
 # kernel modules
 mkdir -p "$ROOT"/etc
 for mod in xen_netback xen_blkback xenfs xen_pciback xen_wdt tun; do
-	if $MOCK modprobe $mod; then
+	if modprobe $mod; then
 		grep -q -w $mod "$ROOT"/etc/modules 2>/dev/null || echo $mod >> "$ROOT"/etc/modules
 	fi
 done

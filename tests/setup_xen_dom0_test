@@ -9,11 +9,15 @@ setup_xen_dom0_body() {
 	mkdir -p etc/init.d
 	touch etc/init.d/xenstored etc/init.d/xenconsoled
 	atf_check -s exit:0 \
-		-o match:"modprobe xen" \
 		-o match:"Starting xenstored" \
 		-o match:"Starting xenconsoled" \
 		-o not-match:"Starting xenqemu" \
 		-e empty \
 		setup-xen-dom0
+	for mod in xen_netback xen_blkback xenfs xen_pciback xen_wdt tun; do
+		if ! [ -d sys/module/$mod ]; then
+			find sys/
+			atf_fail "module $mod"
+		fi
+	done
 }
-
