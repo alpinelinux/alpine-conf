@@ -23,6 +23,7 @@ init_tests \
 	setup_disk_sys_efi_limine_boot \
 	setup_disk_sys_efi_limine_boot_aarch64 \
 	setup_disk_sys_efi_limine_boot_riscv64 \
+	setup_disk_sys_efi_limine_boot_loongarch64 \
 	setup_disk_sys_efi_limine_boot_size_4k \
 	setup_disk_sys_wifi \
 	setup_disk_install_mounted_root_nvme \
@@ -31,6 +32,7 @@ init_tests \
 	setup_disk_install_mounted_root_limine_efi_boot \
 	setup_disk_install_mounted_root_limine_efi_boot_aarch64 \
 	setup_disk_install_mounted_root_limine_efi_boot_riscv64 \
+	setup_disk_install_mounted_root_limine_efi_boot_loongarch64 \
 	setup_disk_install_mounted_root_limine_efi_boot_efi \
 	setup_disk_install_mounted_root_syslinux \
 	setup_disk_install_mounted_root_bootloader_none \
@@ -343,6 +345,11 @@ setup_disk_func_select_bootloader_pkg_body() {
 		atf_check -s exit:0 \
 		-o inline:"cmd:limine limine-efi-riscv64\n" \
 		setup-disk
+
+	ARCH=loongarch64 BOOTLOADER=limine USE_EFI=1 SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o inline:"cmd:limine limine-efi-loongarch64\n" \
+		setup-disk
 }
 
 setup_disk_func_select_default_bootloader_body() {
@@ -527,6 +534,18 @@ setup_disk_sys_efi_limine_boot_riscv64_body() {
 		setup-disk -m sys -s 0 /dev/vda
 }
 
+setup_disk_sys_efi_limine_boot_loongarch64_body() {
+	atf_require_prog sfdisk
+	init_env
+	fake_disk vda
+	mkdir -p proc etc sys/firmware/efi
+	touch proc/mounts etc/fstab
+	APK_ARCH=loongarch64 BOOTLOADER=limine ERASE_DISKS=/dev/vda atf_check \
+		-o match:"Installation is complete" \
+		-o match:"install -D /usr/share/limine/BOOTLOONGARCH64.EFI $PWD/mnt/boot/EFI/BOOT/BOOTLOONGARCH64.EFI" \
+		setup-disk -m sys -s 0 /dev/vda
+}
+
 setup_disk_sys_efi_limine_boot_size_4k_body() {
 	atf_require_prog sfdisk
 	init_env
@@ -674,6 +693,20 @@ setup_disk_install_mounted_root_limine_efi_boot_riscv64_body() {
 	APK_ARCH=riscv64 BOOTLOADER=limine atf_check -s exit:0 \
 		-o match:"Installing system on /dev/vda2" \
 		-o match:"install -D /usr/share/limine/BOOTRISCV64.EFI $PWD/target/boot/EFI/BOOT/BOOTRISCV64.EFI" \
+		setup-disk -v target
+}
+
+setup_disk_install_mounted_root_limine_efi_boot_loongarch64_body() {
+	init_env
+	mkdir -p target/boot \
+		sys/firmware/efi
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+	fake_mount "/dev/vda1 $PWD/target/boot vfat rw,relatime,fmask=0022 0 0"
+
+	APK_ARCH=loongarch64 BOOTLOADER=limine atf_check -s exit:0 \
+		-o match:"Installing system on /dev/vda2" \
+		-o match:"install -D /usr/share/limine/BOOTLOONGARCH64.EFI $PWD/target/boot/EFI/BOOT/BOOTLOONGARCH64.EFI" \
 		setup-disk -v target
 }
 

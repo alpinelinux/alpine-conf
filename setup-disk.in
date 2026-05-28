@@ -448,6 +448,7 @@ limine_efi_binary() {
 		x86_64) echo BOOTX64.EFI ;;
 		aarch64) echo BOOTAA64.EFI ;;
 		riscv64) echo BOOTRISCV64.EFI ;;
+		loongarch64) echo BOOTLOONGARCH64.EFI ;;
 		*) return 1 ;;
 	esac
 }
