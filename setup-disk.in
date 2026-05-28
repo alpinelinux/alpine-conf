@@ -447,6 +447,7 @@ limine_efi_binary() {
 	case "$ARCH" in
 		x86_64) echo BOOTX64.EFI ;;
 		aarch64) echo BOOTAA64.EFI ;;
+		riscv64) echo BOOTRISCV64.EFI ;;
 		*) return 1 ;;
 	esac
 }
