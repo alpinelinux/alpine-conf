@@ -445,6 +445,7 @@ setup_limine() {
 		for disk in "$@"; do
 			$MOCK limine bios-install "$disk"
 		done
+		echo "Installing limine-bios.sys to $mnt/boot/limine/limine-bios.sys"
 		$MOCK install -D /usr/share/limine/limine-bios.sys \
 			"$mnt"/boot/limine/limine-bios.sys
 	fi

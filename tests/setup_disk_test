@@ -406,6 +406,7 @@ setup_disk_sys_limine_bios_body() {
 	APK_ARCH=x86_64 BOOTLOADER=limine ERASE_DISKS=/dev/vda atf_check \
 		-o match:"Installation is complete" \
 		-o match:"limine bios-install /dev/vda" \
+		-o match:"Installing limine-bios.sys to $PWD/mnt/boot/limine/limine-bios.sys" \
 		-o match:"install -D /usr/share/limine/limine-bios.sys $PWD/mnt/boot/limine/limine-bios.sys" \
 		setup-disk -m sys -s 0 /dev/vda
 
