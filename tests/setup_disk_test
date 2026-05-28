@@ -11,6 +11,7 @@ init_tests \
 	setup_disk_func_find_efi_size \
 	setup_disk_func_find_efi_size_multi \
 	setup_disk_func_uuid_or_device \
+	setup_disk_func_select_bootloader_pkg \
 	setup_disk_non_existing_block_dev \
 	setup_disk_sys \
 	setup_disk_sys_efi_boot_size \
@@ -261,6 +262,30 @@ setup_disk_func_uuid_or_device_body() {
 			-o match:"/dev/sda1" \
 			setup-disk /dev/sda1
 
+}
+
+setup_disk_func_select_bootloader_pkg_body() {
+	init_env
+
+	ARCH=x86_64 BOOTLOADER=none SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o empty \
+		setup-disk
+
+	ARCH=x86_64 BOOTLOADER=grub SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o inline:"grub-bios\n" \
+		setup-disk
+
+	ARCH=x86_64 BOOTLOADER=grub USE_EFI=1 SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o inline:"grub-efi\n" \
+		setup-disk
+
+	ARCH=x86_64 BOOTLOADER=syslinux SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o inline:"syslinux\n" \
+		setup-disk
 }
 
 setup_disk_non_existing_block_dev_body() {
