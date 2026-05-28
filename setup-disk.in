@@ -1602,7 +1602,7 @@ write_disk_mode() {
 }
 
 kver=$(uname -r)
-case $kver in
+case "$kver" in
 	*-rc[0-9]*) KERNEL_FLAVOR=lts;;
 	*-[a-z]*) KERNEL_FLAVOR=${kver##*-};;
 	*) KERNEL_FLAVOR=lts;;

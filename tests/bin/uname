@@ -1,0 +1,9 @@
+#!/bin/sh
+
+case "$1" in
+	-r) echo "6.18.33-0-lts" ;;
+	"") echo "Linux" ;;
+	-m) echo "x86_64" ;;
+	*) echo "FAKE uname not implemented" >&2; exit 1;;
+esac
+
