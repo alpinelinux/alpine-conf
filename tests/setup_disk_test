@@ -21,12 +21,14 @@ init_tests \
 	setup_disk_sys_limine_bios \
 	setup_disk_sys_efi_boot_size \
 	setup_disk_sys_efi_limine_boot \
+	setup_disk_sys_efi_limine_boot_aarch64 \
 	setup_disk_sys_efi_limine_boot_size_4k \
 	setup_disk_sys_wifi \
 	setup_disk_install_mounted_root_nvme \
 	setup_disk_install_mounted_root_efi \
 	setup_disk_install_mounted_root_efi_boot \
 	setup_disk_install_mounted_root_limine_efi_boot \
+	setup_disk_install_mounted_root_limine_efi_boot_aarch64 \
 	setup_disk_install_mounted_root_limine_efi_boot_efi \
 	setup_disk_install_mounted_root_syslinux \
 	setup_disk_install_mounted_root_bootloader_none \
@@ -322,12 +324,17 @@ setup_disk_func_select_bootloader_pkg_body() {
 
 	ARCH=x86_64 BOOTLOADER=limine SETUP_DISK_TESTFUNC=select_bootloader_pkg \
 		atf_check -s exit:0 \
-		-o inline:"cmd:limine limine-sys\n" \
+		-o inline:"cmd:limine limine-bios\n" \
 		setup-disk
 
 	ARCH=x86_64 BOOTLOADER=limine USE_EFI=1 SETUP_DISK_TESTFUNC=select_bootloader_pkg \
 		atf_check -s exit:0 \
-		-o inline:"cmd:limine limine-x86_64\n" \
+		-o inline:"cmd:limine limine-efi-x86_64\n" \
+		setup-disk
+
+	ARCH=aarch64 BOOTLOADER=limine USE_EFI=1 SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o inline:"cmd:limine limine-efi-aarch64\n" \
 		setup-disk
 }
 
@@ -489,6 +496,18 @@ setup_disk_sys_efi_limine_boot_body() {
 		cat mnt/etc/fstab
 }
 
+setup_disk_sys_efi_limine_boot_aarch64_body() {
+	atf_require_prog sfdisk
+	init_env
+	fake_disk vda
+	mkdir -p proc etc sys/firmware/efi
+	touch proc/mounts etc/fstab
+	APK_ARCH=aarch64 BOOTLOADER=limine ERASE_DISKS=/dev/vda atf_check \
+		-o match:"Installation is complete" \
+		-o match:"install -D /usr/share/limine/BOOTAA64.EFI $PWD/mnt/boot/EFI/BOOT/BOOTAA64.EFI" \
+		setup-disk -m sys -s 0 /dev/vda
+}
+
 setup_disk_sys_efi_limine_boot_size_4k_body() {
 	atf_require_prog sfdisk
 	init_env
@@ -609,6 +628,20 @@ setup_disk_install_mounted_root_limine_efi_boot_body() {
 		-o match:"module_path: boot.*:/initramfs-lts" \
 		-o match:"kernel_cmdline: root=/dev/vda2 ro modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4" \
 		cat target/boot/limine/limine.conf
+}
+
+setup_disk_install_mounted_root_limine_efi_boot_aarch64_body() {
+	init_env
+	mkdir -p target/boot \
+		sys/firmware/efi
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+	fake_mount "/dev/vda1 $PWD/target/boot vfat rw,relatime,fmask=0022 0 0"
+
+	APK_ARCH=aarch64 BOOTLOADER=limine atf_check -s exit:0 \
+		-o match:"Installing system on /dev/vda2" \
+		-o match:"install -D /usr/share/limine/BOOTAA64.EFI $PWD/target/boot/EFI/BOOT/BOOTAA64.EFI" \
+		setup-disk -v target
 }
 
 setup_disk_install_mounted_root_limine_efi_boot_efi_body() {

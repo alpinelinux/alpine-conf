@@ -443,24 +443,34 @@ limine_serial_config() {
 	echo "serial_baudrate: $baudrate"
 }
 
+limine_efi_binary() {
+	case "$ARCH" in
+		x86_64) echo BOOTX64.EFI ;;
+		aarch64) echo BOOTAA64.EFI ;;
+		*) return 1 ;;
+	esac
+}
+
 setup_limine() {
 	local mnt="$1" root="$2" modules="$3" kernel_opts="$4"
-	local efi_directory=
+	local efi_directory= efi_binary=
 	shift 4
-	if [ "$ARCH" != "x86_64" ]; then
-		die "Limine bootloader is only supported on x86_64"
-	fi
 	if [ -n "$USE_EFI" ]; then
+		efi_binary=$(limine_efi_binary) || \
+			die "Limine EFI bootloader is not supported on $ARCH"
 		efi_directory=$(find_efi_directory "$mnt") || \
 			die "Limine EFI requires a vfat boot filesystem mounted at /boot"
 		if [ "$efi_directory" != "$mnt"/boot ]; then
 			die "Limine EFI requires the vfat boot filesystem mounted at /boot"
 		fi
-		$MOCK install -D /usr/share/limine/BOOTX64.EFI \
-			"$efi_directory"/EFI/BOOT/BOOTX64.EFI
-		$MOCK install -D /usr/share/limine/BOOTX64.EFI \
-			"$efi_directory"/EFI/alpine/BOOTX64.EFI
+		$MOCK install -D /usr/share/limine/"$efi_binary" \
+			"$efi_directory"/EFI/BOOT/"$efi_binary"
+		$MOCK install -D /usr/share/limine/"$efi_binary" \
+			"$efi_directory"/EFI/alpine/"$efi_binary"
 	else
+		if [ "$ARCH" != "x86_64" ]; then
+			die "Limine BIOS bootloader is only supported on x86_64"
+		fi
 		for disk in "$@"; do
 			$MOCK limine bios-install "$disk"
 		done
@@ -878,9 +888,9 @@ select_bootloader_pkg() {
 		;;
 	limine)
 		if [ -n "$USE_EFI" ]; then
-			echo cmd:limine limine-"$ARCH"
+			echo cmd:limine limine-efi-"$ARCH"
 		else
-			echo cmd:limine limine-sys
+			echo cmd:limine limine-bios
 		fi
 		;;
 	zipl) echo s390-tools;;
@@ -1648,8 +1658,11 @@ if [ -z "$BOOTLOADER" ]; then
 fi
 
 if [ "$BOOTLOADER" = "limine" ]; then
-	if [ "$ARCH" != "x86_64" ]; then
-		die "Limine bootloader is only supported on x86_64"
+	if [ -n "$USE_EFI" ]; then
+		limine_efi_binary >/dev/null || \
+			die "Limine EFI bootloader is not supported on $ARCH"
+	elif [ "$ARCH" != "x86_64" ]; then
+		die "Limine BIOS bootloader is only supported on x86_64"
 	fi
 	BOOTFS=vfat
 fi
