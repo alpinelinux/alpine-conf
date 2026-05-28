@@ -38,7 +38,13 @@ init_tests \
 	lbu_status_added \
 	lbu_status_deleted \
 	lbu_status_updated \
-	lbu_status_all_default
+	lbu_status_all_default \
+	lbu_exclude_add \
+	lbu_exclude_remove \
+	lbu_exclude_existing \
+	lbu_exclude_remove_nonexistent \
+	lbu_exclude_list \
+	lbu_include_list
 
 lbu_usage_body() {
 	test_usage lbu
@@ -445,4 +451,85 @@ lbu_status_all_default_body() {
 		-o match:"^U etc/localtime" \
 		-e empty \
 		lbu status -a
+}
+
+lbu_exclude_add_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"Adding etc/hosts to" \
+		-e empty \
+		lbu exclude -v etc/hosts
+
+	atf_check -s exit:0 \
+		-o match:"-etc/hosts" \
+		cat etc/apk/protected_paths.d/lbu.list
+}
+
+lbu_exclude_remove_body() {
+	init_env
+	mkdir -p etc/apk/protected_paths.d
+	echo "-etc/hosts" > etc/apk/protected_paths.d/lbu.list
+
+	atf_check -s exit:0 \
+		-o match:"Removing etc/hosts from" \
+		-e empty \
+		lbu exclude -r -v etc/hosts
+
+	if grep -q 'etc/hosts' etc/apk/protected_paths.d/lbu.list; then
+		atf_fail "etc/hosts was not removed from exclude list"
+	fi
+}
+
+lbu_exclude_existing_body() {
+	init_env
+	mkdir -p etc/apk/protected_paths.d
+	echo "-etc/hosts" > etc/apk/protected_paths.d/lbu.list
+
+	atf_check -s exit:0 \
+		-o match:"etc/hosts is already in" \
+		-e empty \
+		lbu exclude -v etc/hosts
+}
+
+lbu_exclude_remove_nonexistent_body() {
+	init_env
+	mkdir -p etc/apk/protected_paths.d
+	: > etc/apk/protected_paths.d/lbu.list
+
+	atf_check -s exit:0 \
+		-o match:"etc/hosts is not in" \
+		-e empty \
+		lbu exclude -r -v etc/hosts
+}
+
+lbu_exclude_list_body() {
+	init_env
+	mkdir -p etc/apk/protected_paths.d
+	cat > etc/apk/protected_paths.d/lbu.list <<-EOF
+		+etc/hosts
+		-etc/localtime
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"Exclude files:" \
+		-o match:"^etc/localtime" \
+		-o not-match:"etc/hosts" \
+		-e empty \
+		lbu exclude -l -v
+}
+
+lbu_include_list_body() {
+	init_env
+	mkdir -p etc/apk/protected_paths.d
+	cat > etc/apk/protected_paths.d/lbu.list <<-EOF
+		+etc/hosts
+		-etc/localtime
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"Include files:" \
+		-o match:"^etc/hosts" \
+		-o not-match:"etc/localtime" \
+		-e empty \
+		lbu include -l -v
 }
