@@ -424,6 +424,25 @@ setup_raspberrypi_bootloader() {
 	echo "root=$root modules=$modules $kernel_opts" > "$mnt"/boot/cmdline.txt
 }
 
+limine_serial_config() {
+	local kernel_opts="$1" opt= console= baudrate=
+	for opt in $kernel_opts; do
+		case "$opt" in
+			console=ttyS*)
+				console="${opt#console=}"
+				break
+				;;
+		esac
+	done
+	[ -z "$console" ] && return 0
+	baudrate="${console#*,}"
+	case "$baudrate" in
+		"$console"|*[!0-9]*|"") baudrate=115200;;
+	esac
+	echo "serial: yes"
+	echo "serial_baudrate: $baudrate"
+}
+
 setup_limine() {
 	local mnt="$1" root="$2" modules="$3" kernel_opts="$4"
 	local efi_directory=
@@ -451,15 +470,18 @@ setup_limine() {
 	fi
 
 	mkdir -p "$mnt"/boot/limine
-	cat > "$mnt"/boot/limine/limine.conf <<-EOF
-	timeout: 5
+	{
+		echo "timeout: 5"
+		limine_serial_config "$kernel_opts"
+		cat <<-EOF
 
-	/Alpine Linux ($KERNEL_FLAVOR)
-	    protocol: linux
-	    kernel_path: boot():/vmlinuz-$KERNEL_FLAVOR
-	    module_path: boot():/initramfs-$KERNEL_FLAVOR
-	    kernel_cmdline: root=$root ro modules=$modules $kernel_opts
-	EOF
+		/Alpine Linux ($KERNEL_FLAVOR)
+		    protocol: linux
+		    kernel_path: boot():/vmlinuz-$KERNEL_FLAVOR
+		    module_path: boot():/initramfs-$KERNEL_FLAVOR
+		    kernel_cmdline: root=$root ro modules=$modules $kernel_opts
+		EOF
+	} > "$mnt"/boot/limine/limine.conf
 }
 
 setup_bootloader() {

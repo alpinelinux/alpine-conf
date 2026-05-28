@@ -14,6 +14,7 @@ init_tests \
 	setup_disk_func_supported_boot_fs \
 	setup_disk_func_select_bootloader_pkg \
 	setup_disk_func_select_default_bootloader \
+	setup_disk_func_setup_limine_serial \
 	setup_disk_func_setup_bootloader_unsupported \
 	setup_disk_non_existing_block_dev \
 	setup_disk_sys \
@@ -357,6 +358,42 @@ setup_disk_func_select_default_bootloader_body() {
 		atf_check -s exit:0 \
 		-o inline:"u-boot\n" \
 		setup-disk
+}
+
+setup_disk_func_setup_limine_serial_body() {
+	init_env
+
+	mkdir -p target
+	ARCH=x86_64 BOOTLOADER=limine SETUP_DISK_TESTFUNC=setup_limine \
+		atf_check -s exit:0 \
+		-o ignore \
+		setup-disk target /dev/vda2 sd-mod,usb-storage,ext4 "quiet console=ttyS0,9600" /dev/vda
+	atf_check \
+		-o match:"serial: yes" \
+		-o match:"serial_baudrate: 9600" \
+		cat target/boot/limine/limine.conf
+
+	rm -rf target
+	mkdir -p target
+	ARCH=x86_64 BOOTLOADER=limine SETUP_DISK_TESTFUNC=setup_limine \
+		atf_check -s exit:0 \
+		-o ignore \
+		setup-disk target /dev/vda2 sd-mod,usb-storage,ext4 "quiet console=ttyS0" /dev/vda
+	atf_check \
+		-o match:"serial: yes" \
+		-o match:"serial_baudrate: 115200" \
+		cat target/boot/limine/limine.conf
+
+	rm -rf target
+	mkdir -p target
+	ARCH=x86_64 BOOTLOADER=limine SETUP_DISK_TESTFUNC=setup_limine \
+		atf_check -s exit:0 \
+		-o ignore \
+		setup-disk target /dev/vda2 sd-mod,usb-storage,ext4 quiet /dev/vda
+	atf_check \
+		-o not-match:"serial:" \
+		-o not-match:"serial_baudrate:" \
+		cat target/boot/limine/limine.conf
 }
 
 setup_disk_func_setup_bootloader_unsupported_body() {
