@@ -806,6 +806,19 @@ select_bootloader_pkg() {
 	echo "$bootloader"
 }
 
+select_default_bootloader() {
+	if [ "$DISKLABEL" = "gpt" ]; then
+		echo grub
+		return
+	fi
+	case "$ARCH" in
+		x86*) echo syslinux;;
+		ppc64le) echo grub;;
+		s390x) echo zipl;;
+		arm*|aarch64|riscv64) echo u-boot;;
+	esac
+}
+
 # install needed programs
 init_progs() {
 	local raidpkg= lvmpkg= cryptpkg= fs= fstools= grub=
@@ -1546,18 +1559,11 @@ if is_efi || [ -n "$USE_EFI" ]; then
 	BOOTFS=vfat
 fi
 
-if [ "$DISKLABEL" = "gpt" ]; then
-	: ${BOOTLOADER:=grub}
-fi
-
 # machine arch
 ARCH=$(apk --print-arch)
-case "$ARCH" in
-	x86*) 		: ${BOOTLOADER:=syslinux};;
-	ppc64le)	: ${BOOTLOADER:=grub};;
-	s390x) 		: ${BOOTLOADER:=zipl};;
-	arm*|aarch64|riscv64) : ${BOOTLOADER:=u-boot};;
-esac
+if [ -z "$BOOTLOADER" ]; then
+	BOOTLOADER=$(select_default_bootloader)
+fi
 
 if [ -d "$1" ]; then
 	# install to given mounted root
