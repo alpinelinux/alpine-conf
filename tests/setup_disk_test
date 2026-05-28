@@ -311,6 +311,9 @@ setup_disk_func_select_bootloader_pkg_body() {
 		-o inline:"grub-efi\n" \
 		setup-disk
 
+	# zsh needs this
+	unset USE_EFI
+
 	ARCH=ppc64le BOOTLOADER=grub SETUP_DISK_TESTFUNC=select_bootloader_pkg \
 		atf_check -s exit:0 \
 		-o inline:"grub-ieee1275\n" \
@@ -364,6 +367,9 @@ setup_disk_func_select_default_bootloader_body() {
 		atf_check -s exit:0 \
 		-o inline:"grub\n" \
 		setup-disk
+
+	# needed for zsh
+	unset DISKLABEL
 
 	ARCH=ppc64le SETUP_DISK_TESTFUNC=select_default_bootloader \
 		atf_check -s exit:0 \
