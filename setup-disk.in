@@ -382,7 +382,7 @@ setup_syslinux() {
 	sed -e "s:^root=.*:root=$root:" \
 		-e "s:^default_kernel_opts=.*:default_kernel_opts=\"$kernel_opts\":" \
 		-e "s:^modules=.*:modules=$modules:" \
-		/etc/update-extlinux.conf > "$mnt"/etc/update-extlinux.conf
+		"${ROOT}etc/update-extlinux.conf" > "$mnt"/etc/update-extlinux.conf
 
 	# Check if we boot from raid so we can pass proper option to
 	# extlinux later.

@@ -81,6 +81,10 @@ esac
 
 for pkg in $pkgs; do
 	case "$pkg" in
+		syslinux*)
+			mkdir -p "$rootfs"/etc
+			touch "$rootfs"/etc/update-extlinux.conf
+			;;
 		linux-firmware*)
 			# simulate install firmware
 			mkdir -p "$rootfs"/lib/firmware/brcm \
