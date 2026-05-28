@@ -11,16 +11,21 @@ init_tests \
 	setup_disk_func_find_efi_size \
 	setup_disk_func_find_efi_size_multi \
 	setup_disk_func_uuid_or_device \
+	setup_disk_func_supported_boot_fs \
 	setup_disk_func_select_bootloader_pkg \
 	setup_disk_func_select_default_bootloader \
 	setup_disk_func_setup_bootloader_unsupported \
 	setup_disk_non_existing_block_dev \
 	setup_disk_sys \
+	setup_disk_sys_limine_bios \
 	setup_disk_sys_efi_boot_size \
+	setup_disk_sys_efi_limine_boot \
 	setup_disk_sys_wifi \
 	setup_disk_install_mounted_root_nvme \
 	setup_disk_install_mounted_root_efi \
 	setup_disk_install_mounted_root_efi_boot \
+	setup_disk_install_mounted_root_limine_efi_boot \
+	setup_disk_install_mounted_root_limine_efi_boot_efi \
 	setup_disk_install_mounted_root_syslinux \
 	setup_disk_install_mounted_root_bootloader_none \
 	setup_disk_install_mounted_root_zfs
@@ -267,6 +272,19 @@ setup_disk_func_uuid_or_device_body() {
 
 }
 
+setup_disk_func_supported_boot_fs_body() {
+	init_env
+
+	BOOTLOADER=limine SETUP_DISK_TESTFUNC=supported_boot_fs \
+		atf_check -s exit:0 \
+		setup-disk vfat
+
+	BOOTLOADER=limine SETUP_DISK_TESTFUNC=supported_boot_fs \
+		atf_check -s not-exit:0 \
+		-e match:"ext4 is not supported. Only supported are: vfat" \
+		setup-disk ext4
+}
+
 setup_disk_func_select_bootloader_pkg_body() {
 	init_env
 
@@ -300,9 +318,14 @@ setup_disk_func_select_bootloader_pkg_body() {
 		-o inline:"syslinux\n" \
 		setup-disk
 
+	ARCH=x86_64 BOOTLOADER=limine SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o inline:"limine-sys\n" \
+		setup-disk
+
 	ARCH=x86_64 BOOTLOADER=limine USE_EFI=1 SETUP_DISK_TESTFUNC=select_bootloader_pkg \
 		atf_check -s exit:0 \
-		-o inline:"limine\n" \
+		-o inline:"limine-x86_64\n" \
 		setup-disk
 }
 
@@ -373,6 +396,26 @@ setup_disk_sys_body() {
 		awk '$3 == "swap" {print $2}' mnt/etc/fstab
 }
 
+setup_disk_sys_limine_bios_body() {
+	atf_require_prog sfdisk
+	init_env
+	fake_disk vda
+	mkdir proc etc
+	touch proc/mounts etc/fstab
+	APK_ARCH=x86_64 BOOTLOADER=limine ERASE_DISKS=/dev/vda atf_check \
+		-o match:"Installation is complete" \
+		-o match:"limine bios-install /dev/vda" \
+		-o match:"install -D /usr/share/limine/limine-bios.sys $PWD/mnt/boot/limine/limine-bios.sys" \
+		setup-disk -m sys -s 0 /dev/vda
+
+	atf_check \
+		-o match:"^dev/vda1 : start= *[0-9]+, size= *614400, type=c" \
+		sfdisk -d dev/vda
+	atf_check \
+		-o match:"/dev/vda1	/boot	vfat	rw,relatime,fmask=0022 0 2" \
+		cat mnt/etc/fstab
+}
+
 setup_disk_sys_efi_boot_size_body() {
 	atf_require_prog sfdisk
 	init_env
@@ -386,6 +429,25 @@ setup_disk_sys_efi_boot_size_body() {
 	atf_check \
 		-o match:"^dev/vda1 : start= *[0-9]+, size= *327680, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B" \
 		sfdisk -d dev/vda
+}
+
+setup_disk_sys_efi_limine_boot_body() {
+	atf_require_prog sfdisk
+	init_env
+	fake_disk vda
+	mkdir -p proc etc sys/firmware/efi
+	touch proc/mounts etc/fstab
+	APK_ARCH=x86_64 BOOTLOADER=limine ERASE_DISKS=/dev/vda atf_check \
+		-o match:"Installation is complete" \
+		-o match:"install -D /usr/share/limine/BOOTX64.EFI $PWD/mnt/boot/EFI/BOOT/BOOTX64.EFI" \
+		setup-disk -m sys -s 0 /dev/vda
+
+	atf_check \
+		-o match:"^dev/vda1 : start= *[0-9]+, size= *614400, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B" \
+		sfdisk -d dev/vda
+	atf_check \
+		-o match:"/dev/vda1	/boot	vfat	rw,relatime,fmask=0022 0 2" \
+		cat mnt/etc/fstab
 }
 
 setup_disk_sys_wifi_body() {
@@ -473,6 +535,40 @@ setup_disk_install_mounted_root_efi_boot_body() {
 
 	atf_check -o match:"GRUB_CMDLINE_LINUX_DEFAULT=.*ext4" \
 		cat target/etc/default/grub
+}
+
+setup_disk_install_mounted_root_limine_efi_boot_body() {
+	init_env
+	mkdir -p target/boot \
+		sys/firmware/efi
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+	fake_mount "/dev/vda1 $PWD/target/boot vfat rw,relatime,fmask=0022 0 0"
+
+	APK_ARCH=x86_64 BOOTLOADER=limine atf_check -s exit:0 \
+		-o match:"Installing system on /dev/vda2" \
+		-o match:"install -D /usr/share/limine/BOOTX64.EFI $PWD/target/boot/EFI/BOOT/BOOTX64.EFI" \
+		setup-disk -v target
+
+	atf_check \
+		-o match:"kernel_path: boot.*:/vmlinuz-lts" \
+		-o match:"module_path: boot.*:/initramfs-lts" \
+		-o match:"kernel_cmdline: root=/dev/vda2 ro modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4" \
+		cat target/boot/limine/limine.conf
+}
+
+setup_disk_install_mounted_root_limine_efi_boot_efi_body() {
+	init_env
+	mkdir -p target/boot/efi \
+		sys/firmware/efi
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+	fake_mount "/dev/vda1 $PWD/target/boot/efi vfat rw,relatime,fmask=0022 0 0"
+
+	APK_ARCH=x86_64 BOOTLOADER=limine atf_check -s not-exit:0 \
+		-o ignore \
+		-e match:"Limine EFI requires the vfat boot filesystem mounted at /boot" \
+		setup-disk target
 }
 
 setup_disk_install_mounted_root_syslinux_body() {

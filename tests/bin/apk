@@ -1,6 +1,6 @@
 #!/bin/sh
 
-arch=aarch64
+arch=${APK_ARCH:-aarch64}
 
 if [ "$1" = "--print-arch" ]; then
 	echo $arch

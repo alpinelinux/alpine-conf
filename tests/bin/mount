@@ -15,6 +15,6 @@ case "$fstype" in
 esac
 
 mkdir -p proc
-echo "$1 $(echo $2 | sed -E 's:/+:/:g') ext4 $opts 0 0" >> proc/mounts
+echo "$1 $(echo $2 | sed -E 's:/+:/:g') $fstype $opts 0 0" >> proc/mounts
 
 echo "DEBUG: fake mount $@"

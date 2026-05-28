@@ -239,6 +239,8 @@ supported_boot_fs() {
 	local supported="ext2 ext3 ext4 btrfs xfs vfat"
 	if [ "$BOOTLOADER" = "grub" ]; then
 		local supported="$supported zfs"
+	elif [ "$BOOTLOADER" = "limine" ]; then
+		local supported="vfat"
 	fi
 	local fs=
 	if is_rpi; then
@@ -422,6 +424,43 @@ setup_raspberrypi_bootloader() {
 	echo "root=$root modules=$modules $kernel_opts" > "$mnt"/boot/cmdline.txt
 }
 
+setup_limine() {
+	local mnt="$1" root="$2" modules="$3" kernel_opts="$4"
+	local efi_directory=
+	shift 4
+	if [ "$ARCH" != "x86_64" ]; then
+		die "Limine bootloader is only supported on x86_64"
+	fi
+	if [ -n "$USE_EFI" ]; then
+		efi_directory=$(find_efi_directory "$mnt") || \
+			die "Limine EFI requires a vfat boot filesystem mounted at /boot"
+		if [ "$efi_directory" != "$mnt"/boot ]; then
+			die "Limine EFI requires the vfat boot filesystem mounted at /boot"
+		fi
+		$MOCK install -D /usr/share/limine/BOOTX64.EFI \
+			"$efi_directory"/EFI/BOOT/BOOTX64.EFI
+		$MOCK install -D /usr/share/limine/BOOTX64.EFI \
+			"$efi_directory"/EFI/alpine/BOOTX64.EFI
+	else
+		for disk in "$@"; do
+			$MOCK limine bios-install "$disk"
+		done
+		$MOCK install -D /usr/share/limine/limine-bios.sys \
+			"$mnt"/boot/limine/limine-bios.sys
+	fi
+
+	mkdir -p "$mnt"/boot/limine
+	cat > "$mnt"/boot/limine/limine.conf <<-EOF
+	timeout: 5
+
+	/Alpine Linux ($KERNEL_FLAVOR)
+	    protocol: linux
+	    kernel_path: boot():/vmlinuz-$KERNEL_FLAVOR
+	    module_path: boot():/initramfs-$KERNEL_FLAVOR
+	    kernel_cmdline: root=$root ro modules=$modules $kernel_opts
+	EOF
+}
+
 setup_bootloader() {
 	local mnt="$1" root="$2" modules="$3" kernel_opts="$4" bootdev="$5"
 	shift 5
@@ -432,6 +471,7 @@ setup_bootloader() {
 		zipl) setup_zipl "$mnt" "$root" "$modules" "$kernel_opts" ;;
 		raspberrypi-bootloader) setup_raspberrypi_bootloader "$mnt" "$root" "$modules" "$kernel_opts" ;;
 		u-boot) setup_uboot "$mnt" "$root" "$modules" "$kernel_opts" ;;
+		limine) setup_limine "$mnt" "$root" "$modules" "$kernel_opts" "$@" ;;
 		*) die "Bootloader \"$BOOTLOADER\" not supported!" ;;
 	esac
 }
@@ -497,6 +537,10 @@ install_mounted_root() {
 
 	bootdev=$(find_mount_dev "$mnt"/boot)
 	if [ -z "$bootdev" ]; then
+		if [ "$BOOTLOADER" = limine ] && [ -n "$USE_EFI" ] \
+				&& [ -n "$(find_mount_dev "$mnt"/boot/efi)" ]; then
+			die "Limine EFI requires the vfat boot filesystem mounted at /boot"
+		fi
 		bootdev=$rootdev
 		mnt_boot="$mnt"
 	else
@@ -807,6 +851,13 @@ select_bootloader_pkg() {
 			echo grub-efi
 		else
 			echo grub-bios
+		fi
+		;;
+	limine)
+		if [ -n "$USE_EFI" ]; then
+			echo limine-"$ARCH"
+		else
+			echo limine-sys
 		fi
 		;;
 	zipl) echo s390-tools;;
@@ -1183,7 +1234,7 @@ setup_root() {
 	mount -t "$ROOTFS" "$root_dev" "$sysroot" || return 1
 	if [ -n "$boot_dev" ]; then
 		# use separate esp partirion with UEFI but without crypt
-		if [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ]; then
+		if [ -n "$USE_EFI" ] && [ -z "$USE_CRYPT" ] && [ "$BOOTLOADER" != limine ]; then
 			mkdir -p "$sysroot"/boot/efi
 			mount -t "$BOOTFS" "$boot_dev" "$sysroot"/boot/efi || return 1
 		else
@@ -1483,7 +1534,7 @@ usage() {
 		If BOOTLOADER is specified, the specified bootloader will be used.
 		If no bootloader is specified, the default bootloader is syslinux(extlinux)
 		except when EFI is detected or explicitly set by USE_EFI which will select grub.
-		Supported bootloaders are: grub, syslinux, zipl, raspberrypi-bootloader, u-boot, none
+		Supported bootloaders are: grub, syslinux, zipl, raspberrypi-bootloader, u-boot, limine, none
 
 		If KERNELOPTS is specified, it will be appended to the kernel boot parameters.
 		Default is: quiet
@@ -1571,6 +1622,14 @@ fi
 ARCH=$(apk --print-arch)
 if [ -z "$BOOTLOADER" ]; then
 	BOOTLOADER=$(select_default_bootloader)
+fi
+
+if [ "$BOOTLOADER" = "limine" ]; then
+	if [ "$ARCH" != "x86_64" ]; then
+		die "Limine bootloader is only supported on x86_64"
+	fi
+	BOOTFS=vfat
+	: ${BOOT_SIZE:=300}
 fi
 
 if [ -d "$1" ]; then
