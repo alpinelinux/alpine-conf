@@ -557,7 +557,7 @@ usage_listbackup() {
 cmd_listbackup() {
 	local media="${1:-"$LBU_MEDIA"}"
 	local mnt="${LBU_BACKUPDIR:-/media/$media}"
-	[ -z "$media" ] && [ -z "$LBU_BACKUPDIR" ] && usage_listbackup
+	[ -z "$media" ] && [ -z "$LBU_BACKUPDIR" ] && usage_listbackup 1
 
 	if [ -n "$media" ]; then
 		mount_once "$mnt" || die "failed to mount $mnt"

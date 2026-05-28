@@ -44,7 +44,10 @@ init_tests \
 	lbu_exclude_existing \
 	lbu_exclude_remove_nonexistent \
 	lbu_exclude_list \
-	lbu_include_list
+	lbu_include_list \
+	lbu_list_basic \
+	lbu_listbackup_basic \
+	lbu_listbackup_no_media
 
 lbu_usage_body() {
 	test_usage lbu
@@ -532,4 +535,34 @@ lbu_include_list_body() {
 		-o not-match:"etc/localtime" \
 		-e empty \
 		lbu include -l -v
+}
+
+lbu_list_basic_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"^etc/hosts" \
+		-o match:"^etc/localtime" \
+		-e empty \
+		lbu list
+}
+
+lbu_listbackup_basic_body() {
+	init_env
+	mkdir -p backup
+	touch backup/$(hostname).20200101000000.tar.gz
+	touch backup/$(hostname).99991231235959.tar.gz
+
+	LBU_BACKUPDIR=backup atf_check -s exit:0 \
+		-o match:"^$(hostname).20200101000000.tar.gz" \
+		-o match:"^$(hostname).99991231235959.tar.gz" \
+		-e empty \
+		lbu list-backup
+}
+
+lbu_listbackup_no_media_body() {
+	init_env
+	atf_check -s exit:1 \
+		-o match:"usage:" \
+		-e ignore \
+		lbu list-backup
 }
