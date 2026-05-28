@@ -11,6 +11,7 @@ BOOTFS=${BOOTFS:-ext4}
 VARFS=${VARFS:-ext4}
 DISKLABEL=${DISKLABEL:-dos}
 KERNELOPTS=${KERNELOPTS:-quiet}
+BOOT_TIMEOUT=${BOOT_TIMEOUT:-1}
 
 # default location for mounted root
 SYSROOT=${SYSROOT:-/mnt}
@@ -358,7 +359,7 @@ setup_grub() {
 	# setup GRUB config. trigger will generate final grub.cfg
 	install -d "$mnt"/etc/default/
 	cat > "$mnt"/etc/default/grub <<- EOF
-	GRUB_TIMEOUT=2
+	GRUB_TIMEOUT=${BOOT_TIMEOUT}
 	GRUB_DISABLE_SUBMENU=y
 	GRUB_DISABLE_RECOVERY=true
 	GRUB_CMDLINE_LINUX_DEFAULT="modules=$modules $kernel_opts"
@@ -382,6 +383,7 @@ setup_syslinux() {
 	sed -e "s:^root=.*:root=$root:" \
 		-e "s:^default_kernel_opts=.*:default_kernel_opts=\"$kernel_opts\":" \
 		-e "s:^modules=.*:modules=$modules:" \
+		-e "s:^timeout=.*:timeout=$BOOT_TIMEOUT:" \
 		"${ROOT}etc/update-extlinux.conf" > "$mnt"/etc/update-extlinux.conf
 
 	# Check if we boot from raid so we can pass proper option to
@@ -401,7 +403,7 @@ setup_uboot() {
 	mkdir -p "$mnt"/boot/extlinux
 	cat > "$mnt/boot/extlinux/extlinux.conf" <<- EOF
 	menu title Alpine Linux
-	timeout 50
+	timeout $((BOOT_TIMEOUT * 10))
 	default $KERNEL_FLAVOR
 
 	label $KERNEL_FLAVOR
@@ -483,7 +485,7 @@ setup_limine() {
 
 	mkdir -p "$mnt"/boot/limine
 	{
-		echo "timeout: 5"
+		echo "timeout: $BOOT_TIMEOUT"
 		limine_serial_config "$kernel_opts"
 		cat <<-EOF
 

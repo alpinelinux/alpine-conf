@@ -95,7 +95,7 @@ setup_zipl() {
 	[defaultboot]
 	defaultauto
 	prompt=1
-	timeout=5
+	timeout=${BOOT_TIMEOUT}
 	default=linux
 	target=/boot
 	[linux]
