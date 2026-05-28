@@ -581,16 +581,19 @@ usage_revert() {
 }
 
 cmd_revert() {
-	local media="${2:-"$LBU_MEDIA"}"
-	[ -z "$media" ] && usage_revert "1" >&2
-	local mnt="/media/$media"
+	local mnt="${LBU_BACKUPDIR:-}"
+	if [ -z "$mnt" ]; then
+		local media="${2:-"$LBU_MEDIA"}"
+		[ -z "$media" ] && usage_revert "1" >&2
+		mnt="/media/$media"
+		mount_once_rw "$mnt" || die "failed to mount $mnt"
+	fi
 	local revertto="$mnt/$1"
 	local current="$mnt/$(hostname).apkovl.tar.gz"
 
 	if [ -n "$ENCRYPTION" ]; then
 		current="$current.$ENCRYPTION"
 	fi
-	mount_once_rw "$mnt" || die "failed to mount $mnt"
 	[ -f "$revertto" ] || die "file not found: $revertto"
 	backup_apkovl "$current"
 	vecho "Reverting to $1"

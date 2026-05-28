@@ -30,7 +30,10 @@ init_tests \
 	lbu_commit_backup \
 	lbu_commit_delete_old \
 	lbu_commit_dryrun \
-	lbu_commit_encrypted
+	lbu_commit_encrypted \
+	lbu_revert_basic \
+	lbu_revert_file_not_found \
+	lbu_revert_no_media
 
 lbu_usage_body() {
 	test_usage lbu
@@ -317,4 +320,58 @@ lbu_commit_encrypted_body() {
 	if [ ! -f "$encfile" ]; then
 		atf_fail "encrypted archive not created"
 	fi
+}
+
+lbu_revert_basic_body() {
+	init_env
+	mkdir -p backup
+
+	echo "current content" > "backup/$(hostname).apkovl.tar.gz"
+	echo "revision content" > "backup/$(hostname).20250101000000.tar.gz"
+
+	LBU_BACKUPDIR=backup \
+		atf_check -s exit:0 \
+		-o match:"Reverting" \
+		-e empty \
+		lbu revert -v "$(hostname).20250101000000.tar.gz"
+
+	# Verify old current was backed up
+	ls backup/"$(hostname)".[0-9]*.tar.gz >/dev/null 2>&1 \
+		|| atf_fail "backup of current was not created"
+
+	# Verify revision became new current
+	atf_check \
+		-o match:"revision content" \
+		cat "backup/$(hostname).apkovl.tar.gz"
+
+	# Verify revision file no longer exists
+	if [ -f "backup/$(hostname).20250101000000.tar.gz" ]; then
+		atf_fail "revision file was not removed"
+	fi
+}
+
+lbu_revert_file_not_found_body() {
+	init_env
+	mkdir -p backup
+
+	echo "current content" > "backup/$(hostname).apkovl.tar.gz"
+
+	LBU_BACKUPDIR=backup \
+		atf_check -s exit:1 \
+		-o empty \
+		-e match:"file not found" \
+		lbu revert "nonexistent.tar.gz"
+
+	# Verify current apkovl was not touched
+	atf_check \
+		-o match:"current content" \
+		cat "backup/$(hostname).apkovl.tar.gz"
+}
+
+lbu_revert_no_media_body() {
+	init_env
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"usage.*revert" \
+		lbu revert somefile
 }
