@@ -19,6 +19,7 @@ init_tests \
 	setup_disk_install_mounted_root_nvme \
 	setup_disk_install_mounted_root_efi \
 	setup_disk_install_mounted_root_efi_boot \
+	setup_disk_install_mounted_root_syslinux \
 	setup_disk_install_mounted_root_bootloader_none \
 	setup_disk_install_mounted_root_zfs
 
@@ -417,6 +418,23 @@ setup_disk_install_mounted_root_efi_boot_body() {
 
 	atf_check -o match:"GRUB_CMDLINE_LINUX_DEFAULT=.*ext4" \
 		cat target/etc/default/grub
+}
+
+setup_disk_install_mounted_root_syslinux_body() {
+	init_env
+	fake_bin extlinux <<-EOF
+		#!/bin/sh
+		echo "extlinux \$@"
+	EOF
+	mkdir -p target/boot
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+
+	BOOTLOADER=syslinux atf_check -s exit:0 \
+		-o match:"Installing system on /dev/vda2" \
+		-o match:"extlinux --install $PWD/target/boot" \
+		-o not-match:"grub-install" \
+		setup-disk target
 }
 
 setup_disk_install_mounted_root_bootloader_none_body() {
