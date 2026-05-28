@@ -321,12 +321,12 @@ setup_disk_func_select_bootloader_pkg_body() {
 
 	ARCH=x86_64 BOOTLOADER=limine SETUP_DISK_TESTFUNC=select_bootloader_pkg \
 		atf_check -s exit:0 \
-		-o inline:"limine-sys\n" \
+		-o inline:"cmd:limine limine-sys\n" \
 		setup-disk
 
 	ARCH=x86_64 BOOTLOADER=limine USE_EFI=1 SETUP_DISK_TESTFUNC=select_bootloader_pkg \
 		atf_check -s exit:0 \
-		-o inline:"limine-x86_64\n" \
+		-o inline:"cmd:limine limine-x86_64\n" \
 		setup-disk
 }
 

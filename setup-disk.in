@@ -855,9 +855,9 @@ select_bootloader_pkg() {
 		;;
 	limine)
 		if [ -n "$USE_EFI" ]; then
-			echo limine-"$ARCH"
+			echo cmd:limine limine-"$ARCH"
 		else
-			echo limine-sys
+			echo cmd:limine limine-sys
 		fi
 		;;
 	zipl) echo s390-tools;;
