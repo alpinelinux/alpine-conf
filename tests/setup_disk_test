@@ -284,9 +284,24 @@ setup_disk_func_select_bootloader_pkg_body() {
 		-o inline:"grub-efi\n" \
 		setup-disk
 
+	ARCH=ppc64le BOOTLOADER=grub SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o inline:"grub-ieee1275\n" \
+		setup-disk
+
+	ARCH=s390x BOOTLOADER=zipl SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o inline:"s390-tools\n" \
+		setup-disk
+
 	ARCH=x86_64 BOOTLOADER=syslinux SETUP_DISK_TESTFUNC=select_bootloader_pkg \
 		atf_check -s exit:0 \
 		-o inline:"syslinux\n" \
+		setup-disk
+
+	ARCH=x86_64 BOOTLOADER=limine USE_EFI=1 SETUP_DISK_TESTFUNC=select_bootloader_pkg \
+		atf_check -s exit:0 \
+		-o inline:"limine\n" \
 		setup-disk
 }
 

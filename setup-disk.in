@@ -793,17 +793,19 @@ select_bootloader_pkg() {
 	if [ "$BOOTLOADER" = none ]; then
 		return
 	fi
-	local bootloader="$BOOTLOADER"
-	if [ "$ARCH" = "ppc64le" ]; then
-		bootloader=grub-ieee1275
-	elif [ "$ARCH" = "s390x" ]; then
-		bootloader=s390-tools
-	elif [ -n "$USE_EFI" ]; then
-		bootloader=grub-efi
-	elif [ "$BOOTLOADER" = "grub" ]; then
-		bootloader=grub-bios
-	fi
-	echo "$bootloader"
+	case "$BOOTLOADER" in
+	grub)
+		if [ "$ARCH" = "ppc64le" ]; then
+			echo grub-ieee1275
+		elif [ -n "$USE_EFI" ]; then
+			echo grub-efi
+		else
+			echo grub-bios
+		fi
+		;;
+	zipl) echo s390-tools;;
+	*) echo "$BOOTLOADER";;
+	esac
 }
 
 select_default_bootloader() {
