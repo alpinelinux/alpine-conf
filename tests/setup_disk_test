@@ -13,6 +13,7 @@ init_tests \
 	setup_disk_func_uuid_or_device \
 	setup_disk_func_select_bootloader_pkg \
 	setup_disk_func_select_default_bootloader \
+	setup_disk_func_setup_bootloader_unsupported \
 	setup_disk_non_existing_block_dev \
 	setup_disk_sys \
 	setup_disk_sys_efi_boot_size \
@@ -332,6 +333,15 @@ setup_disk_func_select_default_bootloader_body() {
 		atf_check -s exit:0 \
 		-o inline:"u-boot\n" \
 		setup-disk
+}
+
+setup_disk_func_setup_bootloader_unsupported_body() {
+	init_env
+
+	BOOTLOADER=bogus SETUP_DISK_TESTFUNC=setup_bootloader \
+		atf_check -s not-exit:0 \
+		-e match:"Bootloader \"bogus\" not supported" \
+		setup-disk /mnt /dev/vda1 ext4 quiet /dev/vda1
 }
 
 setup_disk_non_existing_block_dev_body() {

@@ -422,6 +422,20 @@ setup_raspberrypi_bootloader() {
 	echo "root=$root modules=$modules $kernel_opts" > "$mnt"/boot/cmdline.txt
 }
 
+setup_bootloader() {
+	local mnt="$1" root="$2" modules="$3" kernel_opts="$4" bootdev="$5"
+	shift 5
+	case "$BOOTLOADER" in
+		none) ;;
+		grub) setup_grub "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" "$@" ;;
+		syslinux) setup_syslinux "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" ;;
+		zipl) setup_zipl "$mnt" "$root" "$modules" "$kernel_opts" ;;
+		raspberrypi-bootloader) setup_raspberrypi_bootloader "$mnt" "$root" "$modules" "$kernel_opts" ;;
+		u-boot) setup_uboot "$mnt" "$root" "$modules" "$kernel_opts" ;;
+		*) die "Bootloader \"$BOOTLOADER\" not supported!" ;;
+	esac
+}
+
 # detect which firmware packages to install, if any
 select_firmware_pkgs() {
 	local firmware_pkgs="$( (cd_assert "${ROOT}sys/module/" 2>/dev/null && echo *) \
@@ -630,15 +644,7 @@ install_mounted_root() {
 	# remove the installed db in case its there so we force re-install
 	rm -f "$mnt"/var/lib/apk/installed "$mnt"/lib/apk/db/installed
 	echo "Installing system on $rootdev:"
-	case "$BOOTLOADER" in
-		none) ;;
-		grub) setup_grub "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" $disks ;;
-		syslinux) setup_syslinux "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" ;;
-		zipl) setup_zipl "$mnt" "$root" "$modules" "$kernel_opts" ;;
-		raspberrypi-bootloader) setup_raspberrypi_bootloader "$mnt" "$root" "$modules" "$kernel_opts" ;;
-		u-boot) setup_uboot "$mnt" "$root" "$modules" "$kernel_opts" ;;
-		*) die "Bootloader \"$BOOTLOADER\" not supported!" ;;
-	esac
+	setup_bootloader "$mnt" "$root" "$modules" "$kernel_opts" "$bootdev" $disks
 
 	# apk reads config from target root so we need to copy the config
 	mkdir -p "$mnt"/etc/apk/keys/
