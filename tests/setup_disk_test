@@ -38,7 +38,8 @@ init_tests \
 	setup_disk_install_mounted_root_limine_efi_boot_efi \
 	setup_disk_install_mounted_root_syslinux \
 	setup_disk_install_mounted_root_bootloader_none \
-	setup_disk_install_mounted_root_zfs
+	setup_disk_install_mounted_root_zfs \
+	setup_disk_install_mounted_root_crypt
 
 setup_disk_usage_body() {
 	test_usage setup-disk
@@ -868,4 +869,17 @@ setup_disk_install_mounted_root_zfs_body() {
 		-o match:'features=.*zfs' \
 		-o match:'features=.*keymap' \
 		cat target/etc/mkinitfs/mkinitfs.conf
+}
+
+setup_disk_install_mounted_root_crypt_body() {
+	init_env
+	mkdir -p target/boot sys/firmware/efi
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+	fake_mount "/dev/vda1 $PWD/target/boot vfat rw,relatime,fmask=0022 0 0"
+
+	USE_EFI=1 atf_check -s exit:0 \
+		-o match:"DEBUG: fake apk add --quiet sfdisk cryptsetup blkid" \
+		-o match:"Installing system on /dev/vda2" \
+		setup-disk -e target
 }
