@@ -40,6 +40,7 @@ init_tests \
 	setup_disk_install_mounted_root_bootloader_none \
 	setup_disk_install_mounted_root_zfs \
 	setup_disk_modloop_not_touched_when_disks \
+	setup_disk_modloop_erase_disks \
 	setup_disk_install_mounted_root_crypt
 
 setup_disk_usage_body() {
@@ -878,12 +879,57 @@ setup_disk_modloop_not_touched_when_disks_body() {
 	mkdir proc etc
 	touch proc/mounts etc/fstab
 
+	# no modloop media set up, so find_modloop_media returns empty
+	# and setup_modloop_media returns immediately
 	ERASE_DISKS=/dev/vda atf_check \
 		-o not-match:"modloop" \
 		-o match:"Installation is complete" \
 		setup-disk -m sys /dev/vda
 }
 
+
+setup_disk_modloop_erase_disks_body() {
+	atf_require_prog sfdisk
+	init_env
+	fake_disk vda
+	mkdir proc etc
+	touch proc/mounts etc/fstab
+
+	fake_bin mountpoint <<-'EOF'
+		#!/bin/sh
+		case "$*" in
+			"-d /.modloop")
+				echo "7:0"
+				exit 0
+				;;
+			"-d /media/usb")
+				echo "8:0"
+				exit 0
+				;;
+		esac
+		exit 1
+	EOF
+
+	fake_bin df <<-'EOF'
+		#!/bin/sh
+		echo "Filesystem     1K-blocks  Used Available Use% Mounted on"
+		echo "/dev/vda1        30428736 1234567  27654321   5% /media/usb"
+	EOF
+
+	fake_bin copy-modloop <<-'EOF'
+		#!/bin/sh
+		echo "COPY-MODLOOP CALLED"
+	EOF
+
+	mkdir -p sys/dev/block/7:0/loop sys/dev/block/8:0
+	echo "/media/usb/alpine/modloop-lts" > sys/dev/block/7:0/loop/backing_file
+	echo "DEVNAME=vda" > sys/dev/block/8:0/uevent
+
+	ERASE_DISKS=/dev/vda atf_check \
+		-o match:"COPY-MODLOOP CALLED" \
+		-o match:"Installation is complete" \
+		setup-disk -m sys /dev/vda
+}
 
 setup_disk_install_mounted_root_crypt_body() {
 	init_env

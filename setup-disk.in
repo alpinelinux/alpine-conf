@@ -1750,23 +1750,28 @@ check_dasd
 
 diskdevs=
 
+modloop_media=$(find_modloop_media) || true
+if [ -n "$modloop_media" ]; then
+	modloop_disk="/dev/$(cat "${ROOT}sys/dev/block/$(mountpoint -d "$modloop_media" | cut -d ':' -f 1):0/uevent" \
+		| grep "DEVNAME=" | cut -d '=' -f 2)"
+fi
+
+
 # no disks so lets exit quietly.
 while [ -z "$disks" ]; do
 	disks=$(find_disks)
-	[ -n "$disks" ] && break
+	if [ -n "$disks" ] || [ $# -gt 0 ]; then
+		break
+	fi
 
 	# ask to unmount the boot mmc for rpi and similar
-	modloop_media=$(find_modloop_media)
-	modloop_disk="/dev/$(cat "${ROOT}sys/dev/block/$(mountpoint -d "$modloop_media" | cut -d ':' -f 1):0/uevent" \
-		| grep "DEVNAME\=" | cut -d '=' -f 2)"
-
 	if [ -z "$modloop_media" ] || ! [ "$ERASE_DISKS" = "$modloop_disk" ] && \
 		! ask_yesno "No disks available. Try boot media $modloop_media? (y/n)" n; then
 			[ -z "$QUIET" ] && echo "No disks found." >&2
 			exit 0
 	fi
 
-	DO_UMOUNT=1 modloop_media=$modloop_media copy-modloop
+	DO_UMOUNT=1 modloop_media=$modloop_media copy-modloop && unset modloop_media
 done
 
 if [ $# -gt 0 ]; then
@@ -1775,6 +1780,9 @@ if [ $# -gt 0 ]; then
 		j=$(readlink -f "$i" | sed 's:^/dev/::; s:/:!:g')
 		if ! [ -e "${ROOT}sys/block/$j/device" ]; then
 			die "$i is not a block device suitable for partitioning"
+		fi
+		if isin "$modloop_disk" $ERASE_DISKS && [ "$i" = "$modloop_disk" ] && [ -n "$modloop_media" ]; then
+			DO_UMOUNT=1 modloop_media="$modloop_media" copy-modloop
 		fi
 		diskdevs="$diskdevs $i"
 	done
