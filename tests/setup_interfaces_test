@@ -20,6 +20,8 @@ init_tests \
 	setup_interfaces_auto_up \
 	setup_interfaces_auto_none \
 	setup_interfaces_auto_restart \
+	setup_interfaces_import_wifi_config \
+	setup_interfaces_import_wifi_config_missing \
 
 
 setup_interfaces_usage_body() {
@@ -378,3 +380,46 @@ setup_interfaces_auto_restart_body() {
 	atf_check -o match:"status: started" rc-service networking status
 }
 
+setup_interfaces_import_wifi_config_body() {
+	init_env
+	cat > interfaces <<-EOF
+		auto lo
+		iface lo inet loopback
+
+		auto wlan0
+		iface wlan0 inet dhcp
+	EOF
+	cat > wpa_supplicant.conf <<-EOF
+		ctrl_interface=/run/wpa_supplicant
+		network={
+			ssid="example"
+			psk="secret"
+		}
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"apk add.*wpa_supplicant" \
+		setup-interfaces -w wpa_supplicant.conf -i < interfaces
+
+	atf_check -o match:"auto wlan0" cat etc/network/interfaces
+	atf_check -o match:'ssid="example"' \
+		cat etc/wpa_supplicant/wpa_supplicant.conf
+	if ! [ -L etc/runlevels/boot/wpa_supplicant ]; then
+		atf_fail "wpa_supplicant should be enabled at boot"
+	fi
+	if [ -e run/started/wpa_supplicant ]; then
+		atf_fail "wpa_supplicant should not be started"
+	fi
+}
+
+setup_interfaces_import_wifi_config_missing_body() {
+	init_env
+	cat > interfaces <<-EOF
+		auto lo
+		iface lo inet loopback
+	EOF
+
+	atf_check -s not-exit:0 \
+		-e match:"missing.conf: wpa_supplicant config not found" \
+		setup-interfaces -w missing.conf -i < interfaces
+}

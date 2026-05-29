@@ -9,7 +9,8 @@ init_tests \
 	setup_alpine_restart_network \
 	setup_alpine_answerfile_none \
 	setup_alpine_answerfile_apkcache \
-	setup_alpine_answerfile_network
+	setup_alpine_answerfile_network \
+	setup_alpine_answerfile_wifi
 
 export WGETCONTENT="https://mirror.example.com"
 setup_alpine_usage_body() {
@@ -196,3 +197,49 @@ setup_alpine_answerfile_network_body() {
 	atf_check -o match:"myname" cat etc/hostname
 }
 
+setup_alpine_answerfile_wifi_body() {
+	init_env
+	fake_mount "tmpfs / tmpfs rw,relatime,mode=755,inode64 0 0"
+	cat >wpa_supplicant.conf<<-EOF
+		ctrl_interface=/run/wpa_supplicant
+		network={
+			ssid="example"
+			psk="secret"
+		}
+	EOF
+	cat >opts<<-EOF
+		KEYMAPOPTS=none
+		HOSTNAMEOPTS=alpine
+		INTERFACESOPTS="auto lo
+		iface lo inet loopback
+
+		auto wlan0
+		iface wlan0 inet dhcp
+		"
+		WIFIOPTS="$PWD/wpa_supplicant.conf"
+		DNSOPTS=none
+		TIMEZONEOPTS=none
+		PROXYOPTS=none
+		NTPOPTS=none
+		APKREPOSOPTS=none
+		USEROPTS=none
+		SSHDOPTS=none
+		DISKOPTS=none
+		LBUOPTS=none
+		APKCACHEOPTS=none
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"apk add.*wpa_supplicant" \
+		setup-alpine -e -f opts
+
+	atf_check -o match:"auto wlan0" cat etc/network/interfaces
+	atf_check -o match:'ssid="example"' \
+		cat etc/wpa_supplicant/wpa_supplicant.conf
+	if ! [ -L etc/runlevels/boot/wpa_supplicant ]; then
+		atf_fail "wpa_supplicant should be enabled at boot"
+	fi
+	if [ -e run/started/wpa_supplicant ]; then
+		atf_fail "wpa_supplicant should not be started"
+	fi
+}

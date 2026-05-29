@@ -25,6 +25,17 @@ print_heading2() {
 	printf "${COLWHITE}%s${COLRESET}\n" "$1"
 }
 
+run_setup_interfaces() {
+	local restart=
+	[ -n "$rst_if" ] && restart="-r"
+
+	if [ -n "$WIFIOPTS" ]; then
+		setup-interfaces -w "$WIFIOPTS" $restart "$@"
+	else
+		setup-interfaces $restart "$@"
+	fi
+}
+
 is_kvm_clock() {
 	grep -q "kvm-clock"  "$ROOT"sys/devices/system/clocksource/clocksource0/current_clocksource 2>/dev/null
 }
@@ -118,6 +129,9 @@ if [ -n "$CREATEANSWERFILE" ]; then
 		hostname alpine-test
 		"
 
+		# Import a wpa_supplicant config for wifi after interface setup
+		# WIFIOPTS="/path/to/wpa_supplicant.conf"
+
 		# Search domain of example.com, Google public nameserver
 		# DNSOPTS="-d example.com 8.8.8.8"
 
@@ -205,10 +219,10 @@ print_heading2 " Interface"
 print_heading2 "-----------"
 if [ -n "$INTERFACESOPTS" ]; then
 	if [ "$INTERFACESOPTS" != none ]; then
-		printf "$INTERFACESOPTS" | setup-interfaces -i ${rst_if:+-r}
+		printf "%s" "$INTERFACESOPTS" | run_setup_interfaces -i
 	fi
 else
-	setup-interfaces ${quick:+-a} ${rst_if:+-r}
+	run_setup_interfaces ${quick:+-a}
 fi
 
 # setup up dns if no dhcp was configured
@@ -345,4 +359,3 @@ if [ "$diskmode" != "sys" ]; then
 		apk cache sync
 	fi
 fi
-
