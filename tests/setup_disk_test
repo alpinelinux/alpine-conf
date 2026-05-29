@@ -37,6 +37,8 @@ init_tests \
 	setup_disk_install_mounted_root_limine_efi_boot_loongarch64 \
 	setup_disk_install_mounted_root_limine_efi_boot_efi \
 	setup_disk_install_mounted_root_grub_bootloader_disk \
+	setup_disk_install_mounted_root_grub_requires_bootloader_disk \
+	setup_disk_install_mounted_root_limine_requires_bootloader_disk \
 	setup_disk_install_mounted_root_syslinux \
 	setup_disk_install_mounted_root_bootloader_none \
 	setup_disk_bootloader_disk_requires_mountpoint \
@@ -838,6 +840,30 @@ setup_disk_install_mounted_root_grub_bootloader_disk_body() {
 		-o match:"grub-install --boot-directory=$PWD/target/boot --target=i386-pc /dev/vdb" \
 		-e match:"You might need fix the MBR to be able to boot" \
 		setup-disk -b /dev/vda -b /dev/vdb target
+}
+
+setup_disk_install_mounted_root_grub_requires_bootloader_disk_body() {
+	init_env
+	mkdir -p target/boot
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+
+	APK_ARCH=x86_64 BOOTLOADER=grub atf_check -s not-exit:0 \
+		-e match:"Bootloader target disk is required" \
+		-e match:"setup-disk -m sys -b /dev/sda target" \
+		setup-disk target
+}
+
+setup_disk_install_mounted_root_limine_requires_bootloader_disk_body() {
+	init_env
+	mkdir -p target/boot
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+
+	APK_ARCH=x86_64 BOOTLOADER=limine atf_check -s not-exit:0 \
+		-e match:"Bootloader target disk is required" \
+		-e match:"setup-disk -m sys -b /dev/sda target" \
+		setup-disk target
 }
 
 setup_disk_install_mounted_root_syslinux_body() {

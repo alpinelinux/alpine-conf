@@ -964,6 +964,15 @@ select_default_bootloader() {
 	esac
 }
 
+bootloader_needs_disk() {
+	case "$BOOTLOADER:$USE_EFI:$ARCH" in
+		grub::x86|grub::x86_64|grub::ppc64le|limine::x86_64)
+			return 0
+			;;
+	esac
+	return 1
+}
+
 # install needed programs
 init_progs() {
 	local raidpkg= lvmpkg= cryptpkg= fs= fstools= grub=
@@ -1731,6 +1740,9 @@ fi
 
 if [ -d "$1" ]; then
 	# install to given mounted root
+	if [ -z "$BOOTLOADER_DISKS" ] && bootloader_needs_disk; then
+		die "Bootloader target disk is required. Use -b DISKDEV, for example: setup-disk -m sys -b /dev/sda ${1%/}"
+	fi
 	apk add --quiet $(select_bootloader_pkg)
 	init_progs || return 1
 	install_mounted_root "${1%/}" $BOOTLOADER_DISKS || exit
