@@ -266,7 +266,7 @@ ask_which() {
 }
 
 find_modloop_media() {
-	devnum=$(mountpoint -d /.modloop) || return
+	devnum=$(mountpoint -d /.modloop 2>/dev/null) || return
 	test -n "$devnum" || return
 	modloop_file=$(cat "${ROOT}sys/dev/block/$devnum/loop/backing_file") || return
 	test -n "$modloop_file" || return
