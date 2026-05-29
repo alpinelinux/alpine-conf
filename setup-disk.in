@@ -1765,7 +1765,7 @@ while [ -z "$disks" ]; do
 	fi
 
 	# ask to unmount the boot mmc for rpi and similar
-	if [ -z "$modloop_media" ] || ! [ "$ERASE_DISKS" = "$modloop_disk" ] && \
+	if [ -z "$modloop_media" ] || ! isin "$modloop_disk" $ERASE_DISKS && \
 		! ask_yesno "No disks available. Try boot media $modloop_media? (y/n)" n; then
 			[ -z "$QUIET" ] && echo "No disks found." >&2
 			exit 0
