@@ -6,7 +6,9 @@ init_tests \
 	libalpine_available_ifaces \
 	libalpine_available_ifaces_bond \
 	libalpine_available_ifaces_bridge \
-	libalpine_askpass
+	libalpine_askpass \
+	libalpine_find_modloop_media \
+	libalpine_find_modloop_media_not_mounted
 
 libalpine=$(atf_get_srcdir)/../libalpine.sh
 
@@ -64,4 +66,36 @@ libalpine_askpass_body() {
 		-o match:"stty echo" \
 		-o match:"resp=foo" \
 		sh -c ". $libalpine; askpass 'enter password'<answer; echo resp=\$resp"
+}
+
+libalpine_find_modloop_media_body() {
+	init_env
+	fake_bin mountpoint <<-'EOF'
+		#!/bin/sh
+		[ "$1" = "-d" ] && [ "$2" = "/.modloop" ] && echo "7:0" && exit 0
+		exit 1
+	EOF
+	fake_bin df <<-'EOF'
+		#!/bin/sh
+		echo "Filesystem     1K-blocks  Used Available Use% Mounted on"
+		echo "/dev/sda1        30428736 1234567  27654321   5% /media/usb"
+	EOF
+	mkdir -p sys/dev/block/7:0/loop
+	echo "/media/usb/alpine/modloop-lts" > sys/dev/block/7:0/loop/backing_file
+
+	atf_check \
+		-o match:"/media/usb" \
+		sh -c ". $libalpine; find_modloop_media"
+}
+
+libalpine_find_modloop_media_not_mounted_body() {
+	init_env
+	fake_bin mountpoint <<-'EOF'
+		#!/bin/sh
+		exit 1
+	EOF
+
+	atf_check -s exit:1 \
+		-o empty \
+		sh -c ". $libalpine; find_modloop_media"
 }
