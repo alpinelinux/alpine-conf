@@ -1757,7 +1757,7 @@ while [ -z "$disks" ]; do
 
 	# ask to unmount the boot mmc for rpi and similar
 	modloop_media=$(find_modloop_media)
-	modloop_disk="/dev/$(cat /sys/dev/block/"$(mountpoint -d "$modloop_media" | cut -d ':' -f 1):0/uevent" \
+	modloop_disk="/dev/$(cat "${ROOT}sys/dev/block/$(mountpoint -d "$modloop_media" | cut -d ':' -f 1):0/uevent" \
 		| grep "DEVNAME\=" | cut -d '=' -f 2)"
 
 	if [ -z "$modloop_media" ] || ! [ "$ERASE_DISKS" = "$modloop_disk" ] && \

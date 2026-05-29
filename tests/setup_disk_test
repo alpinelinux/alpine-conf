@@ -39,6 +39,7 @@ init_tests \
 	setup_disk_install_mounted_root_syslinux \
 	setup_disk_install_mounted_root_bootloader_none \
 	setup_disk_install_mounted_root_zfs \
+	setup_disk_modloop_not_touched_when_disks \
 	setup_disk_install_mounted_root_crypt
 
 setup_disk_usage_body() {
@@ -870,6 +871,19 @@ setup_disk_install_mounted_root_zfs_body() {
 		-o match:'features=.*keymap' \
 		cat target/etc/mkinitfs/mkinitfs.conf
 }
+
+setup_disk_modloop_not_touched_when_disks_body() {
+	init_env
+	fake_disk vda
+	mkdir proc etc
+	touch proc/mounts etc/fstab
+
+	ERASE_DISKS=/dev/vda atf_check \
+		-o not-match:"modloop" \
+		-o match:"Installation is complete" \
+		setup-disk -m sys /dev/vda
+}
+
 
 setup_disk_install_mounted_root_crypt_body() {
 	init_env
