@@ -15,6 +15,7 @@ init_tests \
 	setup_disk_func_select_bootloader_pkg \
 	setup_disk_func_select_default_bootloader \
 	setup_disk_func_setup_limine_serial \
+	setup_disk_func_setup_grub_serial \
 	setup_disk_func_setup_bootloader_unsupported \
 	setup_disk_non_existing_block_dev \
 	setup_disk_sys \
@@ -421,6 +422,45 @@ setup_disk_func_setup_limine_serial_body() {
 		-o not-match:"serial:" \
 		-o not-match:"serial_baudrate:" \
 		cat target/boot/limine/limine.conf
+}
+
+setup_disk_func_setup_grub_serial_body() {
+	init_env
+
+	mkdir -p target
+	ARCH=x86_64 SETUP_DISK_TESTFUNC=setup_grub \
+		atf_check -s exit:0 \
+		-o ignore \
+		setup-disk target /dev/vda2 sd-mod,usb-storage,ext4 "quiet console=ttyS0,9600" /dev/vda
+	atf_check \
+		-o match:'GRUB_SERIAL_COMMAND="serial --speed=9600 --unit=0' \
+		-o match:'GRUB_TERMINAL_INPUT="console serial"' \
+		-o match:'GRUB_TERMINAL_OUTPUT="console serial"' \
+		cat target/etc/default/grub
+
+	rm -rf target
+	mkdir -p target
+	ARCH=x86_64 SETUP_DISK_TESTFUNC=setup_grub \
+		atf_check -s exit:0 \
+		-o ignore \
+		setup-disk target /dev/vda2 sd-mod,usb-storage,ext4 "quiet console=ttyS0" /dev/vda
+	atf_check \
+		-o match:'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0' \
+		-o match:'GRUB_TERMINAL_INPUT="console serial"' \
+		-o match:'GRUB_TERMINAL_OUTPUT="console serial"' \
+		cat target/etc/default/grub
+
+	rm -rf target
+	mkdir -p target
+	ARCH=x86_64 SETUP_DISK_TESTFUNC=setup_grub \
+		atf_check -s exit:0 \
+		-o ignore \
+		setup-disk target /dev/vda2 sd-mod,usb-storage,ext4 quiet /dev/vda
+	atf_check \
+		-o not-match:'GRUB_SERIAL_COMMAND' \
+		-o not-match:'GRUB_TERMINAL_INPUT' \
+		-o not-match:'GRUB_TERMINAL_OUTPUT' \
+		cat target/etc/default/grub
 }
 
 setup_disk_func_setup_bootloader_unsupported_body() {

@@ -373,6 +373,7 @@ setup_grub() {
 	case "$initfs_features" in
 		*zfs*) echo "GRUB_FS=zfs" >> "$mnt"/etc/default/grub;;
 	esac
+	grub_serial_config "$kernel_opts" >> "$mnt"/etc/default/grub
 }
 
 # setup syslinux bootloader
@@ -426,23 +427,44 @@ setup_raspberrypi_bootloader() {
 	echo "root=$root modules=$modules $kernel_opts" > "$mnt"/boot/cmdline.txt
 }
 
-limine_serial_config() {
-	local kernel_opts="$1" opt= console= baudrate=
+# parse kernel_opts for serial console, sets globals:
+#   serial_console  (e.g. "ttyS0,115200")
+#   serial_baudrate (e.g. "115200")
+# returns 1 if no serial console found
+parse_serial_console() {
+	local kernel_opts="$1" opt=
+	serial_console=
+	serial_baudrate=
 	for opt in $kernel_opts; do
 		case "$opt" in
 			console=ttyS*)
-				console="${opt#console=}"
+				serial_console="${opt#console=}"
 				break
 				;;
 		esac
 	done
-	[ -z "$console" ] && return 0
-	baudrate="${console#*,}"
-	case "$baudrate" in
-		"$console"|*[!0-9]*|"") baudrate=115200;;
+	[ -z "$serial_console" ] && return 1
+	serial_baudrate="${serial_console#*,}"
+	case "$serial_baudrate" in
+		"$serial_console"|*[!0-9]*|"") serial_baudrate=115200;;
 	esac
+}
+
+limine_serial_config() {
+	parse_serial_console "$1" || return 0
 	echo "serial: yes"
-	echo "serial_baudrate: $baudrate"
+	echo "serial_baudrate: $serial_baudrate"
+}
+
+grub_serial_config() {
+	parse_serial_console "$1" || return 0
+	local unit="${serial_console%,*}"
+	unit="${unit#ttyS}"
+	cat <<-EOF
+	GRUB_SERIAL_COMMAND="serial --speed=${serial_baudrate} --unit=${unit} --word=8 --parity=no --stop=1"
+	GRUB_TERMINAL_INPUT="console serial"
+	GRUB_TERMINAL_OUTPUT="console serial"
+	EOF
 }
 
 limine_efi_binary() {
