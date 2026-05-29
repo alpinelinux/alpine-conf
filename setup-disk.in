@@ -1595,8 +1595,9 @@ ask_disk() {
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-disk [-hLqrve] [-k kernelflavor] [-m MODE] [-o apkovl] [-R ROOT_SIZE]
-		                  [-s SWAP_SIZE] [-w FILE] [MOUNTPOINT | DISKDEV...]
+		usage: setup-disk [-hLqrve] [-b DISKDEV] [-k kernelflavor] [-m MODE]
+		                  [-o apkovl] [-R ROOT_SIZE] [-s SWAP_SIZE] [-w FILE]
+		                  [MOUNTPOINT | DISKDEV...]
 
 		Install alpine on harddisk.
 
@@ -1609,6 +1610,8 @@ usage() {
 
 		options:
 		 -h  Show this help
+		 -b  Install bootloader to DISKDEV when installing to a mounted root
+		     May be specified multiple times
 		 -e  Encrypt disk
 		 -m  Use disk for MODE without asking, where MODE is either 'data' or 'sys'
 		 -o  Restore system from given apkovl file
@@ -1670,11 +1673,13 @@ if [ -n "$SETUP_DISK_TESTFUNC" ]; then
 fi
 
 USE_CRYPT=
+BOOTLOADER_DISKS=
 DISK_MODE=
 USE_LVM=
 # Parse args
-while getopts "hek:Lm:o:qrR:s:vw:" opt; do
+while getopts "b:hek:Lm:o:qrR:s:vw:" opt; do
 	case $opt in
+		b) BOOTLOADER_DISKS="$BOOTLOADER_DISKS $OPTARG";;
 		e) USE_CRYPT="_crypt";;
 		h) usage 0;;
 		m) DISK_MODE="$OPTARG";;
@@ -1728,12 +1733,16 @@ if [ -d "$1" ]; then
 	# install to given mounted root
 	apk add --quiet $(select_bootloader_pkg)
 	init_progs || return 1
-	install_mounted_root "${1%/}" || exit
+	install_mounted_root "${1%/}" $BOOTLOADER_DISKS || exit
 	if [ -z "$USE_EFI" ] && [ "$ARCH" = "x86_64" -o "$ARCH" = x86 ]; then
 		echo "You might need fix the MBR to be able to boot" >&2
 	fi
 	write_disk_mode
 	exit 0
+fi
+
+if [ -n "$BOOTLOADER_DISKS" ]; then
+	die "-b can only be used when installing to a mounted root"
 fi
 
 reset_var

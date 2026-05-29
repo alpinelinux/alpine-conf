@@ -36,8 +36,10 @@ init_tests \
 	setup_disk_install_mounted_root_limine_efi_boot_riscv64 \
 	setup_disk_install_mounted_root_limine_efi_boot_loongarch64 \
 	setup_disk_install_mounted_root_limine_efi_boot_efi \
+	setup_disk_install_mounted_root_grub_bootloader_disk \
 	setup_disk_install_mounted_root_syslinux \
 	setup_disk_install_mounted_root_bootloader_none \
+	setup_disk_bootloader_disk_requires_mountpoint \
 	setup_disk_install_mounted_root_zfs \
 	setup_disk_modloop_not_touched_when_disks \
 	setup_disk_modloop_erase_disks \
@@ -818,6 +820,26 @@ setup_disk_install_mounted_root_limine_efi_boot_efi_body() {
 		setup-disk target
 }
 
+setup_disk_install_mounted_root_grub_bootloader_disk_body() {
+	init_env
+	fake_bin grub-install <<-EOF
+		#!/bin/sh
+		echo "grub-install \$@"
+	EOF
+	mkdir -p target/boot
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+
+	APK_ARCH=x86_64 BOOTLOADER=grub atf_check -s exit:0 \
+		-o match:"Installing system on /dev/vda2" \
+		-o match:"Installing grub on /dev/vda" \
+		-o match:"Installing grub on /dev/vdb" \
+		-o match:"grub-install --boot-directory=$PWD/target/boot --target=i386-pc /dev/vda" \
+		-o match:"grub-install --boot-directory=$PWD/target/boot --target=i386-pc /dev/vdb" \
+		-e match:"You might need fix the MBR to be able to boot" \
+		setup-disk -b /dev/vda -b /dev/vdb target
+}
+
 setup_disk_install_mounted_root_syslinux_body() {
 	init_env
 	fake_bin extlinux <<-EOF
@@ -849,6 +871,14 @@ setup_disk_install_mounted_root_bootloader_none_body() {
 	if [ -f target/etc/default/grub ]; then
 		atf_fail "etc/default/grub should not exist"
 	fi
+}
+
+setup_disk_bootloader_disk_requires_mountpoint_body() {
+	init_env
+
+	atf_check -s not-exit:0 \
+		-e match:"-b can only be used when installing to a mounted root" \
+		setup-disk -b /dev/vda -m sys /dev/vda
 }
 
 setup_disk_install_mounted_root_zfs_body() {
