@@ -16,6 +16,7 @@ init_tests \
 	setup_disk_func_select_default_bootloader \
 	setup_disk_func_setup_limine_serial \
 	setup_disk_func_setup_grub_serial \
+	setup_disk_func_setup_syslinux_serial \
 	setup_disk_func_setup_bootloader_unsupported \
 	setup_disk_non_existing_block_dev \
 	setup_disk_sys \
@@ -461,6 +462,50 @@ setup_disk_func_setup_grub_serial_body() {
 		-o not-match:'GRUB_TERMINAL_INPUT' \
 		-o not-match:'GRUB_TERMINAL_OUTPUT' \
 		cat target/etc/default/grub
+}
+
+setup_disk_func_setup_syslinux_serial_body() {
+	init_env
+	fake_bin extlinux <<-EOF
+		#!/bin/sh
+		echo "extlinux \$@"
+	EOF
+
+	# create a minimal update-extlinux.conf as source (read from ${ROOT}etc/)
+	mkdir -p etc
+	cat > etc/update-extlinux.conf <<-EOF
+	serial_port=
+	serial_baud=115200
+	default_kernel_opts=quiet
+	modules=sd-mod,usb-storage,ext4
+	root=
+	timeout=1
+	EOF
+
+	# test: console=ttyS0,9600 with syslinux
+	mkdir -p target/etc
+	BOOTLOADER=syslinux SETUP_DISK_TESTFUNC=setup_syslinux \
+		atf_check -s exit:0 \
+		-o ignore \
+		setup-disk target /dev/vda2 sd-mod,usb-storage,ext4 "quiet console=ttyS0,9600" /dev/vda
+	atf_check \
+		-o match:"^serial_port=0$" \
+		-o match:"^serial_baud=9600$" \
+		cat target/etc/update-extlinux.conf
+
+	# test: no serial console
+	rm -rf target
+	mkdir -p target/etc
+	BOOTLOADER=syslinux SETUP_DISK_TESTFUNC=setup_syslinux \
+		atf_check -s exit:0 \
+		-o ignore \
+		setup-disk target /dev/vda2 sd-mod,usb-storage,ext4 quiet /dev/vda
+	atf_check \
+		-o match:"^serial_port=$" \
+		-o match:"^serial_baud=115200$" \
+		cat target/etc/update-extlinux.conf
+
+	rm -rf target
 }
 
 setup_disk_func_setup_bootloader_unsupported_body() {

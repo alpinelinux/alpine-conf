@@ -379,12 +379,18 @@ setup_grub() {
 # setup syslinux bootloader
 setup_syslinux() {
 	local mnt="$1" root="$2" modules="$3" kernel_opts="$4" bootdev="$5"
-	local exlinux_raidopt=
+	local exlinux_raidopt= port=
+
+	find_serial_console "$kernel_opts"
+	port="${serial_console%,*}"
+	port="${port##*[!0-9]}"
 
 	sed -e "s:^root=.*:root=$root:" \
 		-e "s:^default_kernel_opts=.*:default_kernel_opts=\"$kernel_opts\":" \
 		-e "s:^modules=.*:modules=$modules:" \
 		-e "s:^timeout=.*:timeout=$BOOT_TIMEOUT:" \
+		-e "s:^serial_port=.*:serial_port=$port:" \
+		-e "s:^serial_baud=.*:serial_baud=${serial_baudrate:-115200}:" \
 		"${ROOT}etc/update-extlinux.conf" > "$mnt"/etc/update-extlinux.conf
 
 	# Check if we boot from raid so we can pass proper option to
