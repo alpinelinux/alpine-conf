@@ -1,6 +1,6 @@
 #!/usr/bin/env atf-sh
 
-. $(atf_get_srcdir)/test_env.sh
+. "$(atf_get_srcdir)/test_env.sh"
 init_tests \
 	setup_interfaces_usage \
 	setup_interfaces_none \
@@ -31,9 +31,9 @@ setup_interfaces_usage_body() {
 create_fake_ifaces() {
 	local n=1
 	for i; do
-		mkdir -p sys/class/net/$i
-		echo $n > sys/class/net/$i/ifindex
-		echo down >sys/class/net/$i/operstate
+		mkdir -p "sys/class/net/$i"
+		echo $n > "sys/class/net/$i/ifindex"
+		echo down > "sys/class/net/$i/operstate"
 		n=$((n+1))
 	done
 }
@@ -53,11 +53,11 @@ setup_interfaces_interactive_dhcp_body() {
 	create_fake_ifaces lo eth0 docker0
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo eth0
+		echo "eth0"
 		# Ip address for eth0? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0[^ ]" \
@@ -84,13 +84,13 @@ setup_interfaces_interactive_vlan_body() {
 	create_fake_ifaces lo eth0
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo eth0.5
+		echo "eth0.5"
 		# Ip address for eth0.5? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		echo "dhcp"
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo done
+		echo "done"
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"apk add.*vlan" \
@@ -106,13 +106,13 @@ setup_interfaces_interactive_vlan_ng_body() {
 
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo eth0.5
+		echo "eth0.5"
 		# Ip address for eth0.5? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		echo "dhcp"
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo done
+		echo "done"
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 	atf_check -s exit:0 \
 		-o not-match:"apk add.*vlan" \
@@ -128,15 +128,15 @@ setup_interfaces_interactive_vlan0_ng_body() {
 
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo vlan0
+		echo "vlan0"
 		# Which one do you want use for vlan0? (or 'done') [eth0]
-		echo eth0
+		echo "eth0"
 		# Ip address for vlan0? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		echo "dhcp"
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo done
+		echo "done"
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available raw devices are: eth0" \
@@ -153,15 +153,15 @@ setup_interfaces_interactive_br0_body() {
 
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo br0
+		echo "br0"
 		# Which port(s) do you want add to bridge br0? (or 'done') [eth0]
-		echo eth0
+		echo "eth0"
 		# Ip address for vlan0? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		echo "dhcp"
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo done
+		echo "done"
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available bridge ports are: eth0" \
@@ -178,13 +178,13 @@ setup_interfaces_interactive_bond0_body() {
 
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo bond0
+		echo "bond0"
 		# Which slave(s) do you want add to bond0? (or 'done') [eth0]
-		echo eth0
+		echo "eth0"
 		# Ip address for bond0? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0" \
@@ -199,15 +199,15 @@ setup_interfaces_interactive_wlan0_psk_body() {
 
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo wlan2
+		echo "wlan2"
 		# Type the wireless network name to connect to:
-		echo Telenor0366rar
+		echo "Telenor0366rar"
 		# Type the "Telenor0366rar" network Pre-Shared Key (will not echo):
-		echo 0123456789
+		echo "0123456789"
 		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0 wlan2" \
@@ -226,7 +226,7 @@ setup_interfaces_interactive_wlan0_psk_by_index_body() {
 
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo wlan3
+		echo "wlan3"
 		# 1) Get-B3ED64
 		# 2) Lynx2C0CEA
 		# 3) Lynx2C0CEA_5G
@@ -234,13 +234,13 @@ setup_interfaces_interactive_wlan0_psk_by_index_body() {
 		# 5) Telenor0366rar
 		# 6) kano1
 		# Type the wireless network name to connect to:
-		echo 5
+		echo "5"
 		# Type the "Telenor0366rar" network Pre-Shared Key (will not echo):
-		echo 0123456789
+		echo "0123456789"
 		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0 wlan3" \
@@ -259,13 +259,13 @@ setup_interfaces_interactive_wlan0_open_body() {
 
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo wlan0
+		echo "wlan0"
 		# Type the wireless network name to connect to:
-		echo Lynx2C0CEA_5G
+		echo "Lynx2C0CEA_5G"
 		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
 		echo dhcp
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 	atf_check -s exit:0 \
 		-o match:"Available interfaces are: eth0 wlan0" \
@@ -284,13 +284,13 @@ setup_interfaces_interactive_ssid_list_body() {
 
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
-		echo wlan0
+		echo "wlan0"
 		# Type the wireless network name to connect to:
-		echo kano1
+		echo "kano1"
 		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
 		echo dhcp
 		# Do you want to do any manual network configuration? (y/n) [n]
-		echo n
+		echo "n"
 	)>answers
 
 	atf_check -s exit:0 \
