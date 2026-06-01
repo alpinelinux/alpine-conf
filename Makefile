@@ -9,7 +9,8 @@ MAN8		:= \
 		doc/setup-alpine.8 \
 		doc/setup-apkrepos.8 \
 		doc/setup-disk.8 \
-		doc/setup-interfaces.8
+		doc/setup-interfaces.8 \
+		doc/setup-lbu.8
 
 LIB_FILES	:= libalpine.sh dasd-functions.sh
 SBIN_FILES	:= copy-modloop\
