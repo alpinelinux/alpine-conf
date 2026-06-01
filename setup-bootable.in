@@ -13,7 +13,17 @@ read_only_mounts=
 umounts=
 uninstalls=
 destdir=
-: "${BOOTLOADER:=syslinux}"
+
+arch=${APK_ARCH:-$(apk --print-arch 2>/dev/null || uname -m)}
+
+default_bootloader() {
+	case "$arch" in
+		x86|x86_64) echo syslinux;;
+		*) echo none;;
+	esac
+}
+
+: "${BOOTLOADER:=$(default_bootloader)}"
 
 cleanup_tmpdata() {
 	if [ -d "$destdir" ] && [ -d "$destdir/.new" ]; then
@@ -253,7 +263,7 @@ usage() {
 		 -c  Check syslinux.cfg in destination DIR. Use with -f to fix.
 
 		Environment:
-		 BOOTLOADER=syslinux|none
+		 BOOTLOADER=syslinux|none  Defaults to syslinux on x86, none elsewhere.
 
 	__EOF__
 	exit 1
@@ -363,13 +373,15 @@ else
 	version_check "$destdir/.new" "$destdir"
 fi
 
-# find where new syslinux.cfg is
-syslinux_cfg=$(find_syslinux_cfg "$destdir"/.new)
-[ -n "$syslinux_cfg" ] && vecho "Found $syslinux_cfg"
+if [ "$BOOTLOADER" = syslinux ]; then
+	# find where new syslinux.cfg is
+	syslinux_cfg=$(find_syslinux_cfg "$destdir"/.new)
+	[ -n "$syslinux_cfg" ] && vecho "Found $syslinux_cfg"
 
-# abort early in case unexpected trouble
-if [ -z "$syslinux_cfg" ]; then
-	die "Could not find any syslinux.cfg on new iso?"
+	# abort early in case unexpected trouble
+	if [ -z "$syslinux_cfg" ]; then
+		die "Could not find any syslinux.cfg on new iso?"
+	fi
 fi
 
 # make sure files are really there before we replace existing
@@ -387,14 +399,16 @@ for i in $files_to_move; do
 done
 
 # keep any existing syslinux.cfg
-if [ -e "$destdir"/.old/"$syslinux_cfg" ]; then
-	mv "$destdir"/.old/"$syslinux_cfg" "$destdir"/.new/"$syslinux_cfg"
-elif [ -e "$destdir"/.old/syslinux.cfg ] \
-		&& [ -e "$destdir"/.new/boot/syslinux/syslinux.cfg ]; then
-	echo "Warning: moving syslinux.cfg to boot/syslinux/syslinux.cfg" >&2
-	mv "$destdir"/.old/syslinux.cfg "$destdir"/.new/boot/syslinux
-	if [ -z "$force_bootloader" ]; then
-		echo "         You might need run: syslinux $dest" >&2
+if [ "$BOOTLOADER" = syslinux ]; then
+	if [ -e "$destdir"/.old/"$syslinux_cfg" ]; then
+		mv "$destdir"/.old/"$syslinux_cfg" "$destdir"/.new/"$syslinux_cfg"
+	elif [ -e "$destdir"/.old/syslinux.cfg ] \
+			&& [ -e "$destdir"/.new/boot/syslinux/syslinux.cfg ]; then
+		echo "Warning: moving syslinux.cfg to boot/syslinux/syslinux.cfg" >&2
+		mv "$destdir"/.old/syslinux.cfg "$destdir"/.new/boot/syslinux
+		if [ -z "$force_bootloader" ]; then
+			echo "         You might need run: syslinux $dest" >&2
+		fi
 	fi
 fi
 
@@ -406,13 +420,17 @@ for i in $files_to_move; do
 	fi
 done
 
-if { [ -n "$replace_alpine_dev" ] || [ -z "$upgrade" ]; } && [ -n "$UUID" ]; then
+if [ "$BOOTLOADER" = syslinux ] \
+		&& { [ -n "$replace_alpine_dev" ] || [ -z "$upgrade" ]; } \
+		&& [ -n "$UUID" ]; then
 	sed -E -i -e "s/alpine_dev=[^ \t:]+/alpine_dev=UUID=$UUID/" \
 		"$destdir"/"$syslinux_cfg"
 fi
 
 # verify syslinux.cfg
-check_syslinux
+if [ "$BOOTLOADER" = syslinux ]; then
+	check_syslinux
+fi
 
 # cleanup
 [ -z "$keep_old" ] && rm -rf "$destdir"/.old "$destdir"/.new

@@ -11,7 +11,9 @@ init_tests \
 	setup_bootable_check_fix_kernel \
 	setup_bootable_check_fix_initrd \
 	setup_bootable_upgrade_replace_alpine_dev \
-	setup_bootable_bootloader_none
+	setup_bootable_bootloader_none \
+	setup_bootable_default_bootloader_none_on_non_x86 \
+	setup_bootable_explicit_syslinux_requires_syslinux_cfg
 
 create_bootable_tree() {
 	mkdir -p "$1"/boot/syslinux
@@ -23,6 +25,12 @@ create_bootable_tree() {
 		INITRD /boot/initramfs-lts
 		APPEND alpine_dev=/dev/sda1 modules=loop,squashfs,sd-mod
 	EOF
+}
+
+create_bootable_tree_without_syslinux() {
+	mkdir -p "$1"/boot
+	echo "3.21.0" > "$1"/.alpine-release
+	touch "$1"/boot/vmlinuz-lts "$1"/boot/initramfs-lts
 }
 
 fake_mount_and_blkid() {
@@ -130,7 +138,7 @@ setup_bootable_upgrade_replace_alpine_dev_body() {
 	mkdir dest
 	fake_mount_and_blkid
 
-	atf_check -s exit:0 \
+	APK_ARCH=x86_64 atf_check -s exit:0 \
 		-o match:"Installing .* to 3.21.0" \
 		-e empty \
 		setup-bootable -u -U src dest
@@ -144,7 +152,7 @@ setup_bootable_upgrade_replace_alpine_dev_body() {
 
 setup_bootable_bootloader_none_body() {
 	init_env
-	create_bootable_tree src
+	create_bootable_tree_without_syslinux src
 	mkdir dest
 	fake_mount_and_blkid
 	fake_bin syslinux <<-EOF
@@ -160,4 +168,36 @@ setup_bootable_bootloader_none_body() {
 	atf_check -s exit:0 \
 		-o match:"3.21.0" \
 		cat dest/.alpine-release
+}
+
+setup_bootable_default_bootloader_none_on_non_x86_body() {
+	init_env
+	create_bootable_tree_without_syslinux src
+	mkdir dest
+	fake_mount_and_blkid
+	fake_bin syslinux <<-EOF
+		#!/bin/sh
+		exit 99
+	EOF
+
+	APK_ARCH=riscv64 atf_check -s exit:0 \
+		-o match:"Installing .* to 3.21.0" \
+		-o not-match:"Making .* bootable" \
+		-e empty \
+		setup-bootable -u -s src dest
+	atf_check -s exit:0 \
+		-o match:"3.21.0" \
+		cat dest/.alpine-release
+}
+
+setup_bootable_explicit_syslinux_requires_syslinux_cfg_body() {
+	init_env
+	create_bootable_tree_without_syslinux src
+	mkdir dest
+	fake_mount_and_blkid
+
+	BOOTLOADER=syslinux APK_ARCH=riscv64 atf_check -s exit:1 \
+		-o match:"Installing .* to 3.21.0" \
+		-e match:"Could not find any syslinux.cfg on new iso" \
+		setup-bootable -u src dest
 }
