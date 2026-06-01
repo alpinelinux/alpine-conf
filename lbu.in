@@ -277,7 +277,31 @@ usage_package() {
 }
 
 _gen_filelist() {
-	apk audit --root ${ROOT:-/} --backup --quiet --recursive --check-permissions
+	local line path rc tmpfile
+	tmpfile=$(mktemp /tmp/$PROGRAM-filelist-${$}-XXXXXXXXXX) || return 1
+	apk audit --root ${ROOT:-/} --backup --quiet --recursive --check-permissions \
+		> "$tmpfile" || {
+			rc=$?
+			rm -f "$tmpfile"
+			return $rc
+		}
+	if [ -f "$LBU_LIST" ]; then
+		while IFS= read -r line || [ -n "$line" ]; do
+			case "$line" in
+			+*)
+				line=${line#+}
+				path="$ROOT$line"
+				if [ -L "$path" ] || { [ ! -d "$path" ] && [ -e "$path" ]; }; then
+					echo "$line"
+				fi
+				;;
+			esac
+		done < "$LBU_LIST" >> "$tmpfile"
+	fi
+	awk '!seen[$0]++' "$tmpfile"
+	rc=$?
+	rm -f "$tmpfile"
+	return $rc
 }
 
 cmd_package() {

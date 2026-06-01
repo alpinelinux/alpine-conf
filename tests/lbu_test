@@ -46,6 +46,7 @@ init_tests \
 	lbu_exclude_list \
 	lbu_include_list \
 	lbu_list_basic \
+	lbu_root_files \
 	lbu_listbackup_basic \
 	lbu_listbackup_no_media
 
@@ -544,6 +545,36 @@ lbu_list_basic_body() {
 		-o match:"^etc/localtime" \
 		-e empty \
 		lbu list
+}
+
+lbu_root_files_body() {
+	init_env
+	touch foo.txt .gitignore
+	mkdir targetdir
+	ln -s targetdir linkdir
+
+	atf_check -s exit:0 \
+		-o ignore \
+		-e empty \
+		lbu add /foo.txt /.gitignore /linkdir
+
+	atf_check -s exit:0 \
+		-o match:"^foo.txt" \
+		-o match:"^\\.gitignore" \
+		-o match:"^linkdir" \
+		-e empty \
+		lbu list
+
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		lbu package
+
+	atf_check \
+		-o match:"foo.txt" \
+		-o match:"\\.gitignore" \
+		-o match:"linkdir" \
+		tar -ztf "$(hostname).apkovl.tar.gz"
 }
 
 lbu_listbackup_basic_body() {
