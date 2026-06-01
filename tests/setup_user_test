@@ -15,6 +15,7 @@ init_tests \
 	setup_user_groups_spaces \
 	setup_user_admin \
 	setup_user_keys_opt \
+	setup_user_sk_keys \
 	setup_user_unlock
 
 setup_user_usage_body() {
@@ -176,6 +177,25 @@ setup_user_keys_opt_body() {
 		stat -c "%a" home/testuser/.ssh
 	atf_check -o match:"^600$" \
 		stat -c "%a" home/testuser/.ssh/authorized_keys
+}
+
+setup_user_sk_keys_body() {
+	init_env
+	ed25519_key="sk-ssh-ed25519@openssh.com AAAAed25519 test@example"
+	ecdsa_key="sk-ecdsa-sha2-nistp256@openssh.com AAAAecdsa test@example"
+
+	atf_check -s exit:0 \
+		-o match:"adduser.* -D .*testuser" \
+		setup-user -k "$ed25519_key" testuser
+	grep -x "$ed25519_key" home/testuser/.ssh/authorized_keys \
+		|| atf_fail "ed25519-sk key not added"
+
+	rm -rf home
+	atf_check -s exit:0 \
+		-o match:"adduser.* -D .*testuser" \
+		setup-user -k "$ecdsa_key" testuser
+	grep -x "$ecdsa_key" home/testuser/.ssh/authorized_keys \
+		|| atf_fail "ecdsa-sk key not added"
 }
 
 setup_user_unlock_body() {
