@@ -1,7 +1,10 @@
 #!/bin/sh
+# shellcheck shell=sh
+# shellcheck disable=SC3043
 
 PREFIX=@PREFIX@
-: ${LIBDIR=$PREFIX/lib}
+: "${LIBDIR:=$PREFIX/lib}"
+# shellcheck source=/dev/null
 . "$LIBDIR/libalpine.sh"
 
 version=@VERSION@
@@ -12,7 +15,7 @@ uninstalls=
 destdir=
 
 cleanup_tmpdata() {
-	if [ -d "$destdir" -a -d "$destdir/.new" ]; then
+	if [ -d "$destdir" ] && [ -d "$destdir/.new" ]; then
 		rm -rf "$destdir"/.new
 	fi
 }
@@ -27,6 +30,7 @@ cleanup_mounts() {
 	done
 	read_only_mounts=""
 	if [ -n "$umounts" ]; then
+		# shellcheck disable=SC2086
 		umount $umounts
 		umounts=""
 	fi
@@ -57,14 +61,16 @@ find_dev() {
 # check if given device is on usb bus
 on_usb_bus() {
 	local dev="$1"
-	[ -e /sys/block/$dev ] || return 1
-	local sysdev="$(readlink -f /sys/block/$dev/device)"
+	local sysdev
+	[ -e /sys/block/"$dev" ] || return 1
+	sysdev="$(readlink -f /sys/block/"$dev"/device)"
 	test "${sysdev##*/usb[0-9]}" != "$sysdev"
 }
 
 # check if given dir is read-only
 is_read_only() {
-	local tmpfile="$(mktemp -p "$1" 2>/dev/null)"
+	local tmpfile
+	tmpfile="$(mktemp -p "$1" 2>/dev/null)"
 	[ -z "$tmpfile" ] && return 0
 	rm -f "$tmpfile"
 	return 1
@@ -72,13 +78,14 @@ is_read_only() {
 
 # find what disk this partition belongs to
 find_disk_dev() {
-	local i= sysfsname="${1#/dev/}"
-	sysfsname=${sysfsname//\/!}	# cciss/c0d0 -> cciss!c0d0
-	if [ -e /sys/block/$sysfsname ]; then
-		echo "/dev/${sysfsname//!/'/'}"
+	local i sysfsname
+	sysfsname="${1#/dev/}"
+	sysfsname=$(printf '%s\n' "$sysfsname" | sed 's:/:!:g')	# cciss/c0d0 -> cciss!c0d0
+	if [ -e /sys/block/"$sysfsname" ]; then
+		printf "/dev/%s\n" "$(printf '%s\n' "$sysfsname" | sed 's:!:/:g')"
 		return 0
 	fi
-	for i in /sys/block/*/$sysfsname; do
+	for i in /sys/block/*/"$sysfsname"; do
 		[ -e "$i" ] || continue
 		echo "$i" | cut -d/ -f4 | sed -e 's:!:/:g' -e 's:^:/dev/:'
 		return 0
@@ -119,7 +126,8 @@ check_syslinux() {
 	fi
 
 	# kernels
-	for i in $(awk 'tolower($1) == "kernel" {print $2}' "$destdir"/$syslinux_cfg); do
+	while IFS= read -r i; do
+		[ -n "$i" ] || continue
 		k="${destdir%/}/${i#/}"
 		f=${k##*/}
 
@@ -127,37 +135,42 @@ check_syslinux() {
 			continue
 		fi
 
-		if [ -e "${k%/*}"/vmlinuz-$f ] && [ -n "$fix_syslinux_cfg" ]; then
-			fix_syslinux_kernel "$i" "${i%/*}"/vmlinuz-$f
+		if [ -e "${k%/*}"/vmlinuz-"$f" ] && [ -n "$fix_syslinux_cfg" ]; then
+			fix_syslinux_kernel "$i" "${i%/*}"/vmlinuz-"$f"
 		elif ! [ -e "$k" ]; then
 			echo "Warning: $syslinux_cfg: kernel $k  was not found"
-			echo "         Run $0 -f -c "$destdir" to fix"
+			printf '         Run %s -f -c "%s" to fix\n' "$0" "$destdir"
 		fi
-	done
+	done <<-EOF
+	$(awk 'tolower($1) == "kernel" {print $2}' "$destdir"/"$syslinux_cfg")
+	EOF
 
 	#initramfs
 	initrds=$(awk 'tolower($1) == "initrd" {gsub(",", " "); for (i=2; i<=NF; i++) print $i}' \
-			"$destdir"/$syslinux_cfg)
-	for i in $(awk 'tolower($1) == "append" {print $0}' \
-			"$destdir"/$syslinux_cfg); do
-		case $i in
-			initrd=*) initrds=${i#initrd=};;
-		esac
-	done
+			"$destdir"/"$syslinux_cfg")
+	while IFS= read -r line; do
+		for i in $line; do
+			case $i in
+				initrd=*) initrds=${i#initrd=};;
+			esac
+		done
+	done <<-EOF
+	$(awk 'tolower($1) == "append" {print $0}' "$destdir"/"$syslinux_cfg")
+	EOF
 
 	for i in $initrds; do
-		if [ -e "$destdir"/$i ]; then
+		if [ -e "$destdir"/"$i" ]; then
 			continue
 		fi
 		fname=${i##*/}
 		flavor=${fname%.gz}
 
 		new=${i%/*}/initramfs-$flavor
-		if [ -e "$destdir"/$new ] && [ -n "$fix_syslinux_cfg" ]; then
+		if [ -e "$destdir"/"$new" ] && [ -n "$fix_syslinux_cfg" ]; then
 			fix_syslinux_initrd "$i" "$new"
 		else
 			echo "Warning: initrd $i was not found. System will likely not boot"
-			echo "         Run $0 -f -c "$destdir" to fix"
+			printf '         Run %s -f -c "%s" to fix\n' "$0" "$destdir"
 		fi
 	done
 }
@@ -165,9 +178,11 @@ check_syslinux() {
 version_check() {
 	local new_dir="$1" old_dir="$2"
 	# check if its same version
-	local to_version="$(cat "$new_dir"/.alpine-release)"
+	local to_version
+	to_version="$(cat "$new_dir"/.alpine-release)"
 	if [ -n "$upgrade" ] && [ -e "$old_dir"/.alpine-release ]; then
-		local from_version="$(cat "$old_dir"/.alpine-release)"
+		local from_version
+		from_version="$(cat "$old_dir"/.alpine-release)"
 		if [ -z "$force" ] && [ -n "$to_version" ] && [ "$from_version" = "$to_version" ]; then
 			die "Source and target seems to have same version ($from_version). Aborting."
 		fi
@@ -212,11 +227,13 @@ while getopts "c:fhkUusv" opt; do
 	U) replace_alpine_dev=1;;
 	u) upgrade=1;;
 	s) syslinux=1;;
-	v) verbose=1;;
+	v) VERBOSE=1; export VERBOSE;;
+	\?) usage;;
+	*) usage;;
 	esac
 done
 
-shift $(($OPTIND - 1))
+shift $((OPTIND - 1))
 
 src=${1}
 dest=${2:-/media/usb}
@@ -257,21 +274,21 @@ if is_read_only "$destdir"; then
 fi
 
 # fish out label, uuid and type
-eval $(blkid $dest | cut -d: -f2-)
+eval "$(blkid "$dest" | cut -d: -f2-)"
 
 vecho "Using $dest as target (mounted on $destdir)"
 
 # find parent device (i.e sda)
 dev="$dest"
 while [ -L "$dev" ]; do
-	dev=$(readlink -f $dev)
+	dev=$(readlink -f "$dev")
 done
-parent_dev=$(find_disk_dev $dev)
+parent_dev=$(find_disk_dev "$dev")
 
 # check if this files exist and not in upgrade mode
 if [ -z "$upgrade" ] && [ -z "$force" ]; then
 	for i in $files_to_move; do
-		[ -e "$destdir"/$i ] && die "$destdir/$i already exists. Use -u to upgrade."
+		[ -e "$destdir"/"$i" ] && die "$destdir/$i already exists. Use -u to upgrade."
 	done
 fi
 
@@ -281,12 +298,12 @@ mkdir -p "$destdir"/.new || die "Failed to create $destdir/.new"
 
 # copy data from source to .new
 if [ -f "$src"/.alpine-release ]; then
-	srcdir="$(echo $src | sed -r 's,/$,,')"
+	srcdir="${src%/}"
 	version_check "$srcdir" "$destdir"
 	for i in $files_to_move; do
-		if [ -e "$srcdir"/$i ]; then
+		if [ -e "$srcdir"/"$i" ]; then
 			vecho "Copying $srcdir/$i to $destdir/.new/"
-			cp -dR "$srcdir"/$i "$destdir"/.new/
+			cp -dR "$srcdir"/"$i" "$destdir"/.new/
 		fi
 	done
 else
@@ -322,14 +339,14 @@ mkdir -p "$destdir"/.old || die "Failed to create $destdir/.old"
 
 # move current files to .old
 for i in $files_to_move; do
-	if [ -e "$destdir"/$i ]; then
-		mv "$destdir"/$i "$destdir"/.old/ || die "Failed to move $destdir/$i to $destdir/.old/"
+	if [ -e "$destdir"/"$i" ]; then
+		mv "$destdir"/"$i" "$destdir"/.old/ || die "Failed to move $destdir/$i to $destdir/.old/"
 	fi
 done
 
 # keep any existing syslinux.cfg
-if [ -e "$destdir"/.old/$syslinux_cfg ]; then
-	mv "$destdir"/.old/$syslinux_cfg "$destdir"/.new/$syslinux_cfg
+if [ -e "$destdir"/.old/"$syslinux_cfg" ]; then
+	mv "$destdir"/.old/"$syslinux_cfg" "$destdir"/.new/"$syslinux_cfg"
 elif [ -e "$destdir"/.old/syslinux.cfg ] \
 		&& [ -e "$destdir"/.new/boot/syslinux/syslinux.cfg ]; then
 	echo "Warning: moving syslinux.cfg to boot/syslinux/syslinux.cfg" >&2
@@ -341,15 +358,15 @@ fi
 
 # move .new to current
 for i in $files_to_move; do
-	if [ -e "$destdir"/.new/$i ]; then
-		mv "$destdir"/.new/$i "$destdir"/ \
+	if [ -e "$destdir"/.new/"$i" ]; then
+		mv "$destdir"/.new/"$i" "$destdir"/ \
 			|| die "Failed to move $destdir/.new/ to $destdir"
 	fi
 done
 
-if [ -n "$replace_alpine_dev" -o -z "$upgrade" ] && [ -n "$UUID" ]; then
+if { [ -n "$replace_alpine_dev" ] || [ -z "$upgrade" ]; } && [ -n "$UUID" ]; then
 	sed -E -i -e "s/alpine_dev=[^ \t:]+/alpine_dev=UUID=$UUID/" \
-		"$destdir"/$syslinux_cfg
+		"$destdir"/"$syslinux_cfg"
 fi
 
 # verify syslinux.cfg
@@ -379,11 +396,11 @@ fi
 
 # we need to unmount the device before we can run syslinux
 cleanup_mounts
-fsync $dest
-syslinux $dest
+fsync "$dest"
+syslinux "$dest"
 
-if [ -b $parent_dev ]; then
-	dd if=/usr/share/syslinux/mbr.bin of=$parent_dev status=none
+if [ -b "$parent_dev" ]; then
+	dd if=/usr/share/syslinux/mbr.bin of="$parent_dev" status=none
 else
 	echo "Warning: Could not find the parent device for $dest"
 fi
