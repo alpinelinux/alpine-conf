@@ -1,6 +1,6 @@
 #!/usr/bin/env atf-sh
 
-. $(atf_get_srcdir)/test_env.sh
+. "$(atf_get_srcdir)/test_env.sh"
 init_tests \
 	setup_keymap_usage \
 	setup_keymap_none \

@@ -1,12 +1,14 @@
 #!/bin/sh
 
 PREFIX=@PREFIX@
-: ${LIBDIR=$PREFIX/lib}
+: "${LIBDIR:=$PREFIX/lib}"
+# shellcheck disable=SC1091
 . "$LIBDIR/libalpine.sh"
 
 MAPDIR="$ROOT/usr/share/bkeymaps"
 
 if [ -f "$ROOT/etc/conf.d/loadkmap" ]; then
+	# shellcheck source=/dev/null
 	. "$ROOT/etc/conf.d/loadkmap"
 	variant=$(basename "$KEYMAP")
 	variant="${variant%%.*}"
@@ -23,7 +25,7 @@ usage() {
 
 		Sets keymap to LAYOUT (and VARIANT) or prompt if unspecified.
 	__EOF__
-	exit $1
+	exit "$1"
 }
 
 
@@ -46,12 +48,15 @@ show_variants() {
 }
 
 print_column() {
+	# shellcheck disable=SC3043
+	local terminal_width max_word_length number_of_columns words i word
+
 	if [ -z "$1" ]; then
 		echo "Error: No data to display." >&2
 		return 1
 	fi
 
-	local terminal_width=$(stty size 2>/dev/null | cut -d' ' -f2)
+	terminal_width=$(stty size 2>/dev/null | cut -d' ' -f2)
 	if [ -z "$terminal_width" ] || [ "$terminal_width" -eq 0 ]; then
 		terminal_width=80
 	fi
@@ -63,7 +68,7 @@ print_column() {
 		number_of_columns=1
 	fi
 
-	words=$(echo $1)
+	words=$1
 	i=0
 	for word in $words; do
 		printf "%-${max_word_length}s " "$word"
@@ -77,6 +82,16 @@ print_column() {
 	fi
 }
 
+find_variant() {
+	# shellcheck disable=SC3043
+	local variant="$1"
+
+	for file in "$MAPDIR/$layout/$variant.bmap"*; do
+		[ -f "$file" ] && return 0
+	done
+	return 1
+}
+
 select_layout() {
 	while true; do
 		if [ -z "$layout" ] || ! [ -d "$MAPDIR/$layout" ]; then
@@ -84,11 +99,13 @@ select_layout() {
 		fi
 		show_layouts
 		echo ""
+		resp=
 		ask "Select keyboard layout:" "$layout"
 		echo ""
 		if [ "$resp" = "abort" ] || [ "$resp" = "none" ] ; then
 			goodbye 0
 		fi
+		# shellcheck disable=SC2086
 		set -- $resp
 		layout="$1"
 		variant="$2"
@@ -99,8 +116,11 @@ select_layout() {
 }
 
 setup_mapfile() {
-	local name="$(basename "$1")"
-	local conf="$ROOT/etc/conf.d/loadkmap"
+	# shellcheck disable=SC3043
+	local name conf
+
+	name=$(basename "$1")
+	conf="$ROOT/etc/conf.d/loadkmap"
 	mkdir -p "$ROOT/etc/keymap"
 	mkdir -p "$ROOT/etc/conf.d/"
 	if cp "$1" "$ROOT/etc/keymap/$name" ; then
@@ -126,15 +146,15 @@ select_variant() {
 		if [ "$variant" = "abort" ] || [ "$variant" = "none" ]; then
 			break;
 		fi
-		if [ -f "$MAPDIR/$layout/$variant.bmap"* ]; then
-			setup_mapfile "$MAPDIR/$layout/$variant.bmap"*
+		if find_variant "$variant"; then
+			setup_mapfile "$file"
 		fi
 	done
 }
 
 goodbye() {
 	apk del --quiet --no-progress .setup-keymap-deps
-	exit $1
+	exit "$1"
 }
 
 while getopts "h" opt; do
@@ -143,7 +163,7 @@ while getopts "h" opt; do
 		'?') usage "1" >&2;;
 	esac
 done
-shift $(( $OPTIND - 1 ))
+shift $((OPTIND - 1))
 
 trap 'goodbye 1' INT
 apk add --quiet --virtual .setup-keymap-deps kbd-bkeymaps
@@ -166,12 +186,15 @@ while true; do
 	fi
 
 	# if variant is defined, this could match, otherwise we'll have to choose a variant
-	if [ -f "$MAPDIR/$layout/$variant.bmap"* ]; then
-		setup_mapfile "$MAPDIR/$layout/$variant.bmap"*
+	if find_variant "$variant"; then
+		setup_mapfile "$file"
 	else
 		# if there is only one variant, just pick it
-		count=$(ls "$MAPDIR"/"$layout" | wc -l)
-		if [ $count -eq 1 ]; then
+		count=0
+		for file in "$MAPDIR/$layout"/*; do
+			[ -f "$file" ] && count=$((count + 1))
+		done
+		if [ "$count" -eq 1 ]; then
 			setup_mapfile "$MAPDIR/$layout/"*
 			continue
 		fi
