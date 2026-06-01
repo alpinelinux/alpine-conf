@@ -4,7 +4,7 @@ sysconfdir	?= /etc/lbu
 
 PREFIX		?=
 
-MAN8		:= doc/setup-alpine.8
+MAN8		:= doc/setup-alpine.8 doc/setup-disk.8
 
 LIB_FILES	:= libalpine.sh dasd-functions.sh
 SBIN_FILES	:= copy-modloop\
@@ -75,7 +75,7 @@ uniso:	uniso.c
 
 apk:	$(APKF)
 
-$(MAN8): doc/setup-alpine.8.scd
+doc/%.8: doc/%.8.scd
 	scdoc < $< > $@
 
 install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES) $(MAN8)
