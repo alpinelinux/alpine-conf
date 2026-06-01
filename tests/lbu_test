@@ -394,8 +394,8 @@ lbu_revert_no_media_body() {
 lbu_status_no_changes_body() {
 	init_env
 	mkdir -p backup committed/etc
-	echo "hosts content" > committed/etc/hosts
-	echo "localtime content" > committed/etc/localtime
+	touch committed/etc/hosts
+	touch committed/etc/localtime
 	tar -czf "backup/$(hostname).apkovl.tar.gz" -C committed .
 
 	LBU_BACKUPDIR=backup \
