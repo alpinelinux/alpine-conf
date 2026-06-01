@@ -10,6 +10,7 @@ MAN8		:= \
 		doc/setup-apkrepos.8 \
 		doc/setup-disk.8 \
 		doc/setup-interfaces.8 \
+		doc/setup-keymap.8 \
 		doc/setup-lbu.8
 
 LIB_FILES	:= libalpine.sh dasd-functions.sh
