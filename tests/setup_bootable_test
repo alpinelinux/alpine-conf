@@ -1,0 +1,138 @@
+#!/usr/bin/env atf-sh
+# shellcheck shell=sh
+
+# shellcheck source=/dev/null
+. "$(atf_get_srcdir)"/test_env.sh
+init_tests \
+	setup_bootable_usage \
+	setup_bootable_check_missing_syslinux_cfg \
+	setup_bootable_check_valid_syslinux_cfg \
+	setup_bootable_check_warn_missing_kernel_initrd \
+	setup_bootable_check_fix_kernel \
+	setup_bootable_check_fix_initrd \
+	setup_bootable_upgrade_replace_alpine_dev
+
+create_bootable_tree() {
+	mkdir -p "$1"/boot/syslinux
+	echo "3.21.0" > "$1"/.alpine-release
+	touch "$1"/boot/vmlinuz-lts "$1"/boot/initramfs-lts
+	cat > "$1"/boot/syslinux/syslinux.cfg <<-EOF
+		LABEL lts
+		KERNEL /boot/vmlinuz-lts
+		INITRD /boot/initramfs-lts
+		APPEND alpine_dev=/dev/sda1 modules=loop,squashfs,sd-mod
+	EOF
+}
+
+setup_bootable_usage_body() {
+	init_env
+	atf_check -s exit:1 \
+		-o match:"^usage: setup-bootable" \
+		-e empty \
+		setup-bootable -h
+}
+
+setup_bootable_check_missing_syslinux_cfg_body() {
+	init_env
+	mkdir -p dest
+
+	atf_check -s exit:1 \
+		-o empty \
+		-e match:"Could not find any syslinux.cfg. Aborting" \
+		setup-bootable -c dest
+}
+
+setup_bootable_check_valid_syslinux_cfg_body() {
+	init_env
+	create_bootable_tree dest
+
+	atf_check -s exit:0 \
+		-o empty \
+		-e empty \
+		setup-bootable -c dest
+}
+
+setup_bootable_check_warn_missing_kernel_initrd_body() {
+	init_env
+	mkdir -p dest/boot/syslinux
+	cat > dest/boot/syslinux/syslinux.cfg <<-EOF
+		LABEL lts
+		KERNEL /boot/vmlinuz-lts
+		INITRD /boot/initramfs-lts
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"Warning: boot/syslinux/syslinux.cfg: kernel dest/boot/vmlinuz-lts  was not found" \
+		-o match:"Warning: initrd /boot/initramfs-lts was not found. System will likely not boot" \
+		-e empty \
+		setup-bootable -c dest
+}
+
+setup_bootable_check_fix_kernel_body() {
+	init_env
+	mkdir -p dest/boot/syslinux
+	touch dest/boot/vmlinuz-lts
+	cat > dest/boot/syslinux/syslinux.cfg <<-EOF
+		LABEL lts
+		KERNEL /boot/lts
+		INITRD /boot/initramfs-lts
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"Fixing boot/syslinux/syslinux.cfg: kernel /boot/lts -> /boot/vmlinuz-lts" \
+		-e empty \
+		setup-bootable -f -c dest
+	atf_check -s exit:0 \
+		-o match:"KERNEL /boot/vmlinuz-lts" \
+		grep "^KERNEL" dest/boot/syslinux/syslinux.cfg
+}
+
+setup_bootable_check_fix_initrd_body() {
+	init_env
+	mkdir -p dest/boot/syslinux
+	touch dest/boot/vmlinuz-lts dest/boot/initramfs-lts
+	cat > dest/boot/syslinux/syslinux.cfg <<-EOF
+		LABEL lts
+		KERNEL /boot/vmlinuz-lts
+		INITRD /boot/lts.gz
+		APPEND alpine_dev=/dev/sda1 initrd=/boot/lts.gz modules=loop,squashfs,sd-mod
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"Fixing boot/syslinux/syslinux.cfg: initrd /boot/lts.gz -> /boot/initramfs-lts" \
+		-e empty \
+		setup-bootable -f -c dest
+	atf_check -s exit:0 \
+		-o match:"INITRD /boot/initramfs-lts" \
+		-o match:"initrd=/boot/initramfs-lts" \
+		cat dest/boot/syslinux/syslinux.cfg
+}
+
+setup_bootable_upgrade_replace_alpine_dev_body() {
+	init_env
+	create_bootable_tree src
+	mkdir dest
+	fake_bin mount <<-EOF
+		#!/bin/sh
+		exit 0
+	EOF
+	fake_bin umount <<-EOF
+		#!/bin/sh
+		exit 0
+	EOF
+	fake_bin blkid <<-EOF
+		#!/bin/sh
+		echo "\$1: UUID=\"1111-2222\" TYPE=\"vfat\""
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"Installing .* to 3.21.0" \
+		-e empty \
+		setup-bootable -u -U src dest
+	atf_check -s exit:0 \
+		-o match:"3.21.0" \
+		cat dest/.alpine-release
+	atf_check -s exit:0 \
+		-o match:"alpine_dev=UUID=1111-2222" \
+		cat dest/boot/syslinux/syslinux.cfg
+}
