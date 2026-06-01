@@ -1,0 +1,61 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+init_tests \
+	genfstab_usage \
+	genfstab_mounts \
+	genfstab_uuid \
+	genfstab_pseudofs
+
+genfstab_usage_body() {
+	test_usage genfstab
+}
+
+genfstab_mounts_body() {
+	init_env
+	mkdir -p mnt/boot proc
+	fake_mount "/dev/vda2 $PWD/mnt ext4 rw,noatime,data=ordered 0 0"
+	fake_mount "/dev/vda1 $PWD/mnt/boot vfat rw,relatime,fmask=0022 0 0"
+	fake_mount "/dev/vdb1 $PWD/mnt2 ext4 rw,relatime 0 0"
+
+	atf_check -s exit:0 \
+		-o match:"^/dev/vda2[[:space:]]+/[[:space:]]+ext4[[:space:]]+rw,noatime,data=ordered[[:space:]]+0 1$" \
+		-o match:"^/dev/vda1[[:space:]]+/boot[[:space:]]+vfat[[:space:]]+rw,relatime,fmask=0022[[:space:]]+0 2$" \
+		-o not-match:"/dev/vdb1" \
+		genfstab "$PWD/mnt"
+}
+
+genfstab_uuid_body() {
+	init_env
+	mkdir -p mnt proc
+	fake_mount "/dev/vda2 $PWD/mnt ext4 rw,noatime 0 0"
+	fake_mount "/dev/md0 $PWD/mnt/home ext4 rw,relatime 0 0"
+	fake_bin blkid <<-EOF
+		#!/bin/sh
+		cat <<-EOF2
+			/dev/vda2: UUID="1111-2222" TYPE="ext4"
+			/dev/md0: UUID="3333-4444" TYPE="ext4"
+			/dev/vda3: UUID="5555-6666" TYPE="swap"
+		EOF2
+	EOF
+
+	atf_check -s exit:0 \
+		-o match:"^UUID=1111-2222[[:space:]]+/[[:space:]]+ext4[[:space:]]+rw,noatime[[:space:]]+0 1$" \
+		-o match:"^/dev/md0[[:space:]]+/home[[:space:]]+ext4[[:space:]]+rw,relatime[[:space:]]+0 2$" \
+		genfstab -U "$PWD/mnt"
+
+	NO_DISK_UUID=/dev/vda2 atf_check -s exit:0 \
+		-o match:"^/dev/vda2[[:space:]]+/[[:space:]]+ext4[[:space:]]+rw,noatime[[:space:]]+0 1$" \
+		genfstab -U "$PWD/mnt"
+}
+
+genfstab_pseudofs_body() {
+	init_env
+	mkdir -p mnt/proc proc
+	fake_mount "/dev/vda2 $PWD/mnt ext4 rw,noatime 0 0"
+	fake_mount "proc $PWD/mnt/proc proc rw,nosuid,nodev,noexec,relatime 0 0"
+
+	atf_check -s exit:0 \
+		-o not-match:"[[:space:]]/proc[[:space:]]" \
+		genfstab "$PWD/mnt"
+}

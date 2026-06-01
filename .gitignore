@@ -2,6 +2,7 @@
 *.tar.gz
 Kyuafile
 copy-modloop
+genfstab
 lbu
 setup-acf
 setup-ads

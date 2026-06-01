@@ -6,6 +6,7 @@ PREFIX		?=
 
 LIB_FILES	:= libalpine.sh dasd-functions.sh
 SBIN_FILES	:= copy-modloop\
+		genfstab\
 		lbu\
 		setup-acf\
 		setup-alpine\
@@ -119,4 +120,3 @@ Kyuafile:
 
 check: $(SCRIPTS) $(BIN_FILES) tests/Kyuafile Kyuafile
 	kyua --variable parallelism=$(shell nproc) test || (kyua report --verbose && exit 1)
-
