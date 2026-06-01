@@ -13,6 +13,7 @@ read_only_mounts=
 umounts=
 uninstalls=
 destdir=
+: "${BOOTLOADER:=syslinux}"
 
 cleanup_tmpdata() {
 	if [ -d "$destdir" ] && [ -d "$destdir/.new" ]; then
@@ -97,30 +98,31 @@ find_syslinux_cfg() {
 	# find where new syslinux.cfg is
 	for i in boot/syslinux/syslinux.cfg syslinux.cfg; do
 		if [ -e "$1"/$i ]; then
-			syslinux_cfg=$i
-			vecho "Found $syslinux_cfg"
-			break
+			echo "$i"
+			return 0
 		fi
 	done
+	return 1
 }
 
 fix_syslinux_kernel() {
-	echo "Fixing $syslinux_cfg: kernel $1 -> $2"
-		sed -i -e "/^\s*[Kk][Ee][Rr][Nn][Ee][Ll]\s/s|$1|$2|" \
- 			"$destdir/$syslinux_cfg"
+	local destdir="$1" syslinux_cfg="$2" old="$3" new="$4"
+	echo "Fixing $syslinux_cfg: kernel $old -> $new"
+	sed -i -e "/^\s*[Kk][Ee][Rr][Nn][Ee][Ll]\s/s|$old|$new|" \
+		"$destdir/$syslinux_cfg"
 }
 
 fix_syslinux_initrd() {
-	echo "Fixing $syslinux_cfg: initrd $1 -> $2"
-	sed -i -e "/^\s*[Ii][Nn][Ii][Tt][Rr][Dd]\s/s|$1|$2|" \
-		-e "/^\s*[Aa][Pp][Pp][Ee][Nn][Dd]\s/s|initrd=$1|initrd=$2|" \
-			"$destdir/$syslinux_cfg"
+	local destdir="$1" syslinux_cfg="$2" old="$3" new="$4"
+	echo "Fixing $syslinux_cfg: initrd $old -> $new"
+	sed -i -e "/^\s*[Ii][Nn][Ii][Tt][Rr][Dd]\s/s|$old|$new|" \
+		-e "/^\s*[Aa][Pp][Pp][Ee][Nn][Dd]\s/s|initrd=$old|initrd=$new|" \
+		"$destdir/$syslinux_cfg"
 }
 
-check_syslinux() {
-	if [ -z "$syslinux_cfg" ]; then
-		find_syslinux_cfg "$destdir"
-	fi
+check_syslinux_config() {
+	local destdir="$1" syslinux_cfg="$2"
+	local i k f initrds line fname flavor new
 	if [ -z "$syslinux_cfg" ]; then
 		die "Could not find any syslinux.cfg. Aborting"
 	fi
@@ -136,7 +138,7 @@ check_syslinux() {
 		fi
 
 		if [ -e "${k%/*}"/vmlinuz-"$f" ] && [ -n "$fix_syslinux_cfg" ]; then
-			fix_syslinux_kernel "$i" "${i%/*}"/vmlinuz-"$f"
+			fix_syslinux_kernel "$destdir" "$syslinux_cfg" "$i" "${i%/*}"/vmlinuz-"$f"
 		elif ! [ -e "$k" ]; then
 			echo "Warning: $syslinux_cfg: kernel $k  was not found"
 			printf '         Run %s -f -c "%s" to fix\n' "$0" "$destdir"
@@ -167,12 +169,48 @@ check_syslinux() {
 
 		new=${i%/*}/initramfs-$flavor
 		if [ -e "$destdir"/"$new" ] && [ -n "$fix_syslinux_cfg" ]; then
-			fix_syslinux_initrd "$i" "$new"
+			fix_syslinux_initrd "$destdir" "$syslinux_cfg" "$i" "$new"
 		else
 			echo "Warning: initrd $i was not found. System will likely not boot"
 			printf '         Run %s -f -c "%s" to fix\n' "$0" "$destdir"
 		fi
 	done
+}
+
+check_syslinux() {
+	syslinux_cfg=${syslinux_cfg:-$(find_syslinux_cfg "$destdir")}
+	[ -n "$syslinux_cfg" ] && vecho "Found $syslinux_cfg"
+	check_syslinux_config "$destdir" "$syslinux_cfg"
+}
+
+install_syslinux() {
+	local dest="$1" parent_dev="$2"
+	echo "Making $dest bootable..."
+
+	if ! [ -x "$(which syslinux)" ]; then
+		apk add --quiet syslinux || die "Failed to install syslinux"
+		uninstalls="syslinux"
+	fi
+
+	# we need to unmount the device before we can run syslinux
+	cleanup_mounts
+	fsync "$dest"
+	syslinux "$dest"
+
+	if [ -b "$parent_dev" ]; then
+		dd if=/usr/share/syslinux/mbr.bin of="$parent_dev" status=none
+	else
+		echo "Warning: Could not find the parent device for $dest"
+	fi
+}
+
+install_bootloader() {
+	local dest="$1" parent_dev="$2"
+	case "$BOOTLOADER" in
+		none) ;;
+		syslinux) install_syslinux "$dest" "$parent_dev" ;;
+		*) die "Bootloader \"$BOOTLOADER\" not supported" ;;
+	esac
 }
 
 version_check() {
@@ -208,11 +246,14 @@ usage() {
 		 -h  Show this help.
 		 -k  fix kernel and initrd name in syslinux.cfg if needed.
 		 -U  Replace current alpine_dev in syslinux.cfg with UUID if UUID found.
-		 -u  Upgrade mode. Keep existing syslinux.cfg and don't run syslinux.
-		 -s  Force run syslinux, even if upgrade mode.
+		 -u  Upgrade mode. Keep existing syslinux.cfg and don't run bootloader.
+		 -s  Force run bootloader, even if upgrade mode.
 		 -v  Verbose mode. Display whats going on.
 
 		 -c  Check syslinux.cfg in destination DIR. Use with -f to fix.
+
+		Environment:
+		 BOOTLOADER=syslinux|none
 
 	__EOF__
 	exit 1
@@ -226,7 +267,7 @@ while getopts "c:fhkUusv" opt; do
 	k) fix_syslinux_cfg=1;;
 	U) replace_alpine_dev=1;;
 	u) upgrade=1;;
-	s) syslinux=1;;
+	s) force_bootloader=1;;
 	v) VERBOSE=1; export VERBOSE;;
 	\?) usage;;
 	*) usage;;
@@ -252,8 +293,8 @@ if [ -d "$dest" ]; then
 	if ! awk '{print $2}' /proc/mounts | grep -q "^$dest\$"; then
 		mount "$dest" || die "Failed to mount $dest"
 		umounts="$umounts $dest"
-	elif [ -n "$syslinux" ]; then
-		die "Cannot run syslinux on mounted device"
+	elif [ -n "$force_bootloader" ] && [ "$BOOTLOADER" != none ]; then
+		die "Cannot run bootloader on mounted device"
 	else
 		nosyslinux=1
 	fi
@@ -323,7 +364,8 @@ else
 fi
 
 # find where new syslinux.cfg is
-find_syslinux_cfg "$destdir"/.new
+syslinux_cfg=$(find_syslinux_cfg "$destdir"/.new)
+[ -n "$syslinux_cfg" ] && vecho "Found $syslinux_cfg"
 
 # abort early in case unexpected trouble
 if [ -z "$syslinux_cfg" ]; then
@@ -351,7 +393,7 @@ elif [ -e "$destdir"/.old/syslinux.cfg ] \
 		&& [ -e "$destdir"/.new/boot/syslinux/syslinux.cfg ]; then
 	echo "Warning: moving syslinux.cfg to boot/syslinux/syslinux.cfg" >&2
 	mv "$destdir"/.old/syslinux.cfg "$destdir"/.new/boot/syslinux
-	if [ -z "$syslinux" ]; then
+	if [ -z "$force_bootloader" ]; then
 		echo "         You might need run: syslinux $dest" >&2
 	fi
 fi
@@ -376,31 +418,15 @@ check_syslinux
 [ -z "$keep_old" ] && rm -rf "$destdir"/.old "$destdir"/.new
 
 # If we only copy then we are done.
-if [ -n "$upgrade" ] && [ -z "$syslinux" ]; then
+if [ -n "$upgrade" ] && [ -z "$force_bootloader" ]; then
 	exit 0
 fi
 
 # prevent running syslinux on mounted device
-if [ -n "$nosyslinux" ]; then
-	echo "Warning: Can not run syslinux on a mounted device"
-	echo "         You might need run syslinux manually and install MBR manually"
+if [ -n "$nosyslinux" ] && [ "$BOOTLOADER" != none ]; then
+	echo "Warning: Can not run bootloader on a mounted device"
+	echo "         You might need run bootloader manually"
 	exit 0
 fi
 
-echo "Making $dest bootable..."
-
-if ! [ -x "$(which syslinux)" ]; then
-	apk add --quiet syslinux || die "Failed to install syslinux"
-	uninstalls="syslinux"
-fi
-
-# we need to unmount the device before we can run syslinux
-cleanup_mounts
-fsync "$dest"
-syslinux "$dest"
-
-if [ -b "$parent_dev" ]; then
-	dd if=/usr/share/syslinux/mbr.bin of="$parent_dev" status=none
-else
-	echo "Warning: Could not find the parent device for $dest"
-fi
+install_bootloader "$dest" "$parent_dev"

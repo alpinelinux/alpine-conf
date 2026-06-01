@@ -10,7 +10,8 @@ init_tests \
 	setup_bootable_check_warn_missing_kernel_initrd \
 	setup_bootable_check_fix_kernel \
 	setup_bootable_check_fix_initrd \
-	setup_bootable_upgrade_replace_alpine_dev
+	setup_bootable_upgrade_replace_alpine_dev \
+	setup_bootable_bootloader_none
 
 create_bootable_tree() {
 	mkdir -p "$1"/boot/syslinux
@@ -21,6 +22,21 @@ create_bootable_tree() {
 		KERNEL /boot/vmlinuz-lts
 		INITRD /boot/initramfs-lts
 		APPEND alpine_dev=/dev/sda1 modules=loop,squashfs,sd-mod
+	EOF
+}
+
+fake_mount_and_blkid() {
+	fake_bin mount <<-EOF
+		#!/bin/sh
+		exit 0
+	EOF
+	fake_bin umount <<-EOF
+		#!/bin/sh
+		exit 0
+	EOF
+	fake_bin blkid <<-EOF
+		#!/bin/sh
+		echo "\$1: UUID=\"1111-2222\" TYPE=\"vfat\""
 	EOF
 }
 
@@ -112,18 +128,7 @@ setup_bootable_upgrade_replace_alpine_dev_body() {
 	init_env
 	create_bootable_tree src
 	mkdir dest
-	fake_bin mount <<-EOF
-		#!/bin/sh
-		exit 0
-	EOF
-	fake_bin umount <<-EOF
-		#!/bin/sh
-		exit 0
-	EOF
-	fake_bin blkid <<-EOF
-		#!/bin/sh
-		echo "\$1: UUID=\"1111-2222\" TYPE=\"vfat\""
-	EOF
+	fake_mount_and_blkid
 
 	atf_check -s exit:0 \
 		-o match:"Installing .* to 3.21.0" \
@@ -135,4 +140,24 @@ setup_bootable_upgrade_replace_alpine_dev_body() {
 	atf_check -s exit:0 \
 		-o match:"alpine_dev=UUID=1111-2222" \
 		cat dest/boot/syslinux/syslinux.cfg
+}
+
+setup_bootable_bootloader_none_body() {
+	init_env
+	create_bootable_tree src
+	mkdir dest
+	fake_mount_and_blkid
+	fake_bin syslinux <<-EOF
+		#!/bin/sh
+		exit 99
+	EOF
+
+	BOOTLOADER=none atf_check -s exit:0 \
+		-o match:"Installing .* to 3.21.0" \
+		-o not-match:"Making .* bootable" \
+		-e empty \
+		setup-bootable -u -s src dest
+	atf_check -s exit:0 \
+		-o match:"3.21.0" \
+		cat dest/.alpine-release
 }
