@@ -4,6 +4,8 @@ sysconfdir	?= /etc/lbu
 
 PREFIX		?=
 
+MAN8		:= doc/setup-alpine.8
+
 LIB_FILES	:= libalpine.sh dasd-functions.sh
 SBIN_FILES	:= copy-modloop\
 		genfstab\
@@ -66,14 +68,17 @@ SED_REPLACE	:= -e 's:@VERSION@:$(FULL_VERSION):g' \
 	${SED} ${SED_REPLACE} ${SED_EXTRA} $< > $@ && chmod +x $@
 
 .PHONY:	all apk clean install uninstall iso
-all:	$(SCRIPTS) $(BIN_FILES) Kyuafile tests/Kyuafile
+all:	$(SCRIPTS) $(BIN_FILES) Kyuafile tests/Kyuafile $(MAN8)
 
 uniso:	uniso.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 apk:	$(APKF)
 
-install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES)
+$(MAN8): doc/setup-alpine.8.scd
+	scdoc < $< > $@
+
+install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES) $(MAN8)
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/bin
 	install -m 755 $(BIN_FILES) $(DESTDIR)$(PREFIX)/bin
 	install -m 755 -d $(DESTDIR)/$(PREFIX)/sbin
@@ -82,6 +87,8 @@ install: $(BIN_FILES) $(SBIN_FILES) $(LIB_FILES) $(ETC_LBU_FILES)
 	install -m 644 $(LIB_FILES) $(DESTDIR)/$(PREFIX)/lib
 	install -m 755 -d $(DESTDIR)/$(sysconfdir)
 	install -m 644 $(ETC_LBU_FILES) $(DESTDIR)/$(sysconfdir)
+	install -m 755 -d $(DESTDIR)/$(PREFIX)/share/man/man8
+	install -m 644 $(MAN8) $(DESTDIR)/$(PREFIX)/share/man/man8
 
 uninstall:
 	for i in $(BIN_FILES); do \
@@ -96,9 +103,12 @@ uninstall:
 	for i in $(ETC_LBU_FILES); do \
 		rm -f "$(DESTDIR)/$(sysconfdir)/$$i";\
 	done
+	for i in $(MAN8); do \
+		rm -f "$(DESTDIR)/$(PREFIX)/share/man/man8/$${i##*/}";\
+	done
 
 clean:
-	rm -rf $(SCRIPTS) $(BIN_FILES) alpine-conf.iso tests/Kyuafile Kyuafile
+	rm -rf $(SCRIPTS) $(BIN_FILES) alpine-conf.iso tests/Kyuafile Kyuafile $(MAN8)
 
 alpine-conf.iso: $(SCRIPTS) $(BIN_FILES)
 	$(MAKE) install PREFIX=/ DESTDIR=tmp/

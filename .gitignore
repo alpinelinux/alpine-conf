@@ -33,3 +33,4 @@ setup-xorg-base
 uniso
 update-conf
 update-kernel
+doc/*.8
