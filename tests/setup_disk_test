@@ -582,7 +582,7 @@ setup_disk_sys_limine_bios_body() {
 		-o match:"^dev/vda1 : start= *[0-9]+, size= *614400, type=c" \
 		sfdisk -d dev/vda
 	atf_check \
-		-o match:"/dev/vda1	/boot	vfat	rw,relatime,fmask=0022 0 2" \
+		-o match:"/dev/vda1[[:space:]]+/boot[[:space:]]+vfat[[:space:]]+rw,relatime,fmask=0022[[:space:]]+0 2" \
 		cat mnt/etc/fstab
 }
 
@@ -616,7 +616,7 @@ setup_disk_sys_efi_limine_boot_body() {
 		-o match:"^dev/vda1 : start= *[0-9]+, size= *614400, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B" \
 		sfdisk -d dev/vda
 	atf_check \
-		-o match:"/dev/vda1	/boot	vfat	rw,relatime,fmask=0022 0 2" \
+		-o match:"/dev/vda1[[:space:]]+/boot[[:space:]]+vfat[[:space:]]+rw,relatime,fmask=0022[[:space:]]+0 2" \
 		cat mnt/etc/fstab
 }
 
@@ -699,8 +699,8 @@ setup_disk_install_mounted_root_nvme_body() {
 		setup-disk target
 
 	atf_check \
-		-o match:"/dev/nvme0n1p2	/	ext4	rw,noatime,data=ordered 0 1" \
-		-o match:"/dev/nvme0n1p3	/boot/efi	vfat	rw,relatime,fmask=0022 0 2" \
+		-o match:"/dev/nvme0n1p2[[:space:]]+/[[:space:]]+ext4[[:space:]]+rw,noatime,data=ordered[[:space:]]+0 1" \
+		-o match:"/dev/nvme0n1p3[[:space:]]+/boot/efi[[:space:]]+vfat[[:space:]]+rw,relatime,fmask=0022[[:space:]]+0 2" \
 		cat target/etc/fstab
 
 	atf_check -o match:"GRUB_CMDLINE_LINUX_DEFAULT=.*ext4,nvme" \
@@ -725,8 +725,8 @@ setup_disk_install_mounted_root_efi_body() {
 			setup-disk -v target
 
 		atf_check \
-			-o match:"/dev/vda2	/	ext4	rw,noatime,data=ordered 0 1" \
-			-o match:"/dev/vda1	/boot/efi	$fs	rw,relatime,fmask=0022 0 2" \
+			-o match:"/dev/vda2[[:space:]]+/[[:space:]]+ext4[[:space:]]+rw,noatime,data=ordered[[:space:]]+0 1" \
+			-o match:"/dev/vda1[[:space:]]+/boot/efi[[:space:]]+$fs[[:space:]]+rw,relatime,fmask=0022[[:space:]]+0 2" \
 			cat target/etc/fstab
 
 		atf_check -o match:"GRUB_CMDLINE_LINUX_DEFAULT=.*ext4" \
@@ -750,8 +750,8 @@ setup_disk_install_mounted_root_efi_boot_body() {
 		setup-disk -v target
 
 	atf_check \
-		-o match:"/dev/vda2	/	ext4	rw,noatime,data=ordered 0 1" \
-		-o match:"/dev/vda1	/boot	vfat	rw,relatime,fmask=0022 0 2" \
+		-o match:"/dev/vda2[[:space:]]+/[[:space:]]+ext4[[:space:]]+rw,noatime,data=ordered[[:space:]]+0 1" \
+		-o match:"/dev/vda1[[:space:]]+/boot[[:space:]]+vfat[[:space:]]+rw,relatime,fmask=0022[[:space:]]+0 2" \
 		cat target/etc/fstab
 
 	atf_check -o match:"GRUB_CMDLINE_LINUX_DEFAULT=.*ext4" \
