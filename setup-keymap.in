@@ -8,7 +8,7 @@ MAPDIR="$ROOT/usr/share/bkeymaps"
 
 if [ -f "$ROOT/etc/conf.d/loadkmap" ]; then
 	. "$ROOT/etc/conf.d/loadkmap"
-	variant=$(basename "KEYMAP")
+	variant=$(basename "$KEYMAP")
 	variant="${variant%%.*}"
 fi
 
@@ -108,7 +108,7 @@ setup_mapfile() {
 		echo "KEYMAP=/etc/keymap/$name" >> "$conf"
 		# we actually load the keymap now
 		rc-service loadkmap restart
-		rc-update -q add loadkmap boot
+		rc-update --quiet add loadkmap boot
 		goodbye 0
 	fi
 }
