@@ -1,8 +1,12 @@
+# shellcheck shell=sh
+# shellcheck disable=SC3043
+
+# shellcheck disable=SC2034
 PREFIX=@PREFIX@
 
-PROGRAM=$(basename $0)
+PROGRAM=$(basename "$0")
 
-: ${ROOT:=/}
+: "${ROOT:=/}"
 [ "${ROOT}" = "${ROOT%/}" ] && ROOT="${ROOT}/"
 [ "${ROOT}" = "${ROOT#/}" ] && ROOT="${PWD}/${ROOT}"
 
@@ -33,8 +37,10 @@ die() {
 
 init_tmpdir() {
 	local __tmpd
-	__tmpd=$(mktemp -d /tmp/$PROGRAM-${$}-$(date +%s)-XXXXXXXXXX) ||
+	__tmpd=$(mktemp -d "/tmp/$PROGRAM-${$}-$(date +%s)-XXXXXXXXXX") ||
 		die "Failed to create tmp dir"
+	# Expand $__tmpd now so cleanup uses this function's local value.
+	# shellcheck disable=SC2064,SC2154
 	trap "rc=\$?; rm -fr \"$__tmpd\"; exit \$rc" 0
 	eval "$1=\"$__tmpd\""
 }
@@ -45,7 +51,7 @@ cd_assert() {
 
 default_read() {
 	local n
-	read n
+	read -r n
 	[ -z "$n" ] && n="$2"
 	eval "$1=\"$n\""
 }
@@ -79,14 +85,14 @@ sorted_ifaces() {
 	for i in "$ROOT"/sys/class/net/*; do
 		local iface="${i##*/}"
 		if [ -e "$i"/ifindex ]; then
-			printf "%s\t%s\n" "$(cat $i/ifindex)" "$iface"
+			printf "%s\t%s\n" "$(cat "$i"/ifindex)" "$iface"
 		fi
 	done | sort -n | awk '{print $2}'
 }
 
 # list of available network interfaces that aren't part of any bridge or bond
 available_ifaces() {
-	local iflist= ifpath= iface=
+	local iflist="" ifpath="" iface=""
 	if ! [ -d "$ROOT"/sys/class/net ]; then
 		ip link | awk -F: '$1 ~ /^[0-9]+$/ {printf "%s",$2}'
 		return
@@ -99,7 +105,7 @@ available_ifaces() {
 		fi
 		iflist="${iflist}${iflist:+ }$iface"
 	done
-	echo $iflist
+	echo "$iflist"
 }
 
 # from OpenBSD installer
@@ -162,7 +168,7 @@ rmel() {
 _ask() {
 	local _redo=0
 
-	read resp
+	read -r resp
 	case "$resp" in
 	!)	echo "Type 'exit' to return to setup."
 		sh
@@ -190,7 +196,7 @@ ask() {
 	while :; do
 		printf %s "$_question "
 		[ -z "$_default" ] || printf "[%s] " "$_default"
-		_ask && : ${resp:=$_default} && break
+		_ask && : "${resp:=$_default}" && break
 	done
 }
 
@@ -246,12 +252,14 @@ ask_which() {
 
 		# Clean away whitespace and determine the default
 		set -o noglob
+		# shellcheck disable=SC2086
 		set -- $_dyndef; _dyndef="$1"
+		# shellcheck disable=SC2086
 		set -- $_dynlist; _dynlist="$*"
 		set +o noglob
-		[ $# -lt 1 ] && resp=done && return
+		[ $# -lt 1 ] && resp="done" && return
 
-		: ${_dyndef:=$1}
+		: "${_dyndef:=$1}"
 		echo "Available ${_name}s are: $_dynlist."
 		printf "Which one %s? (or 'done') " "$_query"
 		[ -n "$_dyndef" ] && printf "[%s] " "$_dyndef"
@@ -260,7 +268,8 @@ ask_which() {
 
 		# Quote $resp to prevent user from confusing isin() by
 		# entering something like 'a a'.
-		isin "$resp" $_dynlist done && break
+		# shellcheck disable=SC2086
+		isin "$resp" $_dynlist "done" && break
 		echo "'$resp' is not a valid choice."
 	done
 }
@@ -281,7 +290,7 @@ find_modloop_media() {
 get_fqdn() {
 	local _dn
 	_dn=$(hostname -f 2>/dev/null)
-	_dn=${_dn#$(hostname -s 2>/dev/null)}
+	_dn=${_dn#"$(hostname -s 2>/dev/null)"}
 	_dn=${_dn#.}
 	echo "${_dn:=$1}"
 }
