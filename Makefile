@@ -15,6 +15,7 @@ MAN8		:= \
 		doc/setup-interfaces.8 \
 		doc/setup-keymap.8 \
 		doc/setup-lbu.8 \
+		doc/setup-ntp.8 \
 		doc/setup-proxy.8 \
 		doc/setup-sshd.8 \
 		doc/setup-timezone.8
