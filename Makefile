@@ -9,6 +9,7 @@ MAN8		:= \
 		doc/setup-alpine.8 \
 		doc/setup-apkrepos.8 \
 		doc/setup-disk.8 \
+		doc/setup-hostname.8 \
 		doc/setup-interfaces.8 \
 		doc/setup-keymap.8 \
 		doc/setup-lbu.8
