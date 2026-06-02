@@ -906,6 +906,11 @@ is_available_disk() {
 		return 1
 	fi
 
+	# reject optical drives
+	if grep -q 5 "${ROOT}sys/block/$dev/device/type" 2>/dev/null; then
+		return 1
+	fi
+
 	return 0
 }
 
