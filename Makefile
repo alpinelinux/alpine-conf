@@ -14,7 +14,8 @@ MAN8		:= \
 		doc/setup-hostname.8 \
 		doc/setup-interfaces.8 \
 		doc/setup-keymap.8 \
-		doc/setup-lbu.8
+		doc/setup-lbu.8 \
+		doc/setup-timezone.8
 
 LIB_FILES	:= libalpine.sh dasd-functions.sh
 SBIN_FILES	:= copy-modloop\
