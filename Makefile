@@ -15,10 +15,13 @@ MAN8		:= \
 		doc/setup-interfaces.8 \
 		doc/setup-keymap.8 \
 		doc/setup-lbu.8 \
+		doc/setup-apkcache.8 \
 		doc/setup-ntp.8 \
 		doc/setup-proxy.8 \
 		doc/setup-sshd.8 \
-		doc/setup-timezone.8
+		doc/setup-timezone.8 \
+		doc/setup-user.8 \
+		doc/setup-xen-dom0.8
 
 LIB_FILES	:= libalpine.sh dasd-functions.sh
 SBIN_FILES	:= copy-modloop\
