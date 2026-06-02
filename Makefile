@@ -10,6 +10,7 @@ MAN8		:= \
 		doc/setup-apkrepos.8 \
 		doc/setup-devd.8 \
 		doc/setup-disk.8 \
+		doc/setup-dns.8 \
 		doc/setup-hostname.8 \
 		doc/setup-interfaces.8 \
 		doc/setup-keymap.8 \
