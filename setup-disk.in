@@ -1611,7 +1611,7 @@ ask_disk() {
 
 usage() {
 	cat <<-__EOF__
-		usage: setup-disk [-hLqrve] [-b DISKDEV] [-k kernelflavor] [-m MODE]
+		usage: setup-disk [-hLqrve] [-b DISKDEV] [-B BOOTLOADER] [-k kernelflavor] [-m MODE]
 		                  [-o apkovl] [-R ROOT_SIZE] [-s SWAP_SIZE] [-w FILE]
 		                  [MOUNTPOINT | DISKDEV...]
 
@@ -1628,6 +1628,7 @@ usage() {
 		 -h  Show this help
 		 -b  Install bootloader to DISKDEV when installing to a mounted root
 		     May be specified multiple times
+		 -B  Use BOOTLOADER instead of the default bootloader
 		 -e  Encrypt disk
 		 -m  Use disk for MODE without asking, where MODE is either 'data' or 'sys'
 		 -o  Restore system from given apkovl file
@@ -1693,9 +1694,10 @@ BOOTLOADER_DISKS=
 DISK_MODE=
 USE_LVM=
 # Parse args
-while getopts "b:hek:Lm:o:qrR:s:vw:" opt; do
+while getopts "b:B:hek:Lm:o:qrR:s:vw:" opt; do
 	case $opt in
 		b) BOOTLOADER_DISKS="$BOOTLOADER_DISKS $OPTARG";;
+		B) BOOTLOADER="$OPTARG";;
 		e) USE_CRYPT="_crypt";;
 		h) usage 0;;
 		m) DISK_MODE="$OPTARG";;

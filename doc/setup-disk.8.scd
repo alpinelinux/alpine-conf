@@ -6,11 +6,9 @@ SETUP-DISK(8) "Alpine Linux"
 
 # SYNOPSIS
 
-*setup-disk* [\-hLqrve] [\-b _DISKDEV_] [\-k _KERNELFLAVOR_] [\-m _MODE_]
-
-*setup-disk* [\-o _APKOVL_] [\-R _ROOT_SIZE_] [\-s _SWAP_SIZE_] [\-w _FILE_]
-
-*setup-disk* [_MOUNTPOINT_ | _DISKDEV_...]
+*setup-disk* [\-hLqrve] [\-b _DISKDEV_] [\-B _BOOTLOADER_] [\-k _KERNELFLAVOR_]
+*setup-disk* [\-m _MODE_] [\-o _APKOVL_] [\-R _ROOT_SIZE_] [\-s _SWAP_SIZE_]
+*setup-disk* [\-w _FILE_] [_MOUNTPOINT_ | _DISKDEV_...]
 
 # DESCRIPTION
 
@@ -63,6 +61,11 @@ The selected disk devices are erased.
 	Install the bootloader to _DISKDEV_ when installing to a mounted root.
 	This option may be specified multiple times.
 
+*\-B* _BOOTLOADER_
+	Use _BOOTLOADER_ instead of the default. Supported values: *grub*,
+	*syslinux*, *zipl*, *raspberrypi-bootloader*, *u-boot*, *limine*,
+	*none*.
+
 *\-e*
 	Encrypt the disk using LUKS.
 
@@ -108,7 +111,7 @@ The selected disk devices are erased.
 	Select the bootloader. Supported values are *grub*, *syslinux*,
 	*zipl*, *raspberrypi-bootloader*, *u-boot*, *limine*, and *none*.
 	If unset, a default is selected from the architecture and boot
-	environment.
+	environment. The *\-B* option takes precedence over this variable.
 
 *BOOTFS*, *ROOTFS*, *VARFS*
 	Select filesystems for boot, root, and var storage. The default is
@@ -164,7 +167,7 @@ setup-disk -b /dev/sda /mnt
 Use Limine as the bootloader:
 
 ```
-BOOTLOADER=limine setup-disk -m sys /dev/sda
+setup-disk -B limine -m sys /dev/sda
 ```
 
 # EXIT STATUS

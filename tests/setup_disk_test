@@ -47,7 +47,10 @@ init_tests \
 	setup_disk_install_mounted_root_zfs \
 	setup_disk_modloop_not_touched_when_disks \
 	setup_disk_modloop_erase_disks \
-	setup_disk_install_mounted_root_crypt
+	setup_disk_install_mounted_root_crypt \
+	setup_disk_option_bootloader_usage \
+	setup_disk_option_bootloader_none \
+	setup_disk_option_bootloader_cli_overrides_env
 
 setup_disk_usage_body() {
 	test_usage setup-disk
@@ -1053,4 +1056,40 @@ setup_disk_install_mounted_root_crypt_body() {
 		-o match:"DEBUG: fake apk add --quiet.* blkid" \
 		-o match:"Installing system on /dev/vda2" \
 		setup-disk -e target
+}
+
+setup_disk_option_bootloader_usage_body() {
+	init_env
+	atf_check -s exit:0 \
+		-o match:"-B" \
+		-e empty \
+		setup-disk -h
+}
+
+setup_disk_option_bootloader_none_body() {
+	init_env
+	mkdir -p target/boot \
+		sys/firmware/efi
+
+	fake_mount "/dev/vda2 $PWD/target virtiofs rw,noatime,data=ordered 0 0"
+
+	atf_check -s exit:0 \
+		-o not-match:"grub" \
+		setup-disk -B none -v target
+}
+
+setup_disk_option_bootloader_cli_overrides_env_body() {
+	init_env
+	fake_bin grub-install <<-EOF
+		#!/bin/sh
+		echo "grub-install \$@"
+	EOF
+	mkdir -p target/boot \
+		sys/firmware/efi
+
+	fake_mount "/dev/vda2 $PWD/target ext4 rw,noatime,data=ordered 0 0"
+
+	BOOTLOADER=none atf_check -s exit:0 \
+		-o match:"grub-install" \
+		setup-disk -B grub -v target
 }
