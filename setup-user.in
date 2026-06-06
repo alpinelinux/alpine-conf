@@ -26,7 +26,9 @@ usage() {
 }
 
 filter_ssh_keys() {
-	grep -E '^(ecdsa|rsa|ssh|sk-ecdsa|sk-ssh)-'
+	# authorized_keys lines may start with an options field:
+	# https://man.openbsd.org/sshd#AUTHORIZED_KEYS_FILE_FORMAT
+	grep -E '^([^[:space:]]+[[:space:]]+)?(ecdsa|rsa|ssh|sk-ecdsa|sk-ssh)-'
 }
 
 retrieve_ssh_keys() {

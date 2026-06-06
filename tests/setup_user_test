@@ -16,6 +16,7 @@ init_tests \
 	setup_user_admin \
 	setup_user_keys_opt \
 	setup_user_sk_keys \
+	setup_user_cert_authority_keys \
 	setup_user_unlock
 
 setup_user_usage_body() {
@@ -196,6 +197,17 @@ setup_user_sk_keys_body() {
 		setup-user -k "$ecdsa_key" testuser
 	grep -x "$ecdsa_key" home/testuser/.ssh/authorized_keys \
 		|| atf_fail "ecdsa-sk key not added"
+}
+
+setup_user_cert_authority_keys_body() {
+	init_env
+	ca_key="cert-authority ssh-ed25519 AAAAca ca@example"
+
+	atf_check -s exit:0 \
+		-o match:"adduser.* -D .*testuser" \
+		setup-user -k "$ca_key" testuser
+	grep -x "$ca_key" home/testuser/.ssh/authorized_keys \
+		|| atf_fail "cert-authority key not added"
 }
 
 setup_user_unlock_body() {
