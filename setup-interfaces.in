@@ -56,43 +56,49 @@ iface_exists() {
 }
 
 get_default_addr() {
+	local iface="$1"
+	local family="$2"
 	# check if dhcpcd is running
-	if pidof dhcpcd > /dev/null && [ -f "$ROOT/var/lib/dhcpc/dhcpcd-$1.info" ]; then
+	if pidof dhcpcd > /dev/null && [ -f "$ROOT/var/lib/dhcpc/dhcpcd-$iface.info" ]; then
 		echo dhcp
-	elif iface_exists $1; then
-		$MOCK ip addr show $1 | awk '/inet / {print $2}' | head -n 1 | sed 's:/.*::'
-	fi
-}
-
-get_default_mask() {
-	if [ "$1" ] ; then
-		ipcalc -m $1 | sed 's/.*=//'
-	else
-		echo "255.255.255.0"
+	elif iface_exists "$iface"; then
+		local family_type="inet"
+		if [ "$family" = "IPv6" ]; then
+			family_type="inet6"
+		fi
+		$MOCK ip addr show "$iface" | awk "/$family_type / {print \$2}" | head -n 1
 	fi
 }
 
 get_default_gateway() {
-	if iface_exists $1; then
-		$MOCK ip route show dev $1 | awk '/^default/ {print $3}'
+	local iface="$1"
+	local family="$2"
+	if iface_exists "$iface"; then
+		local flags=""
+		if [ "$family" = "IPv6" ]; then
+			flags="-6"
+		fi
+		$MOCK ip $flags route show dev "$iface" | awk '/^default/ {print $3}'
 	fi
 }
 
 ipaddr_help() {
-	cat <<-__EOF__
+	cat <<-EOF
 
-		Select the ip address for this interface.
+		Select the IP address for this interface.
 
-		dhcp				      Dynamic/automatic ip via DHCP
-		none				      Do not add any address
-		n.n.n.n		(ex: 192.168.0.1)     Static ip
-		n.n.n.n/m	(ex: 192.168.0.1/24)  Static ip with mask
-		br[0-9]+	(ex: br0)	      Add this interface to a bridge
-		bridge[0-9]	(ex: bridge0)	      Add this interface to a bridge
+		dhcp					Dynamic/automatic IP via DHCP
+		none					Do not add any address
+		n.n.n.n		(ex: 192.168.0.1)	Static IPv4
+		n.n.n.n/m	(ex: 192.168.0.1/24)	Static IPv4 with mask
+		<IPv6>		(ex: fec0:0:0:1::2)	Static IPv6
+		<IPv6>/m	(ex: fec0:0:0:1::2/64)	Static IPv6 with mask
+		br[0-9]+	(ex: br0)		Add this interface to a bridge
+		bridge[0-9]	(ex: bridge0)		Add this interface to a bridge
 
 		You will be prompted for netmask if not specified with the address.
 
-	__EOF__
+	EOF
 }
 
 bridge_add_port() {
@@ -152,10 +158,10 @@ config_wpa_supp() {
 		EOF
 	fi
 	mkdir -p "$ROOT/etc/conf.d"
-	if grep -q ^wpa_supplicant_args= "$ROOT"/etc/conf.d/wpa_supplicant 2>/dev/null; then
+	if grep -q ^wpa_supplicant_args= "$ROOT/etc/conf.d/wpa_supplicant" 2>/dev/null; then
 		sed -i -e "s/^wpa_supplicant_args=.*/wpa_supplicant_args=\"-i $iface\"/" /etc/conf.d/wpa_supplicant
 	else
-		printf 'wpa_supplicant_args="-i%s"\n' "$iface" >> "$ROOT"/etc/conf.d/wpa_supplicant
+		printf 'wpa_supplicant_args="-i%s"\n' "$iface" >> "$ROOT/etc/conf.d/wpa_supplicant"
 	fi
 	rc-update --quiet add wpa_supplicant boot
 	rc-service wpa_supplicant start
@@ -180,6 +186,17 @@ wlan_is_psk() {
 	awk -F/ -v essid="$essid" '$1==essid {print $2}' "$essids_list" | grep -q -F -w 'PSK'
 }
 
+is_ipv6_enabled() {
+	test -f /proc/net/if_inet6
+}
+
+contains() {
+  case "$1" in
+    (*"$2"*) true;;
+    (*) false;;
+  esac
+}
+
 cat_collapsing_whitespace() {
 	local path="$1"
 	# shellcheck disable=SC2005 disable=SC2046
@@ -202,19 +219,7 @@ config_iface() {
 		return
 	fi
 
-	if [ -r "$iface.bridge_ports" ]; then
-		bridge_ports=$(echo $(cat $iface.bridge_ports))
-		echo "bridge_ports=\"$bridge_ports\"" >> $conf
-	fi
-	if [ -r "$iface.bond_slaves" ]; then
-		bond_slaves=$(echo $(cat $iface.bond_slaves))
-		echo "bond_slaves=\"$bond_slaves\"" >> $conf
-	fi
-	if [ -r "$iface.raw_device" ]; then
-		raw_device=$(cat $iface.raw_device)
-		echo "raw_device=\"$raw_device\"" >> $conf
-	fi
-	if is_wifi $iface; then
+	if is_wifi "$iface"; then
 		apk add --quiet --no-progress iw wpa_supplicant || return
 		local wifi_configured=false
 		while ! $wifi_configured; do
@@ -249,23 +254,55 @@ config_iface() {
 			config_wpa_supp "$iface" "$essid" "$auth_type" "$psk" && wifi_configured=true
 		done
 	fi
-	# use ipcalc to validate the address. we do accept /mask
-	# we are no interested in the result, only error code, so
-	# we send result to /dev/null
-	while ! ipcalc -s -m $address >/dev/null 2>&1; do
-		address=${default_address:-$(get_default_addr $iface)}
-		[ -z "$address" ] && address="dhcp"
-		ask "Ip address for $iface? (or 'dhcp', 'none', '?')" $address
+
+	config_iface_family "$iface" "$conf" "$default_address" "IPv4" 32 24 "dhcp"
+	if is_ipv6_enabled; then
+		config_iface_family "$iface" "$conf" "$default_address" "IPv6" 128 64 "auto" "auto"
+	fi
+}
+
+config_iface_family() {
+	local iface="$1"
+	local conf="$2"
+	local default_address="$3"
+	local family="$4"
+	local max_mask_size="$5"
+	local default_mask_size="$6"
+	local default_method="$7"
+	local extra_methods="$8"
+	local address gateway bridge_ports
+
+	if [ -r "$iface.bridge_ports" ]; then
+		bridge_ports="$(cat_collapsing_whitespace "$iface.bridge_ports")"
+		echo "bridge_ports_$family=\"$bridge_ports\"" >> "$conf"
+	fi
+	if [ -r "$iface.bond_slaves" ]; then
+		bond_slaves="$(cat_collapsing_whitespace "$iface.bond_slaves")"
+		echo "bond_slaves_$family=\"$bond_slaves\"" >> "$conf"
+	fi
+	if [ -r "$iface.raw_device" ]; then
+		raw_device="$(cat_collapsing_whitespace "$iface.raw_device")"
+		echo "raw_device_$family=\"$raw_device\"" >> "$conf"
+	fi
+
+	while ! ( ([ "$family" = "IPv4" ] && ipcalc -s -m "$address/0" >/dev/null 2>&1) || ([ "$family" = "IPv6" ] && contains "$address" ":") ); do
+		address=${default_address:-$(get_default_addr "$iface" "$family")}
+		[ -z "$address" ] && address="$default_method"
+		local method extra_options=""
+		for method in $extra_methods; do
+			extra_options="$extra_options'$method', "
+		done
+		ask "$family address for $iface? (or $extra_options'dhcp', 'none', '?')" "$address"
 		address=$resp
 		case "$resp" in
 		'?')	ipaddr_help;;
 		"abort") return;;
-		"dhcp")
-			echo "type=dhcp" >> $conf
+		auto|dhcp)
+			echo "type_$family=$resp" >> "$conf"
 			unconfigured_del "$iface"
 			return ;;
 		"none")
-			echo "type=manual" >> $conf
+			echo "type_$family=manual" >> "$conf"
 			unconfigured_del "$iface"
 			return;;
 		br[0-9]*|bridge[0-9]*)
@@ -279,23 +316,21 @@ config_iface() {
 	done
 
 	# extract netmask if entered together with address
-	if [ "$address" != "${address%%/*}" ]; then
-		netmask=$(ipcalc -s -m $address | cut -d= -f2)
+	local address_without_netmask="${address%%/*}"
+	local netmask=""
+	if contains "$address" "/"; then
+		netmask="${address##*/}"
 	fi
 
-	# use ipcalc -m to validate netmask. we dont accept <addr>/mask suffix
-	# so we pass on a dummy mask to ipcalc.
-	while ! ipcalc -s -m $netmask/0 >/dev/null 2>&1; do
-		netmask=$(get_default_mask $address)
-		ask "Netmask?" $netmask
+	while [ -z "$netmask" ] || [ "$netmask" -lt 0 ] || [ "$netmask" -gt "$max_mask_size" ]; do
+		netmask=$default_mask_size
+		ask "Netmask?" "$netmask"
 		netmask=$resp
 		[ "$netmask" = "abort" ] && return
 	done
 
-	# use ipcalc -m to validate netmask. we dont accept <addr>/mask suffix
-	# so we pass on a dummy mask to ipcalc.
-	while ! ipcalc -s -m $gateway/0 >/dev/null 2>&1; do
-		gateway=$(get_default_gateway $iface)
+	while ! ( ([ "$family" = "IPv4" ] && ipcalc -s -m "$gateway/0" >/dev/null 2>&1) || ([ "$family" = "IPv6" ] && contains "$gateway" ":") ); do
+		gateway=$(get_default_gateway "$iface" "$family")
 		[ -z "$gateway" ] && gateway=none
 		ask "Gateway? (or 'none')" "$gateway"
 		gateway=$resp
@@ -304,20 +339,14 @@ config_iface() {
 		[ -z "$gateway" ] && break
 	done
 
-	echo "type=static" >> $conf
-	if [ -n "$bridge_ports" ]; then
-		echo "bridge_ports=$bridge_ports" >> $conf
-	fi
-	echo "address=${address%%/*}" >> $conf  #strip off /mask if there
-	echo "netmask=$netmask" >> $conf
-	echo "gateway=$gateway" >> $conf
+	echo "$family configuration for $iface:"
+	{
+		echo "type_$family=static"
+		echo "address_$family=$address_without_netmask/$netmask"
+		echo "gateway_$family=$gateway"
+	} | tee -a "$conf" | sed 's/^/  /' | sed "s/_$family//"
 
-
-	# print summary
-	echo "Configuration for $iface:"
-	sed 's/^/  /' $conf
-
-	unconfigured_del $iface
+	unconfigured_del "$iface"
 }
 
 is_bridge() {
@@ -507,51 +536,38 @@ prompt_for_interfaces() {
 	done
 
 	if [ "$(openrc --sys)" != "LXC" ] || ! ip addr show lo | grep -q 'inet.*127\.0'; then
-		echo "type=loopback" > 000~lo.conf
-		echo "" > interface
+		echo "type_IPv4=loopback" > 000~lo.conf
+		if is_ipv6_enabled; then
+			echo "type_IPv6=loopback" >> 000~lo.conf
+		fi
 	fi
 
-	for i in *.conf ; do
-		iface=$(basename $i .conf)
+	for path in *.conf ; do
+		iface=$(basename "$path" .conf)
 		iface=${iface#[0-9]*~}
-		bridge_ports=
-		bond_slaves=
-		raw_device=
-		address=
-		type=
-		gateway=
-		. ./$i
+		type_IPv4=
+		address_IPv4=
+		gateway_IPv4=
+		bridge_ports_IPv4=
+		bond_slaves_IPv4=
+		raw_device_IPv4=
+		type_IPv6=
+		address_IPv6=
+		gateway_IPv6=
+		bridge_ports_IPv6=
+		bond_slaves_IPv6=
+		raw_device_IPv6=
+		# shellcheck disable=SC1090
+		. "./$path"
 		echo "auto $iface" >> interfaces
-		echo "iface $iface inet $type" >> interfaces
-		if [ -n "$bridge_ports" ]; then
-			PKGS="$PKGS bridge"
-			printf "\tbridge-ports %s\n" "$bridge_ports" >> interfaces
-		fi
-		if [ -n "$bond_slaves" ]; then
-			PKGS="$PKGS bonding"
-			printf "\tbond-slaves %s\n" "$bond_slaves" >> interfaces
-		fi
-		if [ -n "$raw_device" ]; then
-			printf "\tvlan-raw-device %s\n" "$raw_device" >> interfaces
-		fi
+		render_iface_family inet "$type_IPv4" "$address_IPv4" "$gateway_IPv4" "$bridge_ports_IPv4" "$bond_slaves_IPv4" "$raw_device_IPv4"
+		render_iface_family inet6 "$type_IPv6" "$address_IPv6" "$gateway_IPv6" "$bridge_ports_IPv6" "$bond_slaves_IPv6" "$raw_device_IPv6"
 		case "$iface" in
 			*.[0-9]*|vlan[0-9]*)
 				if ! [ -f "$ROOT/usr/libexec/ifupdown-ng/link" ]; then
 					PKGS="$PKGS vlan"
 				fi
 				;;
-		esac
-		case $type in
-		manual)
-			printf "\tup ip link set \$IFACE up\n" >> interfaces
-			printf "\tdown ip link set \$IFACE down\n" >> interfaces
-			;;
-		static)
-			printf "\taddress %s\n" "$address" >> interfaces
-			printf "\tnetmask %s\n" "$netmask" >> interfaces
-			[ "$gateway" ] \
-				&& printf "\tgateway %s\n" "$gateway" >> interfaces
-			;;
 		esac
 		echo "" >> interfaces
 	done
@@ -571,6 +587,42 @@ prompt_for_interfaces() {
 
 	mkdir -p "$ROOT/etc/network"
 	cp interfaces "$ROOT/etc/network/"
+}
+
+render_iface_family() {
+	local family_type="$1"
+	local type="$2"
+	local address="$3"
+	local gateway="$4"
+	local bridge_ports="$5"
+	local bond_slaves="$6"
+	local raw_device="$7"
+	if [ -z "$type" ]; then
+		return
+	fi
+	echo "iface $iface $family_type $type" >> interfaces
+	if [ -n "$bridge_ports" ]; then
+		PKGS="$PKGS bridge"
+		printf "\tbridge-ports %s\n" "$bridge_ports" >> interfaces
+	fi
+	if [ -n "$bond_slaves" ]; then
+		PKGS="$PKGS bonding"
+		printf "\tbond-slaves %s\n" "$bond_slaves" >> interfaces
+	fi
+	if [ -n "$raw_device" ]; then
+		printf "\tvlan-raw-device %s\n" "$raw_device" >> interfaces
+	fi
+	case $type in
+	manual)
+		printf "\tup ip link set \$IFACE up\n" >> interfaces
+		printf "\tdown ip link set \$IFACE down\n" >> interfaces
+		;;
+	static)
+		printf "\taddress %s\n" "$address" >> interfaces
+		[ "$gateway" ] \
+			&& printf "\tgateway %s\n" "$gateway" >> interfaces
+		;;
+	esac
 }
 
 find_first_iface_up() {
@@ -610,18 +662,31 @@ auto_setup() {
 		fi
 	done
 
-	cat > "$ROOT/etc/network/interfaces" <<-EOF
-	auto lo
-	iface lo inet loopback
+	if is_ipv6_enabled; then
+		cat > "$ROOT/etc/network/interfaces" <<-EOF
+		auto lo
+		iface lo inet loopback
+		iface lo inet6 loopback
 
-	auto $iface
-	iface $iface inet dhcp
-	EOF
+		auto $iface
+		iface $iface inet dhcp
+		iface $iface inet6 auto
+		EOF
+	else
+		cat > "$ROOT/etc/network/interfaces" <<-EOF
+		auto lo
+		iface lo inet loopback
+
+		auto $iface
+		iface $iface inet dhcp
+		EOF
+	fi
+
 }
 
 import_wifi_config() {
 	local wifiopts="$1"
-	local conffile="$ROOT"/etc/wpa_supplicant/wpa_supplicant.conf
+	local conffile="$ROOT/etc/wpa_supplicant/wpa_supplicant.conf"
 
 	[ -n "$wifiopts" ] || return 0
 	[ -f "$wifiopts" ] || die "$wifiopts: wpa_supplicant config not found"

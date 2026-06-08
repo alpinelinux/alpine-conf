@@ -54,7 +54,9 @@ setup_interfaces_interactive_dhcp_body() {
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
 		echo "eth0"
-		# Ip address for eth0? (or 'dhcp', 'none', '?') [dhcp]
+		# IPv4 address for eth0? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for eth0? (or 'auto', 'dhcp', 'none', '?') [auto]
 		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
 		echo "n"
@@ -85,7 +87,9 @@ setup_interfaces_interactive_vlan_body() {
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
 		echo "eth0.5"
-		# Ip address for eth0.5? (or 'dhcp', 'none', '?') [dhcp]
+		# IPv4 address for eth0.5? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for eth0.5? (or 'auto', 'dhcp', 'none', '?') [auto]
 		echo "dhcp"
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
 		echo "done"
@@ -107,7 +111,9 @@ setup_interfaces_interactive_vlan_ng_body() {
 	(
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
 		echo "eth0.5"
-		# Ip address for eth0.5? (or 'dhcp', 'none', '?') [dhcp]
+		# IPv4 address for eth0.5? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for eth0.5? (or 'auto', 'dhcp', 'none', '?') [auto]
 		echo "dhcp"
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
 		echo "done"
@@ -131,7 +137,9 @@ setup_interfaces_interactive_vlan0_ng_body() {
 		echo "vlan0"
 		# Which one do you want use for vlan0? (or 'done') [eth0]
 		echo "eth0"
-		# Ip address for vlan0? (or 'dhcp', 'none', '?') [dhcp]
+		# IPv4 address for vlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for vlan0? (or 'auto', 'dhcp', 'none', '?') [auto]
 		echo "dhcp"
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
 		echo "done"
@@ -156,7 +164,9 @@ setup_interfaces_interactive_br0_body() {
 		echo "br0"
 		# Which port(s) do you want add to bridge br0? (or 'done') [eth0]
 		echo "eth0"
-		# Ip address for vlan0? (or 'dhcp', 'none', '?') [dhcp]
+		# IPv4 address for vlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for vlan0? (or 'auto', 'dhcp', 'none', '?') [auto]
 		echo "dhcp"
 		# Which one do you want to initialize? (or '?' or 'done') [eth0]
 		echo "done"
@@ -181,7 +191,9 @@ setup_interfaces_interactive_bond0_body() {
 		echo "bond0"
 		# Which slave(s) do you want add to bond0? (or 'done') [eth0]
 		echo "eth0"
-		# Ip address for bond0? (or 'dhcp', 'none', '?') [dhcp]
+		# IPv4 address for bond0? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for bond0? (or 'auto', 'dhcp', 'none', '?') [auto]
 		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
 		echo "n"
@@ -204,7 +216,9 @@ setup_interfaces_interactive_wlan0_psk_body() {
 		echo "Telenor0366rar"
 		# Type the "Telenor0366rar" network Pre-Shared Key (will not echo):
 		echo "0123456789"
-		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		# IPv4 address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for wlan0? (or 'auto', 'dhcp', 'none', '?') [auto]
 		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
 		echo "n"
@@ -215,7 +229,7 @@ setup_interfaces_interactive_wlan0_psk_body() {
 		-o match:"Get-B3ED64" \
 		-o not-match:"x00" \
 		-o match:"Type the \"Telenor0366rar\" network Pre-Shared Key" \
-		-o match:"Ip address for wlan2" \
+		-o match:"IPv4 address for wlan2" \
 		setup-interfaces <answers
 }
 
@@ -237,7 +251,9 @@ setup_interfaces_interactive_wlan0_psk_by_index_body() {
 		echo "5"
 		# Type the "Telenor0366rar" network Pre-Shared Key (will not echo):
 		echo "0123456789"
-		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		# IPv4 address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for wlan0? (or 'auto', 'dhcp', 'none', '?') [auto]
 		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
 		echo "n"
@@ -248,7 +264,7 @@ setup_interfaces_interactive_wlan0_psk_by_index_body() {
 		-o match:"Get-B3ED64" \
 		-o not-match:"x00" \
 		-o match:"Type the \"Telenor0366rar\" network Pre-Shared Key" \
-		-o match:"Ip address for wlan3" \
+		-o match:"IPv4 address for wlan3" \
 		setup-interfaces <answers
 }
 
@@ -262,8 +278,10 @@ setup_interfaces_interactive_wlan0_open_body() {
 		echo "wlan0"
 		# Type the wireless network name to connect to:
 		echo "Lynx2C0CEA_5G"
-		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		# IPv4 address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for wlan0? (or 'auto', 'dhcp', 'none', '?') [auto]
+		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
 		echo "n"
 	)>answers
@@ -273,7 +291,7 @@ setup_interfaces_interactive_wlan0_open_body() {
 		-o match:"Get-B3ED64" \
 		-o not-match:"x00" \
 		-o not-match:"Type the \"Lynx2C0CEA_5g\" network Pre-Shared Key" \
-		-o match:"Ip address for wlan0" \
+		-o match:"IPv4 address for wlan0" \
 		setup-interfaces <answers
 }
 
@@ -287,8 +305,10 @@ setup_interfaces_interactive_ssid_list_body() {
 		echo "wlan0"
 		# Type the wireless network name to connect to:
 		echo "kano1"
-		# Ip address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
-		echo dhcp
+		# IPv4 address for wlan0? (or 'dhcp', 'none', '?') [dhcp]
+		echo "dhcp"
+		# IPv6 address for wlan0? (or 'auto', 'dhcp', 'none', '?') [auto]
+		echo "dhcp"
 		# Do you want to do any manual network configuration? (y/n) [n]
 		echo "n"
 	)>answers
@@ -311,8 +331,10 @@ setup_interfaces_auto_single_body() {
 	atf_check \
 		-o match:"auto lo" \
 		-o match:"iface lo inet loopback" \
+		-o match:"iface lo inet6 loopback" \
 		-o match:"auto eth0" \
 		-o match:"iface eth0 inet dhcp" \
+		-o match:"iface eth0 inet6 auto" \
 		cat etc/network/interfaces
 }
 
@@ -329,8 +351,10 @@ setup_interfaces_auto_first_body() {
 	atf_check \
 		-o match:"auto lo" \
 		-o match:"iface lo inet loopback" \
+		-o match:"iface lo inet6 loopback" \
 		-o match:"auto eth0" \
 		-o match:"iface eth0 inet dhcp" \
+		-o match:"iface eth0 inet6 auto" \
 		cat etc/network/interfaces
 }
 
@@ -354,8 +378,10 @@ setup_interfaces_auto_up_body() {
 	atf_check \
 		-o match:"auto lo" \
 		-o match:"iface lo inet loopback" \
+		-o match:"iface lo inet6 loopback" \
 		-o match:"auto eth1" \
 		-o match:"iface eth1 inet dhcp" \
+		-o match:"iface eth1 inet6 auto" \
 		cat etc/network/interfaces
 }
 
