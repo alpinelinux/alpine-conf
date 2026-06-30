@@ -6,7 +6,7 @@ PREFIX=@PREFIX@
 
 usage() {
 	cat <<-__EOF__
-		usage: genfstab [-h] [-U] ROOT
+		usage: setup-fstab [-h] [-U] ROOT
 
 		Generate fstab entries from mounted filesystems below ROOT.
 
@@ -107,6 +107,6 @@ shift $((OPTIND - 1))
 
 [ $# -eq 1 ] || usage 1 >&2
 
-root=$(cd "$1" 2>/dev/null && pwd -P) || die "genfstab: $1 is not a directory"
+root=$(cd "$1" 2>/dev/null && pwd -P) || die "setup-fstab: $1 is not a directory"
 
 print_mounts "$root"

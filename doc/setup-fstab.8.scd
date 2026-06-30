@@ -1,16 +1,16 @@
-GENFSTAB(8) "Alpine Linux"
+SETUP-FSTAB(8) "Alpine Linux"
 
 # NAME
 
-*genfstab* - generate fstab entries from mounted filesystems
+*setup-fstab* - generate fstab entries from mounted filesystems
 
 # SYNOPSIS
 
-*genfstab* [\-h] [\-U] _ROOT_
+*setup-fstab* [\-h] [\-U] _ROOT_
 
 # DESCRIPTION
 
-*genfstab* reads _/proc/mounts_ and generates fstab output for filesystems
+*setup-fstab* reads _/proc/mounts_ and generates fstab output for filesystems
 mounted below _ROOT_.
 
 Pseudo filesystems (proc, sysfs, devtmpfs, cgroup, and similar) are

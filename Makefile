@@ -6,7 +6,6 @@ PREFIX		?=
 
 MAN8		:= \
 		doc/copy-modloop.8 \
-		doc/genfstab.8 \
 		doc/lbu.8 \
 		doc/setup-acf.8 \
 		doc/setup-alpine.8 \
@@ -17,6 +16,7 @@ MAN8		:= \
 		doc/setup-devd.8 \
 		doc/setup-disk.8 \
 		doc/setup-dns.8 \
+		doc/setup-fstab.8 \
 		doc/setup-hostname.8 \
 		doc/setup-interfaces.8 \
 		doc/setup-keymap.8 \
@@ -35,7 +35,6 @@ MAN8		:= \
 
 LIB_FILES	:= libalpine.sh dasd-functions.sh
 SBIN_FILES	:= copy-modloop\
-		genfstab\
 		lbu\
 		setup-acf\
 		setup-alpine\
@@ -46,6 +45,7 @@ SBIN_FILES	:= copy-modloop\
 		setup-devd\
 		setup-disk\
 		setup-dns\
+		setup-fstab\
 		setup-hostname\
 		setup-interfaces\
 		setup-keymap\

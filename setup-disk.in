@@ -710,7 +710,7 @@ install_mounted_root() {
 		mv "$mnt"/etc/fstab "$mnt"/etc/fstab.old
 	fi
 	mkdir -p "$mnt"/etc
-	genfstab -U "$mnt" >> "$mnt"/etc/fstab
+	setup-fstab -U "$mnt" >> "$mnt"/etc/fstab
 	if [ -n "$SWAP_DEVICES" ]; then
 		local swap_dev
 		for swap_dev in $SWAP_DEVICES; do

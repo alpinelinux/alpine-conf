@@ -2,16 +2,16 @@
 
 . $(atf_get_srcdir)/test_env.sh
 init_tests \
-	genfstab_usage \
-	genfstab_mounts \
-	genfstab_uuid \
-	genfstab_pseudofs
+	setup_fstab_usage \
+	setup_fstab_mounts \
+	setup_fstab_uuid \
+	setup_fstab_pseudofs
 
-genfstab_usage_body() {
-	test_usage genfstab
+setup_fstab_usage_body() {
+	test_usage setup-fstab
 }
 
-genfstab_mounts_body() {
+setup_fstab_mounts_body() {
 	init_env
 	mkdir -p mnt/boot proc
 	fake_mount "/dev/vda2 $PWD/mnt ext4 rw,noatime,data=ordered 0 0"
@@ -22,10 +22,10 @@ genfstab_mounts_body() {
 		-o match:"^/dev/vda2[[:space:]]+/[[:space:]]+ext4[[:space:]]+rw,noatime,data=ordered[[:space:]]+0 1$" \
 		-o match:"^/dev/vda1[[:space:]]+/boot[[:space:]]+vfat[[:space:]]+rw,relatime,fmask=0022[[:space:]]+0 2$" \
 		-o not-match:"/dev/vdb1" \
-		genfstab "$PWD/mnt"
+		setup-fstab "$PWD/mnt"
 }
 
-genfstab_uuid_body() {
+setup_fstab_uuid_body() {
 	init_env
 	mkdir -p mnt proc
 	fake_mount "/dev/vda2 $PWD/mnt ext4 rw,noatime 0 0"
@@ -42,14 +42,14 @@ genfstab_uuid_body() {
 	atf_check -s exit:0 \
 		-o match:"^UUID=1111-2222[[:space:]]+/[[:space:]]+ext4[[:space:]]+rw,noatime[[:space:]]+0 1$" \
 		-o match:"^/dev/md0[[:space:]]+/home[[:space:]]+ext4[[:space:]]+rw,relatime[[:space:]]+0 2$" \
-		genfstab -U "$PWD/mnt"
+		setup-fstab -U "$PWD/mnt"
 
 	NO_DISK_UUID=/dev/vda2 atf_check -s exit:0 \
 		-o match:"^/dev/vda2[[:space:]]+/[[:space:]]+ext4[[:space:]]+rw,noatime[[:space:]]+0 1$" \
-		genfstab -U "$PWD/mnt"
+		setup-fstab -U "$PWD/mnt"
 }
 
-genfstab_pseudofs_body() {
+setup_fstab_pseudofs_body() {
 	init_env
 	mkdir -p mnt/proc proc
 	fake_mount "/dev/vda2 $PWD/mnt ext4 rw,noatime 0 0"
@@ -57,5 +57,5 @@ genfstab_pseudofs_body() {
 
 	atf_check -s exit:0 \
 		-o not-match:"[[:space:]]/proc[[:space:]]" \
-		genfstab "$PWD/mnt"
+		setup-fstab "$PWD/mnt"
 }

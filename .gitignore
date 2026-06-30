@@ -2,7 +2,6 @@
 *.tar.gz
 Kyuafile
 copy-modloop
-genfstab
 lbu
 setup-acf
 setup-ads
@@ -16,6 +15,7 @@ setup-desktop
 setup-devd
 setup-disk
 setup-dns
+setup-fstab
 setup-gparted-desktop
 setup-hostname
 setup-interfaces
